@@ -1,4 +1,8 @@
+#ifdef PARADISE_PRODUCTION_HARDWARE
+#undef DEBUG
+#else
 #define DEBUG
+#endif
 //#define TESTING
 
 // Uncomment the following line to enable debug logging for cooking recipes.
