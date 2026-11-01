@@ -24,18 +24,18 @@
 	technical_name = "CereStation"
 	map_path = "_maps/map_files/stations/cerestation.dmm"
 	webmap_url = "https://webmap.affectedarc07.co.uk/maps/paradise/cerestation/"
-	min_players_random = 60
 	welcome_sound = 'sound/AI/welcome_farragus.ogg'
-	voteable = FALSE
+	voteable = TRUE
+	min_players_random = 0
 
 /datum/map/emeraldstation
 	fluff_name = "NSS Diagoras"
 	technical_name = "EmeraldStation"
 	map_path = "_maps/map_files/stations/emeraldstation.dmm"
 	webmap_url = "https://webmap.affectedarc07.co.uk/maps/paradise/emeraldstation/"
-	min_players_random = 60
 	welcome_sound = 'sound/AI/welcome_diagoras.ogg'
-	voteable = FALSE
+	voteable = TRUE
+	min_players_random = 0
 
 /datum/map/omegastation
 	fluff_name = "NSS Legaria"
