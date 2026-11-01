@@ -104,7 +104,7 @@ GLOBAL_PROTECT(admin_ranks) // this shit is being protected for obvious reasons
 
 		if(get_admin.NextRow())
 			var/rank = get_admin.item[1]
-			var/rights = get_admin.item[2]
+			var/rights = text2num(get_admin.item[2])
 			if(rights == 0)
 				// If you have no rights, you don't get an admin datum.
 				qdel(get_admin)
@@ -194,7 +194,7 @@ GLOBAL_PROTECT(admin_ranks) // this shit is being protected for obvious reasons
 		while(get_admins.NextRow())
 			var/ckey = get_admins.item[1]
 			var/rank = get_admins.item[2]
-			var/rights = get_admins.item[3]
+			var/rights = text2num(get_admins.item[3])
 			if(rights == 0)
 				// If you have no rights, you don't get an admin datum.
 				continue
