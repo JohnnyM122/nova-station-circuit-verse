@@ -1,0 +1,75 @@
+/**
+ * Copyright (c) 2020 Aleksej Komarov
+ * SPDX-License-Identifier: MIT
+ */
+
+@use 'sass:meta';
+@use './base.scss';
+@use '~tgui-core/styles';
+
+// Core styles
+@include meta.load-css('./reset.scss');
+@include meta.load-css('./css-variables.scss');
+
+// Atomic classes
+@include meta.load-css('./atomic/candystripe.scss');
+@include meta.load-css('./atomic/color.scss');
+@include meta.load-css('./atomic/debug-layout.scss');
+@include meta.load-css('./atomic/outline.scss');
+@include meta.load-css('./atomic/text.scss');
+
+// Components
+@include meta.load-css('./components/Countdown.scss');
+@include meta.load-css('./components/IconStack.scss');
+@include meta.load-css('./components/NanoMap.scss');
+
+// Interfaces
+@include meta.load-css('./interfaces/AccountsUplinkTerminal.scss');
+@include meta.load-css('./interfaces/AdminAntagMenu.scss');
+@include meta.load-css('./interfaces/AIControllerDebugger.scss');
+@include meta.load-css('./interfaces/AlertModal.scss');
+@include meta.load-css('./interfaces/BrigCells.scss');
+@include meta.load-css('./interfaces/BugReportForm.scss');
+@include meta.load-css('./interfaces/CameraConsole.scss');
+@include meta.load-css('./interfaces/ColorPicker.scss');
+@include meta.load-css('./interfaces/Contractor.scss');
+@include meta.load-css('./interfaces/CrewMonitor.scss');
+@include meta.load-css('./interfaces/ExosuitFabricator.scss');
+@include meta.load-css('./interfaces/GeneModder.scss');
+@include meta.load-css('./interfaces/KitchenMachine.scss');
+@include meta.load-css('./interfaces/LibraryComputer.scss');
+@include meta.load-css('./interfaces/Loadout.scss');
+@include meta.load-css('./interfaces/LoreConsole.scss');
+@include meta.load-css('./interfaces/Newscaster.scss');
+@include meta.load-css('./interfaces/OreRedemption.scss');
+@include meta.load-css('./interfaces/PanDEMIC.scss');
+@include meta.load-css('./interfaces/PDA.scss');
+@include meta.load-css('./interfaces/pda_minesweeper.scss');
+@include meta.load-css('./interfaces/PdaPainter.scss');
+@include meta.load-css('./interfaces/PoolController.scss');
+@include meta.load-css('./interfaces/ReagentsEditor.scss');
+@include meta.load-css('./interfaces/RndConsole.scss');
+@include meta.load-css('./interfaces/Safe.scss');
+@include meta.load-css('./interfaces/SecureStorage.scss');
+@include meta.load-css('./interfaces/SecurityRecords.scss');
+@include meta.load-css('./interfaces/SeedExtractor.scss');
+@include meta.load-css('./interfaces/MedicalRecords.scss');
+@include meta.load-css('./interfaces/MaterialContainer.scss');
+
+// Layouts
+@include meta.load-css('./layouts/Layout.scss');
+@include meta.load-css('./layouts/TitleBar.scss');
+@include meta.load-css('./layouts/Window.scss');
+
+// NT Theme
+.Layout__content {
+  background-image: url('../assets/bg-nanotrasen.svg');
+  background-size: 70% 70%;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+// A default, in case someone uses the vp() function outside of a <Window>
+:root {
+  --scaling-amount: 1;
+}

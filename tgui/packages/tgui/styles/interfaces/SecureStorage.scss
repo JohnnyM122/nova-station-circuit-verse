@@ -1,0 +1,47 @@
+.SecureStorage {
+  --display-box-color: hsl(from var(--color-base) h s calc(l + 7.5));
+
+  &__displayBox {
+    background-color: hsl(from var(--display-box-color) h s 9);
+    color: var(--display-box-color);
+    border: var(--border-thickness-small) inset var(--color-base);
+    font-size: 375%;
+    font-family: var(--font-family-mono);
+    padding: var(--space-s);
+
+    &--good {
+      --display-box-color: hsl(from var(--color-good) h 75 50);
+    }
+
+    &--bad {
+      --display-box-color: hsl(from var(--color-bad) h 75 50);
+    }
+  }
+}
+
+.SecureStorage__Button {
+  padding: 0 !important;
+  background-color: var(--display-box-color);
+  border: var(--border-thickness-small) outset var(--display-box-color);
+  transition-property: border-color, background-color;
+
+  &:hover:not(:active) {
+    background-color: hsl(from var(--display-box-color) h s calc(l + var(--adjust-hover)));
+    border-color: hsl(from var(--display-box-color) h s calc(l + var(--adjust-hover)));
+  }
+
+  &:active {
+    background-color: var(--display-box-color) !important;
+    border-style: inset;
+  }
+
+  &--E,
+  &--C {
+    --display-box-color: var(--color-caution);
+    color: var(--color-black) !important;
+  }
+
+  &--C {
+    --display-box-color: var(--color-danger);
+  }
+}

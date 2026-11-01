@@ -1,0 +1,453 @@
+/*
+ * False Walls
+ */
+
+// Minimum pressure difference to fail building falsewalls.
+// Also affects admin alerts.
+#define FALSEDOOR_MAX_PRESSURE_DIFF 25.0
+
+/obj/structure/falsewall
+	name = "wall"
+	desc = "A huge chunk of metal used to separate rooms."
+	anchored = TRUE
+	icon = 'icons/turf/walls/32x40wall.dmi'
+	icon_state = "wall-0"
+	base_icon_state = "wall"
+	flags_2 = RAD_PROTECT_CONTENTS_2 | RAD_NO_CONTAMINATE_2
+	rad_insulation_beta = RAD_BETA_BLOCKER
+	rad_insulation_gamma = RAD_LIGHT_INSULATION
+	layer = TURF_LAYER
+
+	var/mineral = /obj/item/stack/sheet/metal
+	var/mineral_amount = 2
+	var/walltype = /turf/simulated/wall
+	var/girder_type = /obj/structure/girder/displaced
+	var/opening = FALSE
+	/// Minimum environment smash level (found on simple animals) to break through this instantly
+	var/env_smash_level = ENVIRONMENT_SMASH_STRUCTURES
+
+	density = TRUE
+	opacity = TRUE
+	max_integrity = 100
+
+	smoothing_flags = SMOOTH_BITMASK
+	smoothing_groups = list(SMOOTH_GROUP_SIMULATED_TURFS, SMOOTH_GROUP_WALLS, SMOOTH_GROUP_REGULAR_WALLS)
+	canSmoothWith = list(SMOOTH_GROUP_AIRLOCK, SMOOTH_GROUP_WALLS, SMOOTH_GROUP_REGULAR_WALLS, SMOOTH_GROUP_REINFORCED_WALLS)
+
+/obj/structure/falsewall/Initialize(mapload)
+	. = ..()
+	recalculate_atmos_connectivity()
+
+/obj/structure/falsewall/examine_status(mob/user)
+	var/healthpercent = (obj_integrity/max_integrity) * 100
+	switch(healthpercent)
+		if(100)
+			. += SPAN_NOTICE("It looks fully intact.")
+		if(70 to 99)
+			. +=  SPAN_WARNING("It looks slightly damaged.")
+		if(40 to 70)
+			. +=  SPAN_WARNING("It looks moderately damaged.")
+		if(0 to 40)
+			. += SPAN_DANGER("It looks heavily damaged.")
+	. += "<br>[SPAN_NOTICE("Using a lit welding tool on this item will allow you to slice through it, eventually removing the outer layer.")]"
+
+/obj/structure/falsewall/Destroy()
+	density = FALSE
+	recalculate_atmos_connectivity()
+	return ..()
+
+/obj/structure/falsewall/CanAtmosPass(direction)
+	return !density
+
+/obj/structure/falsewall/attack_ghost(mob/user)
+	if(user.can_advanced_admin_interact())
+		toggle(user, silent = TRUE)
+
+/obj/structure/falsewall/attack_hand(mob/user)
+	. = ..()
+	toggle(user)
+
+/obj/structure/falsewall/attack_robot(mob/living/user)
+	. = ..()
+	if(Adjacent(user) && !isdrone(user))
+		toggle(user)
+
+/obj/structure/falsewall/proc/toggle(mob/user, silent = FALSE)
+	if(opening)
+		return
+	opening = TRUE
+	var/direction = get_current_direction()
+	dir = direction ? direction : NORTH
+	if(density)
+		flick("fwall_opening", src)
+		density = FALSE
+		set_opacity(FALSE)
+		clear_smooth_overlays()
+		icon_state = "fwall_opening"
+	else
+		var/srcturf = get_turf(src)
+		for(var/mob/living/obstacle in srcturf) //Stop people from using this as a shield
+			opening = FALSE
+			return
+		flick("fwall_closing", src)
+		density = TRUE
+		set_opacity(TRUE)
+		icon_state = "fwall_closing"
+	if(!silent)
+		user.visible_message(
+			SPAN_WARNING("[user] pushes the wall, and it begins to slide [density ? "closed" : "open"]!"),
+			SPAN_WARNING("You push the wall, and it begins to slide [density ? "closed" : "open"]!"),
+			SPAN_WARNING("You hear metallic grinding!")
+		)
+	recalculate_atmos_connectivity()
+	opening = FALSE
+	update_icon()
+
+/obj/structure/falsewall/update_icon_state()
+	if(opening)
+		smoothing_flags = NONE
+		clear_smooth_overlays()
+		if(density)
+			icon_state = "fwall_opening"
+			return
+		icon_state = "fwall_closing"
+		return
+	if(!density)
+		icon_state = "fwall_open"
+		return
+	smoothing_flags = SMOOTH_BITMASK | SMOOTH_OBJ
+	icon_state = initial(icon_state)
+	icon_state = "[base_icon_state]-[smoothing_junction]"
+	QUEUE_SMOOTH(src)
+
+/obj/structure/falsewall/proc/ChangeToWall(delete = TRUE)
+	var/turf/T = get_turf(src)
+	T.ChangeTurf(walltype)
+	if(delete)
+		qdel(src)
+	return T
+
+/obj/structure/falsewall/item_interaction(mob/living/user, obj/item/used, list/modifiers)
+	if(opening)
+		to_chat(user, SPAN_WARNING("You must wait until the door has stopped moving."))
+		return ITEM_INTERACT_COMPLETE
+
+	if(istype(used, /obj/item/gun/energy/plasmacutter) || istype(used, /obj/item/pickaxe/drill/diamonddrill) || istype(used, /obj/item/pickaxe/drill/jackhammer) || istype(used, /obj/item/melee/energy/blade) || istype(used, /obj/item/pyro_claws))
+		dismantle(user, TRUE)
+		return ITEM_INTERACT_COMPLETE
+
+/obj/structure/falsewall/attack_animal(mob/living/simple_animal/M)
+	. = ..()
+	if(. && M.environment_smash >= env_smash_level)
+		deconstruct(FALSE)
+		to_chat(M, SPAN_NOTICE("You smash through the wall."))
+
+/obj/structure/falsewall/screwdriver_act(mob/living/user, obj/item/I)
+	if(opening)
+		to_chat(user, SPAN_WARNING("You must wait until the door has stopped moving."))
+		return TRUE
+	if(!density)
+		to_chat(user, SPAN_WARNING("You can't reach, close it first!"))
+		return TRUE
+	var/turf/T = get_turf(src)
+	if(T.density)
+		to_chat(user, SPAN_WARNING("[src] is blocked!"))
+		return TRUE
+
+	if(!isfloorturf(T))
+		to_chat(user, SPAN_WARNING("[src] bolts must be tightened on the floor!"))
+		return TRUE
+	user.visible_message(SPAN_NOTICE("[user] tightens some bolts on the wall."), SPAN_WARNING("You tighten the bolts on the wall."))
+	ChangeToWall()
+	return TRUE
+
+/obj/structure/falsewall/welder_act(mob/user, obj/item/I)
+	if(!density)
+		return
+	. = TRUE
+	if(!I.use_tool(src, user, volume = I.tool_volume))
+		return
+	dismantle(user, TRUE)
+
+/obj/structure/falsewall/proc/dismantle(mob/user, disassembled = TRUE)
+	user.visible_message(SPAN_NOTICE("[user] dismantles the false wall."), SPAN_WARNING("You dismantle the false wall."))
+	playsound(src, 'sound/items/welder.ogg', 100, TRUE)
+	deconstruct(disassembled)
+
+/obj/structure/falsewall/deconstruct(disassembled = TRUE)
+	if(!(flags & NODECONSTRUCT))
+		if(disassembled)
+			new girder_type(loc)
+		if(mineral_amount)
+			for(var/i in 1 to mineral_amount)
+				new mineral(loc)
+	qdel(src)
+
+/obj/structure/falsewall/set_smoothed_icon_state(new_junction)
+	if(opening || !density)
+		return
+	return ..()
+
+/obj/structure/falsewall/proc/get_current_direction()
+	for(var/direction in GLOB.cardinal)
+		if(iswallturf(get_step(src, direction)))
+			return direction
+
+/*
+ * False R-Walls
+ */
+
+/obj/structure/falsewall/reinforced
+	name = "reinforced wall"
+	desc = "A huge chunk of reinforced metal used to separate rooms."
+	icon = 'icons/turf/walls/32x40reinforced_wall.dmi'
+	icon_state = "reinforced_wall-0"
+	base_icon_state = "reinforced_wall"
+	walltype = /turf/simulated/wall/r_wall
+	mineral = /obj/item/stack/sheet/plasteel
+	smoothing_groups = list(SMOOTH_GROUP_SIMULATED_TURFS, SMOOTH_GROUP_WALLS, SMOOTH_GROUP_REINFORCED_WALLS)
+	canSmoothWith = list(SMOOTH_GROUP_AIRLOCK, SMOOTH_GROUP_WALLS, SMOOTH_GROUP_REGULAR_WALLS, SMOOTH_GROUP_REINFORCED_WALLS)
+
+/obj/structure/falsewall/reinforced/examine_status(mob/user)
+	. = ..()
+	. += "<br>[SPAN_NOTICE("The outer <b>grille</b> is fully intact.")]"	//not going to fake other states of disassembly
+
+/obj/structure/falsewall/reinforced/ChangeToWall(delete = 1)
+	var/turf/T = get_turf(src)
+	T.ChangeTurf(/turf/simulated/wall/r_wall)
+	if(delete)
+		qdel(src)
+	return T
+
+/*
+ * Uranium Falsewalls
+ */
+
+/obj/structure/falsewall/uranium
+	name = "uranium wall"
+	desc = "A wall with uranium plating. This is probably a bad idea."
+	icon = 'icons/turf/walls/32x40uranium_wall.dmi'
+	icon_state = "uranium_wall-0"
+	base_icon_state = "uranium_wall"
+	mineral = /obj/item/stack/sheet/mineral/uranium
+	walltype = /turf/simulated/wall/mineral/uranium
+	var/active = FALSE
+	var/last_event = 0
+	smoothing_groups = list(SMOOTH_GROUP_WALLS, SMOOTH_GROUP_MINERAL_WALLS)
+	canSmoothWith = list(SMOOTH_GROUP_AIRLOCK, SMOOTH_GROUP_MINERAL_WALLS)
+
+/obj/structure/falsewall/uranium/Initialize(mapload)
+	. = ..()
+	var/datum/component/inherent_radioactivity/radioactivity = AddComponent(/datum/component/inherent_radioactivity, 50, 0, 0, 1.5)
+	START_PROCESSING(SSradiation, radioactivity)
+/*
+ * Other misc falsewall types
+ */
+
+/obj/structure/falsewall/gold
+	name = "gold wall"
+	desc = "A wall with gold plating. Swag!"
+	icon = 'icons/turf/walls/32x40gold_wall.dmi'
+	icon_state = "gold_wall-0"
+	base_icon_state = "gold_wall"
+	mineral = /obj/item/stack/sheet/mineral/gold
+	walltype = /turf/simulated/wall/mineral/gold
+	smoothing_groups = list(SMOOTH_GROUP_WALLS, SMOOTH_GROUP_MINERAL_WALLS)
+	canSmoothWith = list(SMOOTH_GROUP_AIRLOCK, SMOOTH_GROUP_MINERAL_WALLS)
+
+/obj/structure/falsewall/silver
+	name = "silver wall"
+	desc = "A wall with silver plating. Shiny."
+	icon = 'icons/turf/walls/32x40silver_wall.dmi'
+	icon_state = "silver_wall-0"
+	base_icon_state = "silver_wall"
+	mineral = /obj/item/stack/sheet/mineral/silver
+	walltype = /turf/simulated/wall/mineral/silver
+	smoothing_groups = list(SMOOTH_GROUP_WALLS, SMOOTH_GROUP_MINERAL_WALLS)
+	canSmoothWith = list(SMOOTH_GROUP_AIRLOCK, SMOOTH_GROUP_MINERAL_WALLS)
+
+/obj/structure/falsewall/diamond
+	name = "diamond wall"
+	desc = "A wall with diamond plating. You monster."
+	icon = 'icons/turf/walls/32x40diamond_wall.dmi'
+	icon_state = "diamond_wall-0"
+	base_icon_state = "diamond_wall"
+	mineral = /obj/item/stack/sheet/mineral/diamond
+	walltype = /turf/simulated/wall/mineral/diamond
+	smoothing_groups = list(SMOOTH_GROUP_WALLS, SMOOTH_GROUP_MINERAL_WALLS)
+	canSmoothWith = list(SMOOTH_GROUP_AIRLOCK, SMOOTH_GROUP_MINERAL_WALLS)
+	max_integrity = 800
+
+
+/obj/structure/falsewall/plasma
+	name = "plasma wall"
+	desc = "A wall with plasma plating. This is definitely a bad idea."
+	icon = 'icons/turf/walls/32x40plasma_wall.dmi'
+	icon_state = "plasma_wall-0"
+	base_icon_state = "plasma_wall"
+	mineral = /obj/item/stack/sheet/mineral/plasma
+	walltype = /turf/simulated/wall/mineral/plasma
+	smoothing_groups = list(SMOOTH_GROUP_WALLS, SMOOTH_GROUP_MINERAL_WALLS)
+	canSmoothWith = list(SMOOTH_GROUP_AIRLOCK, SMOOTH_GROUP_MINERAL_WALLS)
+	cares_about_temperature = TRUE
+
+/obj/structure/falsewall/plasma/item_interaction(mob/living/user, obj/item/used, list/modifiers)
+	if(used.get_heat() > 300)
+		var/turf/T = locate(user)
+		message_admins("Plasma falsewall ignited by [key_name_admin(user)] in [ADMIN_VERBOSEJMP(T)]")
+		log_game("Plasma falsewall ignited by [key_name(user)] in [AREACOORD(T)]")
+		investigate_log("was <font color='red'><b>ignited</b></font> by [key_name(user)]",INVESTIGATE_ATMOS)
+		burnbabyburn()
+		return ITEM_INTERACT_COMPLETE
+
+/obj/structure/falsewall/plasma/proc/burnbabyburn(user)
+	playsound(src, 'sound/items/welder.ogg', 100, 1)
+	atmos_spawn_air(LINDA_SPAWN_HEAT | LINDA_SPAWN_TOXINS, 400)
+	new /obj/structure/girder/displaced(loc)
+	qdel(src)
+
+/obj/structure/falsewall/plasma/temperature_expose(exposed_temperature, exposed_volume)
+	..()
+	if(exposed_temperature > 300)
+		burnbabyburn()
+
+/obj/structure/falsewall/alien
+	name = "alien wall"
+	desc = "A strange-looking alien wall."
+	icon = 'icons/turf/walls/32x40abductor_wall.dmi'
+	icon_state = "abductor_wall-0"
+	base_icon_state = "abductor_wall"
+	mineral = /obj/item/stack/sheet/mineral/abductor
+	walltype = /turf/simulated/wall/mineral/abductor
+	smoothing_groups = list(SMOOTH_GROUP_WALLS, SMOOTH_GROUP_ABDUCTOR_WALLS)
+	canSmoothWith = list(SMOOTH_GROUP_AIRLOCK, SMOOTH_GROUP_ABDUCTOR_WALLS)
+
+
+/obj/structure/falsewall/bananium
+	name = "bananium wall"
+	desc = "A wall with bananium plating. Honk!"
+	icon = 'icons/turf/walls/32x40bananium_wall.dmi'
+	icon_state = "bananium_wall-0"
+	base_icon_state = "bananium_wall"
+	mineral = /obj/item/stack/sheet/mineral/bananium
+	walltype = /turf/simulated/wall/mineral/bananium
+	smoothing_groups = list(SMOOTH_GROUP_WALLS, SMOOTH_GROUP_MINERAL_WALLS)
+	canSmoothWith = list(SMOOTH_GROUP_AIRLOCK, SMOOTH_GROUP_MINERAL_WALLS)
+
+/obj/structure/falsewall/sandstone
+	name = "sandstone wall"
+	desc = "A wall with sandstone plating."
+	icon = 'icons/turf/walls/32x40sandstone_wall.dmi'
+	icon_state = "sandstone_wall-0"
+	base_icon_state = "sandstone_wall"
+	mineral = /obj/item/stack/sheet/mineral/sandstone
+	walltype = /turf/simulated/wall/mineral/sandstone
+	smoothing_groups = list(SMOOTH_GROUP_WALLS, SMOOTH_GROUP_MINERAL_WALLS)
+	canSmoothWith = list(SMOOTH_GROUP_AIRLOCK, SMOOTH_GROUP_MINERAL_WALLS)
+
+/obj/structure/falsewall/wood
+	name = "wooden wall"
+	desc = "A wall with wooden plating. Stiff."
+	icon = 'icons/turf/walls/32x40wood_wall.dmi'
+	icon_state = "wood_wall-0"
+	base_icon_state = "wood_wall"
+	mineral = /obj/item/stack/sheet/wood
+	walltype = /turf/simulated/wall/mineral/wood
+	smoothing_groups = list(SMOOTH_GROUP_WALLS, SMOOTH_GROUP_MINERAL_WALLS)
+	canSmoothWith = list(SMOOTH_GROUP_AIRLOCK, SMOOTH_GROUP_MINERAL_WALLS)
+
+/obj/structure/falsewall/iron
+	name = "rough metal wall"
+	desc = "A wall with rough metal plating."
+	icon = 'icons/turf/walls/32x40iron_wall.dmi'
+	icon_state = "iron_wall-0"
+	base_icon_state = "iron_wall"
+	mineral = /obj/item/stack/rods
+	mineral_amount = 5
+	walltype = /turf/simulated/wall/mineral/iron
+	smoothing_groups = list(SMOOTH_GROUP_WALLS, SMOOTH_GROUP_IRON_WALLS)
+	canSmoothWith = list(SMOOTH_GROUP_AIRLOCK, SMOOTH_GROUP_IRON_WALLS)
+
+/obj/structure/falsewall/abductor
+	name = "alien wall"
+	desc = "A wall with alien alloy plating."
+	icon = 'icons/turf/walls/32x40abductor_wall.dmi'
+	icon_state = "abductor_wall-0"
+	base_icon_state = "abductor_wall"
+	mineral = /obj/item/stack/sheet/mineral/abductor
+	walltype = /turf/simulated/wall/mineral/abductor
+	smoothing_groups = list(SMOOTH_GROUP_WALLS, SMOOTH_GROUP_ABDUCTOR_WALLS)
+	canSmoothWith = list(SMOOTH_GROUP_AIRLOCK, SMOOTH_GROUP_ABDUCTOR_WALLS)
+
+/obj/structure/falsewall/titanium
+	desc = "A light-weight titanium wall used in shuttles."
+	icon = 'icons/turf/walls/32x40plastinum_wall.dmi'
+	icon_state = "plastinum_wall-0"
+	base_icon_state = "plastinum_wall"
+	mineral = /obj/item/stack/sheet/mineral/titanium
+	walltype = /turf/simulated/wall/mineral/titanium
+	smoothing_groups = list(SMOOTH_GROUP_WALLS, SMOOTH_GROUP_TITANIUM_WALLS)
+	canSmoothWith = list(SMOOTH_GROUP_AIRLOCK, SMOOTH_GROUP_TITANIUM_WALLS, SMOOTH_GROUP_SHUTTLE_PARTS)
+
+/obj/structure/falsewall/survival
+	name = "pod wall"
+	desc = "An easily-compressable wall used for temporary shelter."
+	icon = 'icons/turf/walls/32x40survival_pod_walls.dmi'
+	icon_state = "survival_pod_walls-0"
+	base_icon_state = "survival_pod_walls"
+	mineral = /obj/item/stack/sheet/mineral/titanium
+	walltype = /turf/simulated/wall/mineral/titanium
+	smoothing_groups = list(SMOOTH_GROUP_PLASTITANIUM_WALLS)
+	canSmoothWith = list(SMOOTH_GROUP_AIRLOCK, SMOOTH_GROUP_PLASTITANIUM_WALLS, SMOOTH_GROUP_SHUTTLE_PARTS)
+
+/obj/structure/falsewall/plastitanium
+	desc = "An evil wall of plasma and titanium."
+	icon = 'icons/turf/walls/32x40plastitanium_wall.dmi'
+	icon_state = "plastitanium_wall-0"
+	base_icon_state = "plastitanium_wall"
+	mineral = /obj/item/stack/sheet/mineral/plastitanium
+	walltype = /turf/simulated/wall/mineral/plastitanium
+	smoothing_groups = list(SMOOTH_GROUP_WALLS, SMOOTH_GROUP_PLASTITANIUM_WALLS)
+	canSmoothWith = list(SMOOTH_GROUP_AIRLOCK, SMOOTH_GROUP_PLASTITANIUM_WALLS, SMOOTH_GROUP_SHUTTLE_PARTS)
+
+/obj/structure/falsewall/backrooms
+	desc = "A strange wall that looks like cheap wallpaper and drywall."
+	icon = 'icons/turf/walls/32x40backrooms_wall.dmi'
+	icon_state = "backrooms_wall-0"
+	base_icon_state = "backrooms_wall"
+	smoothing_groups = list(SMOOTH_GROUP_WALLS, SMOOTH_GROUP_BACKROOMS_WALLS)
+	canSmoothWith = list(SMOOTH_GROUP_AIRLOCK, SMOOTH_GROUP_BACKROOMS_WALLS)
+
+/obj/structure/falsewall/brass
+	name = "clockwork wall"
+	desc = "A huge chunk of warm metal. The clanging of machinery emanates from within."
+	icon = 'icons/turf/walls/32x40clockwork_wall.dmi'
+	icon_state = "clockwork_wall-0"
+	base_icon_state = "clockwork_wall"
+	resistance_flags = FIRE_PROOF | ACID_PROOF
+	mineral_amount = 1
+	smoothing_groups = list(SMOOTH_GROUP_WALLS, SMOOTH_GROUP_BRASS_WALL)
+	canSmoothWith = list(SMOOTH_GROUP_AIRLOCK, SMOOTH_GROUP_BRASS_WALL)
+	girder_type = /obj/structure/clockwork/wall_gear/displaced
+	walltype = /turf/simulated/wall/clockwork
+	mineral = /obj/item/stack/tile/brass
+
+/obj/structure/falsewall/brass/Initialize(mapload)
+	. = ..()
+	var/turf/T = get_turf(src)
+	new /obj/effect/temp_visual/ratvar/wall/false(T)
+	new /obj/effect/temp_visual/ratvar/beam/falsewall(T)
+
+/obj/structure/falsewall/rock_ancient
+	name = "ancient rock"
+	desc = "A rare asteroid rock that appears to be resistant to all mining tools except pickaxes!"
+	icon = 'icons/turf/walls/32x40smoothrocks.dmi'
+	icon_state = "smoothrocks-0"
+	base_icon_state = "smoothrocks"
+	color = COLOR_ANCIENT_ROCK
+	smoothing_groups = list(SMOOTH_GROUP_ASTEROID_WALLS)
+	canSmoothWith = list(SMOOTH_GROUP_AIRLOCK, SMOOTH_GROUP_ASTEROID_WALLS)
+	mineral = /obj/item/stack/ore/glass/basalt/ancient
+	walltype = /turf/simulated/mineral/ancient
+
+#undef FALSEDOOR_MAX_PRESSURE_DIFF

@@ -1,0 +1,71 @@
+/obj/docking_port/mobile/assault_pod
+	name = "assault pod"
+	id = "steel_rain"
+	dwidth = 3
+	width = 7
+	height = 7
+	preferred_direction = EAST
+	port_direction = EAST
+
+/obj/docking_port/mobile/assault_pod/request()
+	if(z == initial(src.z)) //No launching pods that have already launched
+		return ..()
+
+
+/obj/docking_port/mobile/assault_pod/dock(obj/docking_port/stationary/S1, force=FALSE, transit=FALSE)
+	..()
+	if(!istype(S1, /obj/docking_port/stationary/transit))
+		playsound(get_turf(src.loc), 'sound/effects/explosion1.ogg',50,1)
+
+
+
+/obj/item/assault_pod
+	name = "Assault Pod Targetting Device"
+	desc = "Used to select a landing zone for assault pods."
+	icon = 'icons/obj/device.dmi'
+	icon_state = "gangtool-red"
+	inhand_icon_state = "radio"
+	new_attack_chain = TRUE
+	var/target_shuttle_id = "steel_rain"
+	var/dwidth = 3
+	var/dheight = 0
+	var/width = 7
+	var/height = 7
+	var/lz_dir = NORTH
+
+/obj/item/assault_pod/activate_self(mob/living/user)
+	if(..())
+		return ITEM_INTERACT_COMPLETE
+	if(!length(SSmapping.teleportlocs))
+		to_chat(user, SPAN_WARNING("There are no valid landing zones!"))
+		return ITEM_INTERACT_COMPLETE
+	var/target_area
+	target_area = tgui_input_list(user, "Area to land", "Select a Landing Zone", SSmapping.teleportlocs)
+	if(!target_area)
+		return ITEM_INTERACT_COMPLETE
+	var/area/picked_area = SSmapping.teleportlocs[target_area]
+	if(!src || QDELETED(src))
+		return ITEM_INTERACT_COMPLETE
+
+	var/turf/T = safepick(get_area_turfs(picked_area))
+	if(!T)
+		return ITEM_INTERACT_COMPLETE
+	var/obj/docking_port/stationary/landing_zone = new /obj/docking_port/stationary(T)
+	landing_zone.id = "assault_pod(\ref[src])"
+	landing_zone.name = "Landing Zone"
+	landing_zone.dwidth = dwidth
+	landing_zone.dheight = dheight
+	landing_zone.width = width
+	landing_zone.height = height
+	landing_zone.dir = lz_dir
+	landing_zone.register() //new docking ports must be registered
+
+	for(var/obj/machinery/computer/shuttle/S in SSmachines.get_by_type(/obj/machinery/computer/shuttle))
+		for(var/shuttle_id2 in S.shuttleIds)
+			if(shuttle_id2 == target_shuttle_id)
+				S.possibleDestinations2[target_shuttle_id] += "[landing_zone.id]"
+
+	to_chat(user, "Landing zone set.")
+
+	qdel(src)
+	return ITEM_INTERACT_COMPLETE

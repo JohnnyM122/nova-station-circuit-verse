@@ -1,0 +1,35 @@
+<center><h1>Welcome to Nova Station!</h1>
+<h2>Hosted by the Circuit Verse Community</h2></center>
+<hr>
+<h3>Welcome aboard, Crew Member!</h3>
+<p>Thank you for joining us on Nova Station. We are excited to have you here as part of our growing community!</p>
+<h3>A Work in Progress - Please Be Patient</h3>
+<p>Nova Station is currently under active development. We are working behind the scenes to improve the server, implement new features, resolve bugs, and build an enjoyable experience for everyone.</p>
+<p>Development is currently progressing at a slower pace. This is an ongoing project, and updates may not always arrive as quickly as we would like. We appreciate your patience, understanding, and continued support while we work toward our vision.</p>
+<h3>Server Rules &amp; Expectations</h3>
+<p>At this time, Nova Station does not have a formally established set of server rules. However, that does not mean anything goes. Until official rules are published, we ask all players to:</p>
+<ul>
+<li>Use common sense and good judgment.</li>
+<li>Treat fellow players with respect.</li>
+<li>Be considerate of others and avoid intentionally ruining their experience.</li>
+<li>Do not exploit bugs, glitches, or unintended mechanics.</li>
+<li>Avoid harassment, excessive toxicity, and disruptive behavior.</li>
+<li>Respect the decisions and directions of server staff.</li>
+</ul>
+<h3>Staff Authority &amp; Enforcement</h3>
+<p>Although formal rules have not yet been established, server staff retain full authority to address disruptive behavior and issue punishments as they deem necessary.</p>
+<p>Depending on the circumstances, staff may issue verbal warnings, kicks, temporary bans, or permanent bans.</p>
+<p>Staff decisions are intended to protect the community and maintain a welcoming environment. Please cooperate with staff when concerns arise.</p>
+<h3>Help Us Build Nova Station</h3>
+<p>We are building more than a Space Station 13 server. We are building a community.</p>
+<p>Feedback, suggestions, bug reports, and constructive criticism are always welcome. If you encounter an issue or have an idea that could improve the experience, please reach out to a member of the staff team or visit our Discord.</p>
+<p>We are also interested in individuals who would like to contribute to the community and help shape its future.</p>
+<h3>Stay Connected</h3>
+<p>For announcements, development updates, community discussions, support, and staff applications, please visit our Discord community.</p>
+<hr>
+<center><b>Nova Station</b><br>
+<i>An independent Space Station 13 project.</i><br>
+<b>Hosted by the Circuit Verse Community</b>
+<p>Thank you for being here. Thank you for your patience. Most importantly, thank you for helping us build something worth coming back to.</p>
+<h3>Have a safe shift, Crew.</h3>
+<i>Central Command Out.</i></center>

@@ -1,0 +1,171 @@
+/obj/item/electropack
+	name = "electropack"
+	desc = "Dance my monkeys! DANCE!!!"
+	icon = 'icons/obj/radio.dmi'
+	icon_state = "electropack"
+	flags = CONDUCT
+	slot_flags = ITEM_SLOT_BACK
+	w_class = WEIGHT_CLASS_HUGE
+	materials = list(MAT_METAL = 10000, MAT_GLASS = 2500)
+	/// The integrated signaler
+	var/obj/item/assembly/signaler/electropack/integrated_signaler
+	new_attack_chain = TRUE
+
+/obj/item/electropack/Initialize(mapload)
+	. = ..()
+	integrated_signaler = new /obj/item/assembly/signaler/electropack(src, src) // Loc and the integrated one
+
+/obj/item/electropack/Destroy()
+	integrated_signaler.owning_pack = null
+	QDEL_NULL(integrated_signaler)
+
+	if(istype(loc, /obj/item/assembly/shock_kit))
+		var/obj/item/assembly/shock_kit/S = loc
+		if(S.attached_helmet == src)
+			S.attached_helmet = null
+
+		else if(S.attached_electropack == src)
+			S.attached_electropack = null
+
+		master = null
+
+	return ..()
+
+/obj/item/electropack/attack_hand(mob/user)
+	if(src == user.back)
+		to_chat(user, SPAN_NOTICE("You need help taking this off!"))
+		return FALSE
+
+	..()
+
+/obj/item/electropack/activate_self(mob/user)
+	if(..())
+		return ITEM_INTERACT_COMPLETE
+	ui_interact(user)
+	add_fingerprint(user)
+	return ITEM_INTERACT_COMPLETE
+
+/obj/item/electropack/item_interaction(mob/living/user, obj/item/used, list/modifiers)
+	if(!istype(used, /obj/item/clothing/head/helmet))
+		return ..()
+
+	attach_helmet(used, user)
+	return ITEM_INTERACT_COMPLETE
+
+/obj/item/electropack/interact_with_atom(atom/target, mob/living/user, list/modifiers)
+	if(!istype(target, /obj/item/clothing/head/helmet))
+		return ..()
+
+	attach_helmet(target, user)
+	return ITEM_INTERACT_COMPLETE
+
+/obj/item/electropack/proc/attach_helmet(obj/item/clothing/head/helmet/used, mob/living/user)
+	if(!istype(used))
+		return FALSE
+
+	var/obj/item/assembly/shock_kit/kit = new /obj/item/assembly/shock_kit(user)
+	kit.icon = 'icons/obj/assemblies.dmi'
+
+	if(!user.unequip(used))
+		to_chat(user, SPAN_WARNING("[used] is stuck to your hand, you cannot attach it to [src]!"))
+		return FALSE
+
+	used.forceMove(kit)
+	used.master = kit
+	kit.attached_helmet = used
+
+	user.transfer_item_to(src, kit)
+	master = kit
+	kit.attached_electropack = src
+
+	user.put_in_hands(kit)
+	kit.add_fingerprint(user)
+	if(src.flags & NODROP)
+		kit.set_nodrop(TRUE)
+	return TRUE
+
+/obj/item/electropack/proc/handle_shock()
+	if(istype(master, /obj/item/assembly/shock_kit))
+		var/obj/item/assembly/shock_kit/SK = master
+		SK.shock_invoke()
+
+	if(isliving(loc))
+		var/mob/living/M = loc
+		to_chat(M, SPAN_DANGER("You feel a sharp shock!"))
+		do_sparks(3, 1, M)
+
+		M.Weaken(10 SECONDS)
+
+// This should honestly just proxy the UI to the internal signaler
+/obj/item/electropack/ui_state(mob/user)
+	return GLOB.deep_inventory_state
+
+/obj/item/electropack/ui_interact(mob/user, datum/tgui/ui = null)
+	ui = SStgui.try_update_ui(user, src, ui)
+	if(!ui)
+		ui = new(user, src, "Electropack", name)
+		ui.open()
+
+/obj/item/electropack/ui_data(mob/user)
+	var/list/data = list()
+	data["power"] = integrated_signaler.receiving
+	data["frequency"] = integrated_signaler.frequency
+	data["code"] = integrated_signaler.code
+	data["minFrequency"] = PUBLIC_LOW_FREQ
+	data["maxFrequency"] = PUBLIC_HIGH_FREQ
+	return data
+
+/obj/item/electropack/ui_act(action, list/params)
+	if(..())
+		return
+
+	. = TRUE
+
+	switch(action)
+		if("power")
+			integrated_signaler.receiving = !integrated_signaler.receiving
+
+		if("freq")
+			var/value = params["freq"]
+			if(value)
+				integrated_signaler.frequency = sanitize_frequency(value)
+			else
+				. = FALSE
+
+		if("code")
+			var/value = text2num(params["code"])
+			if(value)
+				value = round(value)
+				integrated_signaler.code = clamp(value, 1, 100)
+			else
+				. = FALSE
+
+		if("reset")
+			if(params["reset"] == "freq")
+				integrated_signaler.frequency = initial(integrated_signaler.frequency)
+			else if(params["reset"] == "code")
+				integrated_signaler.code = initial(integrated_signaler.code)
+			else
+				. = FALSE
+
+	if(.)
+		add_fingerprint(usr)
+
+// Electropack signaller type
+/obj/item/assembly/signaler/electropack
+	frequency = ELECTROPACK_FREQ
+	code = 2
+	receiving = TRUE
+	var/obj/item/electropack/owning_pack
+
+/obj/item/assembly/signaler/electropack/Initialize(mapload, holding_electropack)
+	. = ..()
+	owning_pack = holding_electropack
+
+/obj/item/assembly/signaler/electropack/signal_callback()
+	if(owning_pack)
+		owning_pack.handle_shock()
+
+/obj/item/assembly/signaler/electropack/Destroy()
+	owning_pack = null
+	return ..()

@@ -1,0 +1,191 @@
+/obj/machinery/computer/shuttle/labor
+	name = "labor shuttle console"
+	desc = "Used to call and send the labor camp shuttle."
+	circuit = /obj/item/circuitboard/labor_shuttle
+	shuttleIds = list("laborcamp")
+	possibleDestinations2 = alist("laborcamp" = list("laborcamp_home", "laborcamp_away"))
+	req_access = list(ACCESS_BRIG)
+
+/obj/machinery/computer/shuttle/labor/one_way
+	name = "prisoner shuttle console"
+	desc = "A one-way shuttle console, used to summon the shuttle to the labor camp."
+	possibleDestinations2 = alist("laborcamp" = list("laborcamp_away"))
+	circuit = /obj/item/circuitboard/labor_shuttle/one_way
+
+/obj/machinery/computer/shuttle/labor/one_way/allowed(mob/M)
+	if(..())
+		return TRUE
+
+	for(var/obj/item/card/id/prisoner/prisoner_id in M)
+		if(!prisoner_id.goal)
+			continue //no goal? no shuttle
+
+		if(prisoner_id.mining_points >= prisoner_id.goal)
+			return TRUE //completed goal? call it
+
+	return FALSE //if we didn't match above, no shuttle call
+
+/**********************Prisoners' Console**************************/
+
+/obj/machinery/mineral/labor_prisoner_shuttle_console
+	name = "prisoner shuttle controller"
+	desc = "A console used by released prisoners to move the shuttle."
+	icon = 'icons/obj/machines/mining_machines.dmi'
+	icon_state = "console"
+	anchored = TRUE
+	var/inserted_id_uid
+	var/obj/item/radio/intercom/announcer
+
+/obj/machinery/mineral/labor_prisoner_shuttle_console/Initialize(mapload)
+	. = ..()
+	announcer = new /obj/item/radio/intercom(null)
+	announcer.follow_target = src
+	announcer.config(list("Security" = 0))
+
+/obj/machinery/mineral/labor_prisoner_shuttle_console/Destroy()
+	QDEL_NULL(announcer)
+	return ..()
+
+/obj/machinery/mineral/labor_prisoner_shuttle_console/item_interaction(mob/living/user, obj/item/used, list/modifiers)
+	if(istype(used, /obj/item/card/id/prisoner))
+		if(inserted_id_uid)
+			to_chat(user, SPAN_NOTICE("There's an ID inserted already."))
+			return ITEM_INTERACT_COMPLETE
+
+		if(!user.drop_item_to_ground(used))
+			return ITEM_INTERACT_COMPLETE
+
+		used.forceMove(src)
+		inserted_id_uid = used.UID()
+		to_chat(user, SPAN_NOTICE("You insert [used]."))
+		SStgui.update_uis(src)
+
+		return ITEM_INTERACT_COMPLETE
+
+	return ..()
+
+/obj/machinery/mineral/labor_prisoner_shuttle_console/attack_hand(mob/user)
+	add_fingerprint(user)
+	ui_interact(user)
+
+/obj/machinery/mineral/labor_prisoner_shuttle_console/attack_ghost(mob/user)
+	attack_hand(user)
+
+/obj/machinery/mineral/labor_prisoner_shuttle_console/ui_state(mob/user)
+	return GLOB.default_state
+
+/obj/machinery/mineral/labor_prisoner_shuttle_console/ui_interact(mob/user, datum/tgui/ui = null)
+	ui = SStgui.try_update_ui(user, src, ui)
+	if(!ui)
+		ui = new(user, src, "PrisonerShuttleConsole", name)
+		ui.open()
+
+/obj/machinery/mineral/labor_prisoner_shuttle_console/ui_data(mob/user)
+	var/list/data = list()
+	var/obj/item/card/id/prisoner/inserted_id = locateUID(inserted_id_uid)
+
+	data["emagged"] = emagged
+	data["id_inserted"] = !isnull(inserted_id)
+	if(inserted_id)
+		data["id_name"] = inserted_id.registered_name
+		data["id_points"] = inserted_id.mining_points
+		data["id_goal"] = inserted_id.goal
+
+	data["can_go_home"] = check_auth()
+
+	return data
+
+/obj/machinery/mineral/labor_prisoner_shuttle_console/ui_act(action, params, datum/tgui/ui)
+	if(..())
+		return
+	var/obj/item/card/id/prisoner/inserted_id = locateUID(inserted_id_uid)
+	switch(action)
+		if("handle_id")
+			if(inserted_id)
+				if(!ui.user.put_in_hands(inserted_id))
+					inserted_id.forceMove(get_turf(src))
+				inserted_id_uid = null
+				return TRUE
+
+			var/obj/item/I = ui.user.get_active_hand()
+			if(istype(I, /obj/item/card/id/prisoner))
+				if(!ui.user.drop_item_to_ground(I))
+					return
+				I.forceMove(src)
+				inserted_id_uid = I.UID()
+
+		if("move_shuttle")
+			if(!alone_in_area(get_area(src), ui.user))
+				to_chat(ui.user, SPAN_WARNING("Prisoners are only allowed to be released while alone."))
+				return TRUE
+
+			switch(SSshuttle.moveShuttle("laborcamp", "laborcamp_home", TRUE, ui.user))
+				if(1)
+					to_chat(ui.user, SPAN_NOTICE("Shuttle not found."))
+				if(2)
+					to_chat(ui.user, SPAN_NOTICE("Shuttle already at station."))
+				if(3)
+					to_chat(ui.user, SPAN_NOTICE("No permission to dock could be granted."))
+				else
+					if(!emagged)
+						var/message = "[inserted_id.registered_name] has returned to the station. Minerals and Prisoner ID card ready for retrieval."
+						announcer.autosay(message, "Labor Camp Controller", "Security")
+						sec_record_release(ui.user)
+					to_chat(ui.user, SPAN_NOTICE("Shuttle received message and will be sent shortly."))
+					ui.user.create_log(MISC_LOG, "used [src] to call the laborcamp shuttle")
+
+	return TRUE
+
+/obj/machinery/mineral/labor_prisoner_shuttle_console/proc/sec_record_release(mob/living/carbon/human/target)
+	var/target_name = target?.get_visible_name(TRUE)
+	if(!target_name || target_name == "Unknown")
+		return //Do you have the slightest idea how little that narrows it down?
+	var/datum/data/record/R = find_record("name", target_name, GLOB.data_core.security)
+	if(!(R?.fields["criminal"] in list(SEC_RECORD_STATUS_INCARCERATED)))
+		return //stops cheese
+	set_criminal_status(target, R, SEC_RECORD_STATUS_RELEASED, "Automatically released upon reaching labor points quota", "Labor Camp Controller", user_name = "Automated System")
+
+/obj/machinery/mineral/labor_prisoner_shuttle_console/proc/check_auth()
+	if(emagged)
+		return TRUE //Shuttle is emagged, let any ol' person through
+	var/obj/item/card/id/prisoner/inserted_id = locateUID(inserted_id_uid)
+	if(!inserted_id?.goal)
+		return FALSE //ID not properly set up or not present, abort!
+	return (inserted_id.mining_points >= inserted_id.goal) //Otherwise, only let them out if the prisoner's reached his quota.
+
+/obj/machinery/mineral/labor_prisoner_shuttle_console/emag_act(mob/user)
+	if(!emagged)
+		emagged = TRUE
+		to_chat(user, SPAN_WARNING("PZZTTPFFFT"))
+		return TRUE
+
+/**********************Point Lookup Console**************************/
+/obj/machinery/mineral/labor_points_checker
+	name = "points checking console"
+	desc = "A console used by prisoners to check the progress on their quotas. Simply swipe a prisoner ID."
+	icon = 'icons/obj/machines/mining_machines.dmi'
+	icon_state = "console"
+	anchored = TRUE
+
+/obj/machinery/mineral/labor_points_checker/attack_hand(mob/user)
+	. = ..()
+	if(.)
+		return
+	user.examinate(src)
+
+/obj/machinery/mineral/labor_points_checker/item_interaction(mob/living/user, obj/item/used, list/modifiers)
+	if(istype(used, /obj/item/card/id/prisoner))
+		var/obj/item/card/id/prisoner/prisoner_id = used
+		if(!prisoner_id.goal)
+			to_chat(user, SPAN_WARNING("Error: No point quota assigned by security, exiting."))
+			return ITEM_INTERACT_COMPLETE
+		to_chat(user, SPAN_NOTICE("<b>ID: [prisoner_id.registered_name]</b>"))
+		to_chat(user, SPAN_NOTICE("Points Collected:[prisoner_id.mining_points]"))
+		to_chat(user, SPAN_NOTICE("Point Quota: [prisoner_id.goal]"))
+		to_chat(user, SPAN_NOTICE("Collect points by bringing ore to the labor camp ore redemption machine. Reach your quota to earn your release."))
+		return ITEM_INTERACT_COMPLETE
+	if(istype(used, /obj/item/card/id))
+		to_chat(user, SPAN_WARNING("Error: Invalid ID"))
+		return ITEM_INTERACT_COMPLETE
+
+	return ..()

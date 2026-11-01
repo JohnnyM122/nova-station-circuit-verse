@@ -1,0 +1,124 @@
+.Exofab__materials {
+  height: 100%;
+  overflow: auto;
+
+  .Section__content {
+    height: calc(100% - 31px);
+  }
+}
+
+.Exofab__material {
+  &:not(.Exofab__material--line) {
+    margin-bottom: var(--space-s);
+
+    .Button {
+      width: 28px;
+      margin-right: var(--space-m);
+    }
+  }
+
+  &--line {
+    .Button {
+      background-color: transparent;
+      width: 14px;
+    }
+  }
+
+  &--name {
+    color: var(--color-label);
+    text-transform: capitalize;
+  }
+
+  .Button {
+    margin-bottom: 0;
+    padding: 0;
+    vertical-align: middle;
+  }
+}
+
+.Exofab__queue {
+  height: 100%;
+
+  &--queue {
+    .Button {
+      margin: 0;
+      transform: scale(0.75);
+    }
+
+    .Button:first-of-type {
+      margin-left: var(--space-s);
+    }
+  }
+
+  &--time {
+    text-align: center;
+    color: var(--color-label);
+  }
+
+  &--deficit {
+    text-align: center;
+    color: var(--color-bad);
+    font-weight: bold;
+
+    & > div:not(.Divider) {
+      display: inline-block;
+      margin-bottom: calc(-1 * var(--space-s));
+    }
+  }
+
+  .Section__content {
+    height: calc(100% - 31px);
+  }
+  .Exofab__material--amount {
+    margin-right: var(--space-s);
+  }
+}
+
+.Exofab__design {
+  &--cost {
+    display: inline-block;
+    vertical-align: middle;
+    margin-top: var(--space-s);
+
+    & > div {
+      display: inline-block;
+    }
+    .Exofab__material {
+      margin-left: var(--space-s);
+    }
+  }
+
+  &--time {
+    display: inline-block;
+    margin-left: var(--space-m);
+    color: var(--color-label);
+
+    i {
+      margin-right: var(--space-s);
+    }
+  }
+}
+
+.Exofab__designs {
+  .Section__content {
+    height: calc(100% - 31px);
+    overflow: auto;
+  }
+}
+
+.Exofab__building {
+  height: 45px;
+
+  .ProgressBar {
+    width: 100%;
+    height: 75%;
+  }
+  .ProgressBar__content {
+    line-height: 26px;
+    text-align: right;
+    font-size: 12px;
+    font-weight: bold;
+    display: flex;
+    justify-content: flex-end;
+  }
+}

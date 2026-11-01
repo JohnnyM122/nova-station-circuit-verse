@@ -1,0 +1,249 @@
+/**
+ * @file
+ * @copyright 2020 Aleksej Komarov
+ * @license MIT
+ */
+
+import { storage } from 'common/storage';
+
+import {
+  addBlacklistSetting,
+  addHighlightSetting,
+  changeSettingsTab,
+  loadSettings,
+  openChatSettings,
+  removeBlacklistSetting,
+  removeHighlightSetting,
+  toggleSettings,
+  updateBlacklistSetting,
+  updateHighlightSetting,
+  updateSettings,
+} from './actions';
+import { FONTS, MAX_HIGHLIGHT_SETTINGS, SETTINGS_TABS } from './constants';
+import { createDefaultBlacklistSetting, createDefaultHighlightSetting } from './model';
+
+const defaultHighlightSetting = createDefaultHighlightSetting();
+const defaultBlacklistSetting = createDefaultBlacklistSetting();
+
+const initialState = {
+  version: 1,
+  fontSize: 13,
+  fontFamily: FONTS[0],
+  lineHeight: 1.2,
+  theme: 'light',
+  adminMusicVolume: 0.5,
+  // Keep these two state vars for compatibility with other servers
+  highlightText: '',
+  highlightColor: '#ffdd44',
+  // END compatibility state vars
+  highlightSettings: [defaultHighlightSetting.id],
+  highlightSettingById: {
+    [defaultHighlightSetting.id]: defaultHighlightSetting,
+  },
+  blacklistSettings: [defaultBlacklistSetting.id],
+  blacklistSettingById: {
+    [defaultBlacklistSetting.id]: defaultBlacklistSetting,
+  },
+  view: {
+    visible: false,
+    activeTab: SETTINGS_TABS[0].id,
+  },
+  // Stat Panel settings
+  statLinked: true,
+  statFontSize: 12,
+  statFontFamily: FONTS[0],
+  statTabsStyle: 'default',
+  // End of Stat Panel settings
+
+  // Chat persistence setting - default is false, but use stored value if available
+  chatSaving: storage.get('chat-saving-enabled') === true,
+};
+
+export const settingsReducer = (state = initialState, action) => {
+  const { type, payload } = action;
+  if (type === updateSettings.type) {
+    return {
+      ...state,
+      ...payload,
+    };
+  }
+  if (type === loadSettings.type) {
+    // Validate version and/or migrate state
+    if (!payload?.version) {
+      return state;
+    }
+
+    delete payload.view;
+    const nextState = {
+      ...state,
+      ...payload,
+    };
+    // Lazy init the list for compatibility reasons
+    if (!nextState.highlightSettings) {
+      nextState.highlightSettings = [defaultHighlightSetting.id];
+      nextState.highlightSettingById[defaultHighlightSetting.id] = defaultHighlightSetting;
+    }
+    // Compensating for mishandling of default highlight settings
+    else if (!nextState.highlightSettingById[defaultHighlightSetting.id]) {
+      nextState.highlightSettings = [defaultHighlightSetting.id, ...nextState.highlightSettings];
+      nextState.highlightSettingById[defaultHighlightSetting.id] = defaultHighlightSetting;
+    }
+    // Lazy init blacklist
+    if (!nextState.blacklistSettings) {
+      nextState.blacklistSettings = [defaultBlacklistSetting.id];
+      nextState.blacklistSettingById[defaultBlacklistSetting.id] = defaultBlacklistSetting;
+    }
+    // Just doing the same as above
+    else if (!nextState.blacklistSettingById[defaultBlacklistSetting.id]) {
+      nextState.blacklistSettings = [defaultBlacklistSetting.id, ...nextState.blacklistSettings];
+      nextState.blacklistSettingById[defaultBlacklistSetting.id] = defaultBlacklistSetting;
+    }
+    // Update the highlight settings for default highlight
+    // settings compatibility
+    const highlightSetting = nextState.highlightSettingById[defaultHighlightSetting.id];
+    highlightSetting.highlightColor = nextState.highlightColor;
+    highlightSetting.highlightText = nextState.highlightText;
+    return nextState;
+  }
+  if (type === toggleSettings.type) {
+    return {
+      ...state,
+      view: {
+        ...state.view,
+        visible: !state.view.visible,
+      },
+    };
+  }
+  if (type === openChatSettings.type) {
+    return {
+      ...state,
+      view: {
+        ...state.view,
+        visible: true,
+        activeTab: 'chatPage',
+      },
+    };
+  }
+  if (type === changeSettingsTab.type) {
+    const { tabId } = payload;
+    return {
+      ...state,
+      view: {
+        ...state.view,
+        activeTab: tabId,
+      },
+    };
+  }
+  if (type === addHighlightSetting.type) {
+    const highlightSetting = payload;
+    if (state.highlightSettings.length >= MAX_HIGHLIGHT_SETTINGS) {
+      return state;
+    }
+    return {
+      ...state,
+      highlightSettings: [...state.highlightSettings, highlightSetting.id],
+      highlightSettingById: {
+        ...state.highlightSettingById,
+        [highlightSetting.id]: highlightSetting,
+      },
+    };
+  }
+  if (type === removeHighlightSetting.type) {
+    const { id } = payload;
+    const nextState = {
+      ...state,
+      highlightSettings: [...state.highlightSettings],
+      highlightSettingById: {
+        ...state.highlightSettingById,
+      },
+    };
+    if (id === defaultHighlightSetting.id) {
+      nextState.highlightSettings[defaultHighlightSetting.id] = defaultHighlightSetting;
+    } else {
+      delete nextState.highlightSettingById[id];
+      nextState.highlightSettings = nextState.highlightSettings.filter((sid) => sid !== id);
+      if (!nextState.highlightSettings.length) {
+        nextState.highlightSettings.push(defaultHighlightSetting.id);
+        nextState.highlightSettingById[defaultHighlightSetting.id] = defaultHighlightSetting;
+      }
+    }
+    return nextState;
+  }
+  if (type === updateHighlightSetting.type) {
+    const { id, ...settings } = payload;
+    const nextState = {
+      ...state,
+      highlightSettings: [...state.highlightSettings],
+      highlightSettingById: {
+        ...state.highlightSettingById,
+      },
+    };
+
+    // Transfer this data from the default highlight setting
+    // so they carry over to other servers
+    if (id === defaultHighlightSetting.id) {
+      if (settings.highlightText) {
+        nextState.highlightText = settings.highlightText;
+      }
+      if (settings.highlightColor) {
+        nextState.highlightColor = settings.highlightColor;
+      }
+    }
+
+    if (nextState.highlightSettingById[id]) {
+      nextState.highlightSettingById[id] = {
+        ...nextState.highlightSettingById[id],
+        ...settings,
+      };
+    }
+
+    return nextState;
+  }
+  if (type === addBlacklistSetting.type) {
+    const blacklistSetting = payload;
+    if (state.blacklistSettings.length >= MAX_HIGHLIGHT_SETTINGS) {
+      return state;
+    }
+    return {
+      ...state,
+      blacklistSettings: [...state.blacklistSettings, blacklistSetting.id],
+      blacklistSettingById: {
+        ...state.blacklistSettingById,
+        [blacklistSetting.id]: blacklistSetting,
+      },
+    };
+  }
+  if (type === removeBlacklistSetting.type) {
+    const { id } = payload;
+    const nextState = {
+      ...state,
+      blacklistSettings: [...state.blacklistSettings],
+      blacklistSettingById: {
+        ...state.blacklistSettingById,
+      },
+    };
+    delete nextState.blacklistSettingById[id];
+    nextState.blacklistSettings = nextState.blacklistSettings.filter((sid) => sid !== id);
+    return nextState;
+  }
+  if (type === updateBlacklistSetting.type) {
+    const { id, ...settings } = payload;
+    const nextState = {
+      ...state,
+      blacklistSettings: [...state.blacklistSettings],
+      blacklistSettingById: {
+        ...state.blacklistSettingById,
+      },
+    };
+
+    if (nextState.blacklistSettingById[id]) {
+      nextState.blacklistSettingById[id] = {
+        ...nextState.blacklistSettingById[id],
+        ...settings,
+      };
+    }
+
+    return nextState;
+  }
+  return state;
+};

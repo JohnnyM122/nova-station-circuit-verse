@@ -1,0 +1,202 @@
+/obj/item/laser_pointer
+	name = "laser pointer"
+	desc = "Don't shine it in your eyes!"
+	icon = 'icons/obj/device.dmi'
+	icon_state = "pointer"
+	worn_icon_state = "pen"
+	inhand_icon_state = "pen"
+	flags = CONDUCT
+	slot_flags = ITEM_SLOT_BELT
+	materials = list(MAT_METAL=500, MAT_GLASS=500)
+	w_class = WEIGHT_CLASS_SMALL
+	origin_tech = "combat=1;magnets=2"
+	var/pointer_icon_state
+	var/energy = 5
+	var/max_energy = 5
+	var/effectchance = 33
+	var/recharging = 0
+	var/recharge_locked = 0
+	var/obj/item/stock_parts/micro_laser/diode // Used for upgrading!
+	new_attack_chain = TRUE
+
+/obj/item/laser_pointer/red
+	pointer_icon_state = "red_laser"
+
+/obj/item/laser_pointer/green
+	pointer_icon_state = "green_laser"
+
+/obj/item/laser_pointer/blue
+	pointer_icon_state = "blue_laser"
+
+/obj/item/laser_pointer/purple
+	pointer_icon_state = "purple_laser"
+
+/obj/item/laser_pointer/Initialize(mapload)
+	. = ..()
+	create_diode()
+	if(!pointer_icon_state)
+		pointer_icon_state = pick("red_laser","green_laser","blue_laser","purple_laser")
+
+/obj/item/laser_pointer/Destroy()
+	QDEL_NULL(diode)
+	return ..()
+
+/obj/item/laser_pointer/proc/create_diode()
+	diode = new(src)
+
+/obj/item/laser_pointer/upgraded/create_diode()
+	diode = new /obj/item/stock_parts/micro_laser/ultra(src)
+
+/obj/item/laser_pointer/interact_with_atom(atom/target, mob/living/user, list/modifiers)
+	if(!isturf(target.loc))
+		return NONE
+
+	if(isstorage(target) || is_surface(target))
+		return NONE
+
+	laser_act(target, user, modifiers)
+	add_fingerprint(user)
+	return ITEM_INTERACT_COMPLETE
+
+/obj/item/laser_pointer/ranged_interact_with_atom(atom/target, mob/living/user, list/modifiers)
+	if(get_dist(src, target) >= (user.client.maxview() + 2)) // To prevent people from using it over cameras.
+		return ITEM_INTERACT_COMPLETE
+
+	laser_act(target, user, modifiers)
+	add_fingerprint(user)
+	return ITEM_INTERACT_COMPLETE
+
+/obj/item/laser_pointer/item_interaction(mob/user, obj/item/used, list/modifiers)
+	if(!istype(used, /obj/item/stock_parts/micro_laser))
+		return ..()
+
+	if(diode)
+		to_chat(user, SPAN_WARNING("There's already a [diode.name] inside [src]!"))
+		return ITEM_INTERACT_COMPLETE
+
+	if(!user.drop_item())
+		to_chat(user, SPAN_WARNING("[used] is stuck to your hand!"))
+		return ITEM_INTERACT_COMPLETE
+	used.forceMove(src)
+	diode = used
+	to_chat(user, SPAN_NOTICE("You install [diode] in [src]."))
+	return ITEM_INTERACT_COMPLETE
+
+/obj/item/laser_pointer/screwdriver_act(mob/living/user, obj/item/I)
+	if(!diode)
+		return
+
+	to_chat(user, SPAN_NOTICE("You remove [diode] from [src]."))
+	diode.forceMove(get_turf(loc))
+	diode = null
+	return TRUE
+
+/obj/item/laser_pointer/proc/laser_act(atom/target, mob/living/user, list/modifiers)
+	if(!diode)
+		to_chat(user, SPAN_NOTICE("You point [src] at [target], but nothing happens!"))
+		return
+	if(!user.IsAdvancedToolUser())
+		to_chat(user, SPAN_WARNING("You don't have the dexterity to do this!"))
+		return
+	if(HAS_TRAIT(user, TRAIT_CHUNKYFINGERS))
+		to_chat(user, SPAN_WARNING("Your fingers can't press the button!"))
+		return
+	if(!(target in view(7, get_turf(src)))) // Use the turf as center so it won't use the potential xray of the user
+		to_chat(user, SPAN_WARNING("There is something in the way!"))
+		return
+
+	add_fingerprint(user)
+
+	//nothing happens if the battery is drained
+	if(recharge_locked)
+		to_chat(user, SPAN_NOTICE("You point [src] at [target], but it's still charging."))
+		return
+
+	var/outmsg
+	var/turf/targloc = get_turf(target)
+
+	//human/alien mobs
+	if(iscarbon(target))
+		var/mob/living/carbon/C = target
+		if(user.zone_selected == "eyes")
+			add_attack_logs(user, C, "Shone a laser in the eyes with [src]")
+
+			var/severity = 1
+			if(prob(33))
+				severity = 2
+			else if(prob(50))
+				severity = 0
+
+			//20% chance to actually hit the eyes
+			if(prob(effectchance * diode.rating) && C.flash_eyes(severity, laser_pointer = TRUE))
+				outmsg = SPAN_NOTICE("You blind [C] by shining [src] in [C.p_their()] eyes.")
+			else
+				outmsg = SPAN_WARNING("You fail to blind [C] by shining [src] at [C.p_their()] eyes!")
+
+	//robots and AI
+	else if(issilicon(target))
+		var/mob/living/silicon/S = target
+		//20% chance to actually hit the sensors
+		if(prob(effectchance * diode.rating))
+			S.flash_eyes(affect_silicon = TRUE)
+			to_chat(S, SPAN_WARNING("Your sensors were overloaded by a laser!"))
+			outmsg = SPAN_NOTICE("You overload [S] by shining [src] at [S.p_their()] sensors.")
+
+			add_attack_logs(user, S, "shone [src] in their eyes")
+		else
+			outmsg = SPAN_WARNING("You fail to overload [S] by shining [src] at [S.p_their()] sensors!")
+
+	//cameras
+	else if(istype(target, /obj/machinery/camera))
+		var/obj/machinery/camera/C = target
+		if(prob(effectchance * diode.rating))
+			C.emp_act(EMP_HEAVY)
+			outmsg = SPAN_NOTICE("You hit the lens of [C] with [src], temporarily disabling the camera!")
+
+			log_admin("[key_name(user)] EMPd a camera with a laser pointer")
+			user.create_attack_log("[key_name(user)] EMPd a camera with a laser pointer")
+			add_attack_logs(user, C, "EMPd with [src]", ATKLOG_ALL)
+		else
+			outmsg = SPAN_WARNING("You missed the lens of [C] with [src]!")
+
+	//laser pointer image
+	icon_state = "pointer_[pointer_icon_state]"
+	var/list/showto = list()
+	for(var/mob/M in viewers(7,targloc))
+		if(M.client)
+			showto.Add(M.client)
+	var/image/I = image('icons/obj/projectiles.dmi',targloc,pointer_icon_state,10)
+	if(length(modifiers))
+		if(modifiers["icon-x"])
+			I.pixel_x = (text2num(modifiers["icon-x"]) - 16)
+		if(modifiers["icon-y"])
+			I.pixel_y = (text2num(modifiers["icon-y"]) - 16)
+	else
+		I.pixel_x = target.pixel_x + rand(-5,5)
+		I.pixel_y = target.pixel_y + rand(-5,5)
+
+	if(outmsg)
+		to_chat(user, outmsg)
+	else
+		to_chat(user, SPAN_NOTICE("You point [src] at [target]."))
+
+	energy -= 1
+	if(energy <= max_energy)
+		if(!recharging)
+			recharging = 1
+			START_PROCESSING(SSobj, src)
+		if(energy <= 0)
+			to_chat(user, SPAN_WARNING("You've overused the battery of [src], now it needs time to recharge!"))
+			recharge_locked = 1
+
+	flick_overlay(I, showto, 10)
+	icon_state = "pointer"
+
+/obj/item/laser_pointer/process()
+	if(prob(20 - recharge_locked*5))
+		energy += 1
+		if(energy >= max_energy)
+			energy = max_energy
+			recharging = 0
+			recharge_locked = 0
+			..()

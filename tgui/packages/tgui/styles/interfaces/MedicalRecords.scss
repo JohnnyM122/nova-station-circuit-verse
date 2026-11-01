@@ -1,0 +1,40 @@
+@use '../colors.scss';
+
+.MedicalRecords__list {
+  tr > td {
+    text-align: center;
+  }
+
+  tr:not(:first-child) {
+    cursor: var(--cursor-pointer);
+    height: 24px;
+    line-height: 24px;
+    transition: background-color var(--transition-time-fast);
+
+    &:hover,
+    &:focus {
+      background-color: var(--color-base);
+    }
+  }
+}
+
+.MedicalRecords__listRow--deceased {
+  background-color: colors.bg(hsl(350, 80%, 30%));
+}
+
+.MedicalRecords__listRow--ssd {
+  background-color: colors.bg(hsl(185, 100%, 30%));
+}
+
+.MedicalRecords__listRow--physically_unfit {
+  background-color: colors.bg(hsl(50, 100%, 35%));
+}
+
+.MedicalRecords__listRow--disabled {
+  background-color: colors.bg(hsl(250, 75%, 35%));
+}
+
+// The color behind a medibot row for when its disabled (0 represents false).
+.MedicalRecords__listMedbot--0 {
+  background-color: colors.bg(hsl(0, 37.5%, 15%));
+}

@@ -1,0 +1,23 @@
+.OreRedemption__Ores {
+  .OreLine,
+  .OreHeader {
+    min-height: 32px;
+    padding: 0 var(--space-m);
+  }
+
+  .OreHeader {
+    font-weight: bold;
+    line-height: 32px;
+    background-color: var(--color-section);
+  }
+
+  .OreLine:last-of-type {
+    margin-bottom: var(--space-m);
+  }
+
+  .Section__content {
+    overflow: auto;
+    height: 100%;
+    padding: 0;
+  }
+}

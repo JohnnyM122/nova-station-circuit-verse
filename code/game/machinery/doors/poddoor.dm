@@ -1,0 +1,265 @@
+/obj/machinery/door/poddoor
+	name = "blast door"
+	desc = "A heavy duty blast door that opens mechanically."
+	icon = 'icons/obj/doors/blastdoor.dmi'
+	icon_state = "closed"
+	layer = BLASTDOOR_LAYER
+	closingLayer = CLOSED_BLASTDOOR_LAYER
+	explosion_block = 3
+	heat_proof = TRUE
+	safe = FALSE
+	max_integrity = 600
+	armor = list(MELEE = 50, BULLET = 100, LASER = 100, ENERGY = 100, BOMB = 50, RAD = 100, FIRE = 100, ACID = 70)
+	resistance_flags = FIRE_PROOF
+	damage_deflection = 70
+	var/id_tag = 1.0
+	var/protected = 1
+
+/obj/machinery/door/poddoor/open() // Redefined to prevent wall resprite direction change jank
+	if(!density)
+		return TRUE
+	if(operating)
+		return
+	SEND_SIGNAL(src, COMSIG_DOOR_OPEN)
+	operating = DOOR_OPENING
+	recalculate_atmos_connectivity()
+	do_animate("opening")
+	set_opacity(FALSE)
+	if(width > 1)
+		set_fillers_opacity(0)
+	sleep(5)
+	density = FALSE
+	if(width > 1)
+		set_fillers_density(FALSE)
+	sleep(5)
+	layer = initial(layer)
+	update_icon()
+	set_opacity(FALSE)
+	if(width > 1)
+		set_fillers_opacity(0)
+	operating = NONE
+	update_freelook_sight()
+	if(autoclose)
+		autoclose_in(normalspeed ? auto_close_time : auto_close_time_dangerous)
+	return TRUE
+
+/obj/machinery/door/poddoor/close() // Redefined to prevent wall resprite direction change jank
+	if(density)
+		return TRUE
+	if(operating || welded)
+		return
+	if(safe)
+		for(var/turf/turf in locs)
+			for(var/atom/movable/M in turf)
+				if(M.density && M != src) //something is blocking the door
+					if(autoclose)
+						autoclose_in(60)
+					return
+
+	SEND_SIGNAL(src, COMSIG_DOOR_CLOSE)
+	operating = DOOR_CLOSING
+
+	do_animate("closing")
+	layer = closingLayer
+	sleep(5)
+	density = TRUE
+	if(width > 1)
+		set_fillers_density(TRUE)
+	sleep(5)
+	update_icon()
+	if(!glass || polarized_on)
+		set_opacity(TRUE)
+		if(width > 1)
+			set_fillers_opacity(TRUE)
+	operating = NONE
+	recalculate_atmos_connectivity()
+	update_freelook_sight()
+	if(safe)
+		check_for_mobs()
+	else
+		crush()
+	return TRUE
+
+/obj/machinery/door/poddoor/manual_rotation
+	manual_dir = TRUE
+
+/obj/machinery/door/poddoor/preopen
+	icon_state = "open"
+	density = FALSE
+	opacity = FALSE
+
+/obj/machinery/door/poddoor/preopen/manual_rotation
+	manual_dir = TRUE
+
+/obj/machinery/door/poddoor/impassable
+	name = "reinforced blast door"
+	desc = "A heavy duty blast door that opens mechanically. Looks even tougher than usual."
+	resistance_flags = INDESTRUCTIBLE | LAVA_PROOF | FIRE_PROOF | UNACIDABLE | ACID_PROOF
+	move_resist = INFINITY
+
+/obj/machinery/door/poddoor/impassable/manual_rotation
+	manual_dir = TRUE
+
+/obj/machinery/door/poddoor/impassable/gamma
+	name = "gamma armory hatch"
+
+/obj/machinery/door/poddoor/impassable/gamma/manual_rotation
+	manual_dir = TRUE
+
+/obj/machinery/door/poddoor/impassable/hostile_lockdown()
+	return
+
+/obj/machinery/door/poddoor/impassable/disable_lockdown()
+	return
+
+/obj/machinery/door/poddoor/bumpopen(mob/user)
+	return
+
+/obj/machinery/door/poddoor/impassable/emag_act(mob/user)
+	to_chat(user, SPAN_NOTICE("The electronic systems in this door are far too advanced for your primitive hacking peripherals."))
+	return
+
+/obj/machinery/door/poddoor/Bumped(atom/AM)
+	if(density)
+		return
+	else
+		return 0
+
+//"BLAST" doors are obviously stronger than regular doors when it comes to BLASTS.
+/obj/machinery/door/poddoor/ex_act(severity)
+	if(severity == EXPLODE_LIGHT)
+		return
+	..()
+
+/obj/machinery/door/poddoor/do_animate(animation)
+	switch(animation)
+		if("opening")
+			flick("opening", src)
+			playsound(src, 'sound/machines/blastdoor.ogg', 30, 1)
+		if("closing")
+			flick("closing", src)
+			playsound(src, 'sound/machines/blastdoor.ogg', 30, 1)
+
+/obj/machinery/door/poddoor/update_icon_state()
+	if(density)
+		icon_state = "closed"
+	else
+		icon_state = "open"
+
+/obj/machinery/door/poddoor/try_to_activate_door(mob/user)
+	return
+
+/obj/machinery/door/poddoor/try_to_crowbar(mob/user, obj/item/I)
+	if(!density)
+		return
+	if(!hasPower() && !(resistance_flags & INDESTRUCTIBLE))
+		to_chat(user, SPAN_NOTICE("You start forcing [src] open..."))
+		if(do_after(user, 50 * I.toolspeed, target = src))
+			if(!hasPower())
+				open()
+			else
+				to_chat(user, SPAN_WARNING("[src] resists your efforts to force it!"))
+	else
+		to_chat(user, SPAN_WARNING("[src] resists your efforts to force it!"))
+
+/obj/machinery/door/poddoor/update_bounds()
+	if(width <= 1)
+		return
+
+	QDEL_LIST_CONTENTS(fillers)
+
+	if(dir in list(NORTH, SOUTH))
+		bound_width = width * world.icon_size
+		bound_height = world.icon_size
+		bound_y = 0
+		pixel_y = 0
+		if(dir == NORTH)
+			bound_x = -(width - 1) * world.icon_size
+			pixel_x = -(width - 1) * world.icon_size
+		else
+			bound_x = 0
+			pixel_x = 0
+
+	else
+		bound_width = world.icon_size
+		bound_height = width * world.icon_size
+		bound_x = 0
+		pixel_x = 0
+		if(dir == WEST)
+			bound_y = -(width - 1) * world.icon_size
+			pixel_y = -(width - 1) * world.icon_size
+		else
+			bound_y = 0
+			pixel_y = 0
+
+	LAZYINITLIST(fillers)
+
+	var/obj/last_filler = src
+	for(var/i in 1 to width - 1)
+		var/obj/airlock_filler_object/filler
+
+		filler = new(src)
+		filler.pair_airlock(src)
+		filler.loc = get_step(last_filler, turn(dir, 90))
+		filler.density = density
+		filler.set_opacity(opacity)
+
+		fillers += filler
+		last_filler = filler
+
+ // Whoever wrote the old code for multi-tile spesspod doors needs to burn in hell. - Unknown
+ // Wise words. - Bxil
+/obj/machinery/door/poddoor/multi_tile
+	name = "large pod door"
+	icon = 'icons/obj/doors/blastdoor_1x2.dmi'
+	layer = CLOSED_BLASTDOOR_LAYER
+	width = 2
+
+/obj/machinery/door/poddoor/multi_tile/manual_rotation
+	manual_dir = TRUE
+
+/obj/machinery/door/poddoor/multi_tile/triple
+	icon = 'icons/obj/doors/blastdoor_1x3.dmi'
+	width = 3
+
+/obj/machinery/door/poddoor/multi_tile/triple/manual_rotation
+	manual_dir = TRUE
+
+/obj/machinery/door/poddoor/multi_tile/quad
+	icon = 'icons/obj/doors/blastdoor_1x4.dmi'
+	width = 4
+
+/obj/machinery/door/poddoor/multi_tile/quad/manual_rotation
+	manual_dir = TRUE
+
+/obj/machinery/door/poddoor/multi_tile/impassable
+	desc = "A heavy duty blast door that opens mechanically. Looks even tougher than usual."
+	resistance_flags = INDESTRUCTIBLE | LAVA_PROOF | FIRE_PROOF | UNACIDABLE | ACID_PROOF
+	move_resist = INFINITY
+
+/obj/machinery/door/poddoor/multi_tile/impassable/manual_rotation
+	manual_dir = TRUE
+
+/obj/machinery/door/poddoor/multi_tile/impassable/hostile_lockdown()
+	return
+
+/obj/machinery/door/poddoor/multi_tile/impassable/disable_lockdown()
+	return
+
+/obj/machinery/door/poddoor/multi_tile/impassable/emag_act(mob/user)
+	to_chat(user, SPAN_NOTICE("The electronic systems in this door are far too advanced for your primitive hacking peripherals."))
+	return
+
+/obj/machinery/door/poddoor/multi_tile/impassable/triple
+	icon = 'icons/obj/doors/blastdoor_1x3.dmi'
+	width = 3
+
+/obj/machinery/door/poddoor/multi_tile/impassable/triple/manual_rotation
+	manual_dir = TRUE
+
+/obj/machinery/door/poddoor/multi_tile/impassable/quad
+	icon = 'icons/obj/doors/blastdoor_1x4.dmi'
+	width = 4
+
+/obj/machinery/door/poddoor/multi_tile/impassable/quad/manual_rotation
+	manual_dir = TRUE

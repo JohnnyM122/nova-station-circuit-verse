@@ -1,0 +1,59 @@
+/obj/item/clothing/under/plasmaman
+	name = "plasma envirosuit"
+	desc = "A special containment suit that allows plasma-based lifeforms to exist safely in an oxygenated environment, and automatically extinguishes them in a crisis. Despite being airtight, it's not spaceworthy."
+	icon = 'icons/obj/clothing/species/plasmaman/uniform.dmi'
+	icon_state = "plasmaman"
+	inhand_icon_state = "plasmaman_suit"
+	armor = list(MELEE = 0, BULLET = 0, LASER = 0, ENERGY = 0, BOMB = 0, RAD = 0, FIRE = INFINITY, ACID = INFINITY)
+	body_parts_covered = UPPER_TORSO|LOWER_TORSO|LEGS|FEET|ARMS|HANDS
+	strip_delay = 80
+	species_restricted = list("Plasmaman")
+	sprite_sheets = list("Plasmaman" = 'icons/mob/clothing/species/plasmaman/uniform.dmi')
+	dyeable = TRUE
+	dyeing_key = DYE_REGISTRY_PLASMAMEN
+	permeability_coefficient = 0.6
+
+	var/next_extinguish = 0
+	var/extinguish_cooldown = 10 SECONDS
+	var/extinguishes_left = 5
+
+/obj/item/clothing/under/plasmaman/examine(mob/user)
+	. = ..()
+	. += SPAN_NOTICE("There are [extinguishes_left] extinguisher charges left in this suit.")
+
+/obj/item/clothing/under/plasmaman/proc/Extinguish(mob/living/carbon/human/H)
+	if(!istype(H))
+		return
+
+	if(H.on_fire)
+		if(extinguishes_left)
+			if(next_extinguish > world.time)
+				return
+			next_extinguish = world.time + extinguish_cooldown
+			extinguishes_left--
+			H.visible_message(SPAN_WARNING("[H]'s suit automatically extinguishes [H.p_them()]!"),SPAN_WARNING("Your suit automatically extinguishes you."))
+			if(!extinguishes_left)
+				to_chat(H, SPAN_WARNING("Onboard auto-extinguisher depleted, refill with a cartridge."))
+			playsound(H.loc, 'sound/effects/spray.ogg', 10, TRUE, -3)
+			H.ExtinguishMob()
+			new /obj/effect/particle_effect/water(get_turf(H))
+	return FALSE
+
+/obj/item/clothing/under/plasmaman/item_interaction(mob/living/user, obj/item/used, list/modifiers)
+	if(!istype(used, /obj/item/extinguisher_refill))
+		return ..()
+
+	if(extinguishes_left == 5)
+		to_chat(user, SPAN_NOTICE("The inbuilt extinguisher is full."))
+		return ITEM_INTERACT_COMPLETE
+
+	extinguishes_left = 5
+	to_chat(user, SPAN_NOTICE("You refill the suit's built-in extinguisher, using up the cartridge."))
+	qdel(used)
+	return ITEM_INTERACT_COMPLETE
+
+/obj/item/extinguisher_refill
+	name = "envirosuit extinguisher cartridge"
+	desc = "A cartridge loaded with a compressed extinguisher mix, used to refill the automatic extinguisher on plasma envirosuits."
+	icon_state = "plasmarefill"
+	icon = 'icons/obj/device.dmi'

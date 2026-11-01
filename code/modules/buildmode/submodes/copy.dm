@@ -1,0 +1,28 @@
+/datum/buildmode_mode/copy
+	key = "copy"
+	var/atom/movable/stored = null
+
+/datum/buildmode_mode/copy/exit_mode()
+	stored = null
+	return ..()
+
+/datum/buildmode_mode/copy/show_help(mob/user)
+	to_chat(user, SPAN_NOTICE("***********************************************************"))
+	to_chat(user, SPAN_NOTICE("Left Mouse Button on obj/turf/mob   = Spawn a Copy of selected target"))
+	to_chat(user, SPAN_NOTICE("Right Mouse Button on obj/mob = Select target to copy"))
+	to_chat(user, SPAN_NOTICE("***********************************************************"))
+
+/datum/buildmode_mode/copy/handle_click(user, params, obj/object)
+	var/list/pa = params2list(params)
+	var/left_click = pa.Find("left")
+	var/right_click = pa.Find("right")
+
+	if(left_click)
+		var/turf/T = get_turf(object)
+		if(stored)
+			var/obj/O = DuplicateObject(stored, perfectcopy=1, sameloc=0,newloc=T)
+			O.admin_spawned = TRUE
+	else if(right_click)
+		if(ismovable(object)) // No copying turfs for now.
+			to_chat(user, SPAN_NOTICE("[object] set as template."))
+			stored = object

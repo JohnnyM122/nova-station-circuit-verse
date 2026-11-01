@@ -1,0 +1,43 @@
+.theme-safe:root {
+  // Base
+  --color-base: hsl(217.5, 25%, 17.5%);
+  --color-section: hsl(55, 30%, 57.5%);
+  --color-primary: hsl(205, 27.5%, 32.5%);
+  --secondary-lightness-adjustment: 9;
+
+  .Layout__content {
+    background-image: none;
+  }
+
+  .Section {
+    font-family: 'Comic Sans MS', cursive, sans-serif;
+    font-style: italic;
+    color: black;
+    box-shadow: 5px 5px hsla(0, 0%, 0%, 0.5);
+    background-image: linear-gradient(
+      to bottom,
+      var(--color-section) 0%,
+      hsl(from var(--color-section) h calc(s - 10) calc(l - 10)) 100%
+    );
+    transform: rotate(-1deg);
+
+    &__title {
+      padding-bottom: 0;
+      border: 0;
+    }
+
+    &:before {
+      content: ' ';
+      display: block;
+      width: 24px;
+      height: 40px;
+      background-image: linear-gradient(to bottom, transparent 0%, #ffffff 100%);
+      box-shadow: 1px 1px #111111;
+      opacity: 0.2;
+      position: absolute;
+      top: -30px;
+      left: calc(50% - 12px);
+      transform: rotate(-5deg);
+    }
+  }
+}

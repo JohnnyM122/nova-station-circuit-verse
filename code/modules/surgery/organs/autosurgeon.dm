@@ -1,0 +1,246 @@
+#define INFINITE -1
+
+/obj/item/autosurgeon
+	name = "autosurgeon"
+	desc = "A device that automatically inserts an implant or organ into the user without the hassle of extensive surgery. It has a screwdriver slot for removing accidentally added items."
+	icon = 'icons/obj/device.dmi'
+	icon_state = "autoimplanter"
+	w_class = WEIGHT_CLASS_SMALL
+	var/uses = INFINITE
+	new_attack_chain = TRUE
+
+/obj/item/autosurgeon/attack_self_tk(mob/user)
+	return // Stops TK fuckery.
+
+/obj/item/autosurgeon/organ
+	name = "implant autosurgeon"
+	desc = "A device that automatically inserts an implant or organ into the user without the hassle of extensive surgery. It has a slot to insert implants or organs and a screwdriver slot for removing accidentally added items."
+	var/organ_type = /obj/item/organ/internal
+	var/starting_organ
+	var/obj/item/organ/internal/storedorgan
+
+/obj/item/autosurgeon/organ/Initialize(mapload)
+	. = ..()
+	if(starting_organ)
+		insert_organ(new starting_organ(src))
+
+/obj/item/autosurgeon/organ/proc/insert_organ(obj/item/I)
+	storedorgan = I
+	I.forceMove(src)
+	name = "[initial(name)] ([storedorgan.name])"
+
+/obj/item/autosurgeon/organ/activate_self(mob/user) // When the object is used...
+	if(..())
+		return ITEM_INTERACT_COMPLETE
+
+	if(!uses)
+		to_chat(user, SPAN_ALERT("[src] has already been used. The tools are dull and won't reactivate."))
+		return ITEM_INTERACT_COMPLETE
+
+	else if(!storedorgan)
+		to_chat(user, SPAN_ALERT("[src] currently has no implant stored."))
+		return ITEM_INTERACT_COMPLETE
+
+	SSblackbox.record_feedback("tally", "o_implant_auto", 1, "[storedorgan.type]")
+	storedorgan.insert(user) // Insert stored organ into the user.
+	user.visible_message(SPAN_NOTICE("[user] presses a button on [src], and you hear a short mechanical noise."), SPAN_NOTICE("You feel a sharp sting as [src] plunges into your body."))
+	playsound(get_turf(user), 'sound/weapons/circsawhit.ogg', 50, TRUE)
+	storedorgan = null
+	name = initial(name)
+	if(uses != INFINITE)
+		uses--
+	if(!uses)
+		desc = "[initial(desc)] Looks like it's been used up."
+	return ITEM_INTERACT_COMPLETE
+
+/obj/item/autosurgeon/organ/item_interaction(mob/user, obj/item/used, list/modifiers)
+	if(!istype(used, organ_type))
+		return ..()
+
+	if(storedorgan)
+		to_chat(user, SPAN_WARNING("[src] already has an implant stored!"))
+		return ITEM_INTERACT_COMPLETE
+
+	if(!uses)
+		to_chat(user, SPAN_WARNING("[src] has already been used up!"))
+		return ITEM_INTERACT_COMPLETE
+
+	if(!user.drop_item())
+		to_chat(user, SPAN_WARNING("[used] is stuck to your hand! You can't store it in [src]!"))
+		return ITEM_INTERACT_COMPLETE
+
+	used.forceMove(src)
+	storedorgan = used
+	add_fingerprint(user)
+	to_chat(user, SPAN_NOTICE("You insert [used] into [src]."))
+	return ITEM_INTERACT_COMPLETE
+
+/obj/item/autosurgeon/organ/screwdriver_act(mob/living/user, obj/item/I)
+	if(..())
+		return TRUE
+	if(!storedorgan)
+		to_chat(user, SPAN_WARNING("There's no implant in [src] for you to remove!"))
+	else
+		storedorgan.forceMove(user.drop_location())
+
+		to_chat(user, SPAN_NOTICE("You remove [storedorgan] from [src]."))
+		I.play_tool_sound(src)
+		storedorgan = null
+		if(uses != INFINITE)
+			uses--
+		if(!uses)
+			desc = "[initial(desc)] Looks like it's been used up."
+	return TRUE
+
+/obj/item/autosurgeon/organ/one_use
+	uses = 1
+
+/obj/item/autosurgeon/organ/one_use/skill_hud
+	desc = "A single use autosurgeon that contains a skill heads up display. A screwdriver can be used to remove it, but implants can't be placed back in."
+	starting_organ = /obj/item/organ/internal/cyberimp/eyes/hud/skill
+
+/obj/item/autosurgeon/organ/one_use/sec_hud
+	desc = "A single use autosurgeon that contains a security heads up display. A screwdriver can be used to remove it, but implants can't be placed back in."
+	starting_organ = /obj/item/organ/internal/cyberimp/eyes/hud/security
+
+/obj/item/autosurgeon/organ/one_use/med_hud
+	desc = "A single use autosurgeon that contains a medical heads up display. A screwdriver can be used to remove it, but implants can't be placed back in."
+	starting_organ = /obj/item/organ/internal/cyberimp/eyes/hud/medical
+
+/obj/item/autosurgeon/organ/one_use/diagnostic_hud
+	desc = "A single use autosurgeon that contains a diagnostic heads up display. A screwdriver can be used to remove it, but implants can't be placed back in."
+	starting_organ = /obj/item/organ/internal/cyberimp/eyes/hud/diagnostic
+
+/obj/item/autosurgeon/organ/one_use/wire_interface
+	desc = "A single use autosurgeon that contains a wire interface. A screwdriver can be used to remove it, but implants can't be placed back in."
+	starting_organ = /obj/item/organ/internal/cyberimp/brain/wire_interface
+
+/obj/item/autosurgeon/organ/one_use/meson_eyes
+	desc = "A single use autosurgeon that contains a set of meson eyes. A screwdriver can be used to remove it, but implants can't be placed back in."
+	starting_organ = /obj/item/organ/internal/eyes/cybernetic/meson
+
+/obj/item/autosurgeon/organ/syndicate
+	name = "suspicious implant autosurgeon"
+	icon_state = "syndicate_autoimplanter"
+
+/obj/item/autosurgeon/organ/syndicate/activate_self(mob/user)
+	if(storedorgan && uses && storedorgan.is_robotic()) // Helps keep the syndicate ones hidden. One can peel them off if they want them to be visable.
+		storedorgan.self_augmented_skin_level = 3
+	return ..()
+
+/obj/item/autosurgeon/organ/syndicate/oneuse
+	uses = 1
+
+/obj/item/autosurgeon/organ/syndicate/oneuse/laser_arm
+	desc = "A single use autosurgeon that contains a combat arms-up laser augment. A screwdriver can be used to remove it, but implants can't be placed back in."
+	starting_organ = /obj/item/organ/internal/cyberimp/arm/gun/laser
+
+/obj/item/autosurgeon/organ/syndicate/oneuse/meson_eyes
+	desc = "A single use autosurgeon that contains a pair of cybernetic meson eyes. A screwdriver can be used to remove it, but implants can't be placed back in."
+	starting_organ = /obj/item/organ/internal/eyes/cybernetic/meson
+
+/obj/item/autosurgeon/organ/syndicate/oneuse/razorwire
+	desc = "A single use autosurgeon that contains a Razorwire arm implant. A screwdriver can be used to remove it, but implants can't be placed back in."
+	starting_organ = /obj/item/organ/internal/cyberimp/arm/razorwire
+
+/obj/item/autosurgeon/organ/syndicate/oneuse/razorwire/examine_more(mob/user)
+	. = ..()
+	if(storedorgan)
+		return storedorgan.examine_more()
+
+/obj/item/autosurgeon/organ/syndicate/oneuse/hackerman_deck
+	desc = "A single use autosurgeon that contains a Binyat wireless hacking system. A screwdriver can be used to remove it, but implants can't be placed back in."
+	starting_organ = /obj/item/organ/internal/cyberimp/brain/hackerman_deck
+
+/obj/item/autosurgeon/organ/syndicate/oneuse/hackerman_deck/examine_more(mob/user)
+	. = ..()
+	. += "<i>Considered Cybersun Incorporated's most recent and developed implant system focused on hacking from a range while being undetectable from normal means. \
+	The Binyat Wireless Hacking System (BWHS) is a stealth-built implant that gives its user a rudimentary electronic interface on whatever can be perceived. \
+	It uses a micro jammer to hide its existence from even the most advanced scanning systems.<i>"
+	. += "<i>Originally designed as a hand-held device for long-range testing of Cybersun's electronic security systems, \
+	the easy integration of the components into a neural implant led to a revaluation of the device's potential. \
+	Development would commence to create the first sets of prototypes,  focusing on tricking scanners with no false positives, \
+	and being able to hack from afar. The System does have a major flaw, however, as Cybersun R&D was never able to miniaturize its cooling systems to a practical level. \
+	Repeated use will lead to skin irritation, internal burns, and even severe nerve damage in extreme cases.<i>"
+	. += "<i>As of modern times, the BWHS is heavily vetted under Cybersun Inc. due to its dangerous nature and rather difficult detection. \
+	However, this hasn't stopped the flow of these implants from reaching the black market, whether by inside or outside influences.</i>"
+
+/obj/item/autosurgeon/organ/syndicate/oneuse/sensory_enhancer
+	desc = "A single use autosurgeon that contains a Qani-Laaca sensory computer. A screwdriver can be used to remove it, but implants can't be placed back in."
+	starting_organ = /obj/item/organ/internal/cyberimp/brain/sensory_enhancer
+
+/obj/item/autosurgeon/organ/syndicate/oneuse/sensory_enhancer/examine(mob/user)
+	. = ..()
+	. += SPAN_USERDANGER("Epilepsy Warning: Drug has vibrant visual effects!")
+
+/obj/item/autosurgeon/organ/syndicate/oneuse/sensory_enhancer/examine_more(mob/user)
+	. = ..()
+	if(storedorgan)
+		return storedorgan.examine_more()
+
+/obj/item/autosurgeon/organ/syndicate/oneuse/scope_eyes
+	desc = "A single use autosurgeon that contains Hardened Kaleido Optics eyes. A screwdriver can be used to remove it, but implants can't be placed back in."
+	starting_organ = /obj/item/organ/internal/eyes/cybernetic/scope/hardened
+
+/obj/item/autosurgeon/organ/syndicate/thermal_eyes
+	starting_organ = /obj/item/organ/internal/eyes/cybernetic/thermals/hardened
+
+/obj/item/autosurgeon/organ/syndicate/xray_eyes
+	starting_organ = /obj/item/organ/internal/eyes/cybernetic/xray/hardened
+
+/obj/item/autosurgeon/organ/syndicate/anti_stam
+	starting_organ = /obj/item/organ/internal/cyberimp/brain/anti_stam/hardened
+
+/obj/item/autosurgeon/organ/syndicate/reviver
+	starting_organ = /obj/item/organ/internal/cyberimp/chest/reviver/hardened
+
+/obj/item/autosurgeon/organ/syndicate/oneuse/hardened_heart
+	starting_organ = /obj/item/organ/internal/heart/cybernetic/upgraded/hardened
+
+/obj/item/autosurgeon/organ/syndicate/oneuse/syndie_mantis
+	starting_organ = /obj/item/organ/internal/cyberimp/arm/syndie_mantis
+
+/obj/item/autosurgeon/organ/syndicate/oneuse/syndie_mantis/l
+	starting_organ = /obj/item/organ/internal/cyberimp/arm/syndie_mantis/l
+
+/obj/item/autosurgeon/organ/syndicate/oneuse/skinmonger
+	starting_organ = /obj/item/organ/internal/cyberimp/chest/skinmonger
+
+/obj/item/autosurgeon/organ/syndicate/oneuse/skinmonger/activate_self(mob/user)
+	if(!storedorgan)
+		return ..()
+
+	// Configure identity before implantation...
+	var/obj/item/organ/internal/cyberimp/chest/skinmonger/implant = storedorgan
+
+	// Check if they have a monitor head
+	var/has_monitor_head = FALSE
+	if(ishuman(user))
+		var/mob/living/carbon/human/H = user
+		var/obj/item/organ/external/head/head_organ = H.bodyparts_by_name["head"]
+		if(head_organ?.model)
+			var/datum/robolimb/R = GLOB.all_robolimbs[head_organ.model]
+			if(R?.is_monitor)
+				has_monitor_head = TRUE
+				to_chat(user, SPAN_WARNING("The Skinmonger is confused by your freakishly large head, but attempts to disguise you anyway."))
+
+	// Only ask for identity if they're a machine person and don't have a monitor head
+	if(ismachineperson(user) && !has_monitor_head)
+		if(!implant.configured_identity || implant.configured_identity == "Unknown")
+			var/chosen_name = tgui_input_text(user, "The Skinmonger generously offers to turn you into someone else. But who?", default = "Unknown", max_length = MAX_NAME_LEN)
+			if(!chosen_name)
+				return
+
+			// Allow to appear as "Unknown" (default value)
+			if(chosen_name != "Unknown")
+				chosen_name = reject_bad_name(chosen_name, max_length = MAX_NAME_LEN)
+				if(!chosen_name)
+					to_chat(user, SPAN_WARNING("The implanter quietly hisses, rejecting your choice."))
+					return
+
+			implant.configured_identity = chosen_name
+
+	// ... then implant
+	return ..()
+
+#undef INFINITE

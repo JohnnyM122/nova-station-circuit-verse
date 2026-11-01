@@ -1,0 +1,236 @@
+//Cardboard cutouts! They're man-shaped and can be colored with a crayon to look like a human in a certain outfit, although it's limited, discolored, and obvious to more than a cursory glance.
+/obj/item/cardboard_cutout
+	name = "cardboard cutout"
+	desc = "A vaguely humanoid cardboard cutout. It's completely blank."
+	icon = 'icons/obj/cardboard_cutout.dmi'
+	icon_state = "cutout_basic"
+	resistance_flags = FLAMMABLE
+	w_class = WEIGHT_CLASS_BULKY
+	var/list/possible_appearances = list("Assistant", "Female", "Clown", "Mime",
+		"Traitor", "Nuke Op", "Cultist", "Revolutionary", "Wizard", "Shadowling", "Xenomorph", "Swarmer",
+		"Deathsquad Commando", "Ian", "Slaughter Demon",
+		"Laughter Demon", "Xenomorph Maid", "Security Officer", "Terror Spider",
+		"Changeling", "Vampire", "Abductor", "Zombie", "Soviet Marine", "Federation Marine")
+	/// If the cutout is pushed over and has to be righted.
+	var/pushed_over = FALSE
+	/// If the cutout actually appears as what it portray and not a discolored version.
+	var/deceptive = FALSE
+	materials = list(MAT_CARDBOARD = 10000)
+	new_attack_chain = TRUE
+
+/obj/item/cardboard_cutout/attack_hand(mob/living/user)
+	if(user.a_intent == INTENT_HELP || pushed_over)
+		return ..()
+	user.visible_message(SPAN_WARNING("[user] pushes over [src]!"), SPAN_DANGER("You push over [src]!"))
+	playsound(src, 'sound/weapons/genhit.ogg', 50, 1)
+	add_fingerprint(user)
+	push_over()
+
+/obj/item/cardboard_cutout/proc/push_over()
+	name = initial(name)
+	desc = "[initial(desc)] It's been pushed over."
+	icon = initial(icon)
+	icon_state = "cutout_pushed_over"
+	color = initial(color)
+	alpha = initial(alpha)
+	pushed_over = TRUE
+
+/obj/item/cardboard_cutout/activate_self(mob/living/user)
+	if(..())
+		return ITEM_INTERACT_COMPLETE
+	if(!pushed_over)
+		return ITEM_INTERACT_COMPLETE
+	to_chat(user, SPAN_NOTICE("You right [src]."))
+	desc = initial(desc)
+	icon = initial(icon)
+	icon_state = initial(icon_state) // This resets a cutout to its blank state - this is intentional to allow for resetting.
+	pushed_over = FALSE
+	add_fingerprint(user)
+	return ITEM_INTERACT_COMPLETE
+
+/obj/item/cardboard_cutout/item_interaction(mob/living/user, obj/item/used, list/modifiers)
+	if(istype(used, /obj/item/toy/crayon))
+		change_appearance(used, user)
+		return ITEM_INTERACT_COMPLETE
+	// Why yes, this does closely resemble mob and object attack code.
+	if(used.flags & NOBLUDGEON)
+		return ITEM_INTERACT_COMPLETE
+	if(!used.force)
+		playsound(loc, 'sound/weapons/tap.ogg', 20, TRUE, -1)
+	else if(used.hitsound)
+		playsound(loc, used.hitsound, 20, TRUE, -1)
+
+	user.changeNext_move(CLICK_CD_MELEE)
+	user.do_attack_animation(src)
+
+	if(used.force)
+		user.visible_message(
+			SPAN_DANGER("[user] hits [src] with [used]!"),
+			SPAN_DANGER("You hit [src] with [used]!"),
+			SPAN_HEAR("You hear something slap a sheet of cardboard.")
+		)
+
+		if(prob(used.force))
+			push_over()
+	add_fingerprint(user)
+
+/obj/item/cardboard_cutout/bullet_act(obj/projectile/P)
+	visible_message(SPAN_DANGER("[src] is hit by [P]!"))
+	playsound(src, 'sound/weapons/slice.ogg', 50, 1)
+	if(prob(P.damage))
+		push_over()
+
+/obj/item/cardboard_cutout/proc/change_appearance(obj/item/toy/crayon/crayon, mob/living/user)
+	if(!crayon || !user)
+		return
+	if(istype(crayon, /obj/item/toy/crayon/spraycan))
+		var/obj/item/toy/crayon/spraycan/can = crayon
+		if(can.capped)
+			to_chat(user, SPAN_WARNING("The cap is on the spray can remove it first!"))
+			return
+	if(pushed_over)
+		to_chat(user, SPAN_WARNING("Right [src] first!"))
+		return
+	var/new_appearance = tgui_input_list(user, "Choose a new appearance for [src]", "26th Century Deception", possible_appearances)
+	if(!Adjacent(usr))
+		user.visible_message(SPAN_DANGER("You need to be closer!"))
+		return
+	if(pushed_over)
+		to_chat(user, SPAN_WARNING("Right [src] first!"))
+		return
+	if(!new_appearance || !crayon)
+		return
+	if(!do_after(user, 10, FALSE, src, TRUE))
+		return
+	user.visible_message(
+		SPAN_NOTICE("[user] gives [src] a new look."),
+		SPAN_NOTICE("Voila! You give [src] a new look."),
+		SPAN_HEAR("You hear a crayon scribbling on cardboard.")
+	)
+	add_fingerprint(user)
+	alpha = 255
+	icon = initial(icon)
+	if(!deceptive)
+		color = "#FFD7A7"
+	switch(new_appearance)
+		if("Assistant")
+			name = "[pick(GLOB.first_names_male)] [pick(GLOB.last_names)]"
+			desc = "A cardboard cutout of an assistant."
+			icon_state = "cutout_greytide"
+		if("Female")
+			name = "[pick(GLOB.first_names_female)] [pick(GLOB.last_names)]"
+			desc = "A cardboard cutout of a female assistant."
+			icon_state = "cutout_female"
+		if("Clown")
+			name = pick(GLOB.clown_names)
+			desc = "A cardboard cutout of a clown. You get the feeling that it should be in a corner."
+			icon_state = "cutout_clown"
+		if("Mime")
+			name = pick(GLOB.mime_names)
+			desc = "...(A cardboard cutout of a mime.)"
+			icon_state = "cutout_mime"
+		if("Traitor")
+			name = "[pick("Unknown", "Captain")]"
+			desc = "A cardboard cutout of a traitor."
+			icon_state = "cutout_traitor"
+		if("Nuke Op")
+			name = "[pick("Unknown", "COMMS", "Telecomms", "AI", "stealthy op", "STEALTH", "sneakybeaky", "MEDIC", "Medic", "Gonk op")]"
+			desc = "A cardboard cutout of a nuclear operative."
+			icon_state = "cutout_fluke"
+		if("Cultist")
+			name = "Unknown"
+			desc = "A cardboard cutout of a cultist."
+			icon_state = "cutout_cultist"
+		if("Revolutionary")
+			name = "Unknown"
+			desc = "A cardboard cutout of a revolutionary."
+			icon_state = "cutout_viva"
+		if("Wizard")
+			name = "[pick(GLOB.wizard_first)], [pick(GLOB.wizard_second)]"
+			desc = "A cardboard cutout of a wizard."
+			icon_state = "cutout_wizard"
+		if("Shadowling")
+			name = "Unknown"
+			desc = "A cardboard cutout of a shadowling."
+			icon_state = "cutout_shadowling"
+		if("Xenomorph")
+			name = "alien hunter ([rand(1, 999)])"
+			desc = "A cardboard cutout of a xenomorph."
+			icon_state = "cutout_fukken_xeno"
+			if(prob(10))
+				alpha = 75 //Spooky sneaking!
+		if("Swarmer")
+			name = "Swarmer ([rand(1, 999)])"
+			desc = "A cardboard cutout of a swarmer."
+			icon_state = "cutout_swarmer"
+		//if("Ash Walker")
+		//	name = random_name(pick(MALE,FEMALE),"Unathi")
+		//	desc = "A cardboard cutout of an ash walker."
+		//	icon_state = "cutout_free_antag"
+		if("Deathsquad Commando")
+			name = pick(GLOB.deathsquad_names)
+			desc = "A cardboard cutout of a Deathsquad Commando, from that show about loose-cannon ERT Officers."
+			icon_state = "cutout_deathsquad"
+		if("Ian")
+			name = "Ian"
+			desc = "A cardboard cutout of the HoP's beloved corgi."
+			icon_state = "cutout_ian"
+		if("Slaughter Demon")
+			name = "slaughter demon"
+			desc = "A cardboard cutout of a slaughter demon."
+			icon = 'icons/mob/mob.dmi'
+			icon_state = "daemon"
+			dir = "SOUTH"
+		if("Laughter Demon")
+			name = "laughter demon"
+			desc = "A cardboard cutout of a laughter demon."
+			icon = 'icons/mob/mob.dmi'
+			icon_state = "bowmon"
+			dir = "SOUTH"
+		if("Xenomorph Maid")
+			name = "lusty xenomorph maid ([rand(1, 999)])"
+			desc = "A cardboard cutout of a xenomorph maid."
+			icon_state = "cutout_lusty"
+		if("Security Officer")
+			name = "Private Security Officer"
+			desc = "A cardboard cutout of a private security officer."
+			icon_state = "cutout_ntsec"
+		if("Terror Spider")
+			name = "Gray Terror Spider"
+			desc = "A cardboard cutout of a terror spider."
+			icon = 'icons/mob/terrorspider.dmi'
+			icon_state = "terror_gray"
+			dir = "SOUTH"
+		if("Soviet Marine")
+			name = "[pick(GLOB.first_names_soviet)] [pick(GLOB.last_names_soviet)]"
+			desc = "A cardboard cutout of a soviet marine."
+			icon_state = "cutout_soviet"
+		if("Federation Marine")
+			name = "[pick("Corporal", "Sergeant", "Staff Sergeant", "Sergeant First Class", "Master Sergeant", "Sergeant Major")] [pick(GLOB.last_names)]"
+			desc = "A cardboard cutout of a federation marine."
+			icon_state = "cutout_sol"
+		if("Changeling")
+			name = "[pick(GLOB.first_names_male)] [pick(GLOB.last_names)]"
+			desc = "A cardboard cutout of a changeling."
+			icon_state = "cutout_cling"
+		if("Abductor")
+			name = "Unknown"
+			desc = "A cardboard cutout of an abductor."
+			icon_state = "cutout_abductor"
+		if("Zombie")
+			name = "[pick(GLOB.first_names_male)] [pick(GLOB.last_names)]"
+			desc = "A cardboard cutout of a zombie."
+			icon_state = "cutout_zombie"
+		if("Vampire")
+			name = "Unknown"
+			desc = "A cardboard cutout of a vampire."
+			icon_state = "cutout_vampire"
+
+	return TRUE
+
+/obj/item/cardboard_cutout/setDir()
+	dir = SOUTH
+
+/// Purchased by Syndicate agents, these cutouts are indistinguishable from normal cutouts but aren't discolored when their appearance is changed
+/obj/item/cardboard_cutout/adaptive
+	deceptive = TRUE

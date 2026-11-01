@@ -1,0 +1,96 @@
+/obj/item/chameleon_counterfeiter
+	name = "chameleon counterfeiter"
+	icon = 'icons/obj/device.dmi'
+	icon_state = "cham_counter"
+	worn_icon_state = "electronic"
+	inhand_icon_state = "electronic"
+	flags = CONDUCT
+	slot_flags = ITEM_SLOT_BELT
+	w_class = WEIGHT_CLASS_SMALL
+	origin_tech = "materials=5;magnets=4;syndicate=1"
+	new_attack_chain = TRUE
+	var/can_use = TRUE
+	var/saved_name
+	var/saved_desc
+	var/saved_icon
+	var/saved_icon_state
+	var/saved_worn_icon
+	var/saved_worn_icon_state
+	var/saved_inhand_icon_state
+	var/saved_overlays
+	var/saved_underlays
+	var/dummy_active = FALSE
+
+/obj/item/chameleon_counterfeiter/examine(mob/user)
+	. = ..()
+	if(dummy_active)
+		. += SPAN_WARNING("It doesn't look quite right...")
+
+/obj/item/chameleon_counterfeiter/interact_with_atom(obj/item/target, mob/living/user, list/modifiers)
+	if(dummy_active || !isitem(target))
+		return NONE
+
+	if(!check_sprite(target) || target.alpha < 255 || target.invisibility != 0)
+		return NONE
+
+	playsound(get_turf(src), 'sound/weapons/flash.ogg', 100, TRUE, -6)
+	to_chat(user, SPAN_NOTICE("Scanned [target]."))
+	add_fingerprint(user)
+	saved_name = target.name
+	saved_desc = target.desc
+	saved_icon = target.icon
+	saved_icon_state = target.icon_state
+	saved_worn_icon = target.worn_icon
+	saved_worn_icon_state = target.worn_icon_state
+	saved_inhand_icon_state = target.inhand_icon_state
+	saved_overlays = target.overlays
+	saved_underlays = target.underlays
+	return ITEM_INTERACT_COMPLETE
+
+/obj/item/chameleon_counterfeiter/proc/check_sprite(atom/target)
+	return (target.icon_state in icon_states(target.icon))
+
+/obj/item/chameleon_counterfeiter/proc/matter_toggle(mob/living/user)
+	if(!can_use || !saved_name)
+		return
+	playsound(get_turf(src), 'sound/effects/pop.ogg', 100, TRUE, -6)
+	add_fingerprint(user)
+	if(dummy_active)
+		matter_deactivate()
+		to_chat(user, SPAN_NOTICE("You deactivate [src]."))
+	else
+		to_chat(user, SPAN_NOTICE("You activate [src]."))
+		matter_activate()
+
+/obj/item/chameleon_counterfeiter/proc/matter_activate()
+	name = saved_name
+	desc = saved_desc
+	icon = saved_icon
+	icon_state = saved_icon_state
+	worn_icon = saved_worn_icon
+	worn_icon_state = saved_icon_state
+	inhand_icon_state = saved_inhand_icon_state
+	overlays = saved_overlays
+	underlays = saved_underlays
+	dummy_active = TRUE
+
+/obj/item/chameleon_counterfeiter/proc/matter_deactivate()
+	name = initial(name)
+	desc = initial(desc)
+	icon = initial(icon)
+	icon_state = initial(icon_state)
+	worn_icon = initial(worn_icon)
+	worn_icon_state = initial(worn_icon_state)
+	inhand_icon_state = initial(inhand_icon_state)
+	overlays = initial(overlays)
+	underlays = initial(underlays)
+	dummy_active = FALSE
+	can_use = FALSE
+	addtimer(VARSET_CALLBACK(src, can_use, TRUE), 3 SECONDS)
+
+/obj/item/chameleon_counterfeiter/activate_self(mob/living/user)
+	if(..())
+		return ITEM_INTERACT_COMPLETE
+
+	matter_toggle(user)
+	return ITEM_INTERACT_COMPLETE

@@ -1,0 +1,23 @@
+@use '../colors.scss';
+
+.AccountsUplinkTerminal__list {
+  tr > td {
+    text-align: center;
+  }
+
+  tr:not(:first-child) {
+    cursor: var(--cursor-pointer);
+    line-height: 24px;
+    height: 24px;
+    transition: background-color var(--transition-time-fast);
+
+    &:hover,
+    &:focus {
+      background-color: var(--color-base);
+    }
+  }
+}
+
+.AccountsUplinkTerminal__listRow--SUSPENDED {
+  background-color: colors.bg(hsl(347.5, 80%, 30%));
+}

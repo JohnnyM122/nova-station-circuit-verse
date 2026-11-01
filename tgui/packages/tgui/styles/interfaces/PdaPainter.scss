@@ -1,0 +1,17 @@
+.PdaPainter__list {
+  tr > td {
+    text-align: center;
+  }
+
+  tr {
+    cursor: var(--cursor-pointer);
+    height: 24px;
+    line-height: 24px;
+    transition: background-color var(--transition-time-fast);
+
+    &:hover,
+    &:focus {
+      background-color: var(--color-base);
+    }
+  }
+}

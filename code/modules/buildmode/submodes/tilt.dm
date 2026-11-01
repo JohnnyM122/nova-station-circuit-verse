@@ -1,0 +1,72 @@
+/datum/buildmode_mode/tilting
+	key = "tilt"
+
+	/// The thing we're tilting over
+	var/atom/movable/tilter
+	var/crush_damage = 25
+	var/crit_chance = 0
+	var/datum/tilt_crit/forced_crit
+	var/weaken_time = 4 SECONDS
+	var/knockdown_time = 14 SECONDS
+	var/ignore_gravity = TRUE
+	var/should_rotate = TRUE
+	var/rotation_angle
+	var/rightable = TRUE
+	var/block_interactions_until_righted = TRUE
+
+
+
+/datum/buildmode_mode/tilting/show_help(mob/user)
+	to_chat(user, SPAN_NOTICE("***********************************************************"))
+	to_chat(user, SPAN_NOTICE("Left Mouse Button on obj/mob      = Select atom to tilt"))
+	to_chat(user, SPAN_NOTICE("Right Mouse Button on turf/obj/mob = Tilt selected atom onto target"))
+	to_chat(user, SPAN_NOTICE("Right Mouse Button + Alt          = Untilt selected atom"))
+	to_chat(user, SPAN_WARNING("Right-click the main action button to customize tilting behavior."))
+	to_chat(user, SPAN_NOTICE("***********************************************************"))
+
+/datum/buildmode_mode/tilting/change_settings(mob/user)
+	crush_damage = tgui_input_number(user, "Crush Damage", "Damage", initial(crush_damage))
+	crit_chance = tgui_input_number(user, "Crit Chance (out of 100)", "Crit chance", 0)
+	if(crit_chance > 0)
+		var/forced_crit_path = tgui_input_list(user, "Force a specific crit?", "Forced Crit", list(GLOB.tilt_crits))
+		if(forced_crit_path)
+			forced_crit = GLOB.tilt_crits[forced_crit_path]
+	weaken_time = tgui_input_number(user, "How long to weaken (in seconds)?", "Weaken Time", 4)
+	weaken_time = weaken_time SECONDS
+	knockdown_time = tgui_input_number(user, "How long to knockdown (in seconds)?", "Knockdown Time", 12)
+	knockdown_time = knockdown_time SECONDS
+	ignore_gravity = tgui_alert(user, "Ignore gravity?", "Ignore gravity", list("Yes", "No")) == "Yes"
+	should_rotate = tgui_alert(user, "Should it rotate on falling?", "Should rotate", list("Yes", "No")) == "Yes"
+	if(should_rotate)
+		rotation_angle = tgui_input_number(user, "Which angle to rotate at? (if empty, defaults to 90 degrees in either direction)", "Rotation angle", 0)
+		rightable = tgui_alert(user, "Should it be rightable with alt-click?", "Rightable", list("Yes", "No")) == "Yes"
+		if(rightable)
+			block_interactions_until_righted = tgui_alert(user, "Should it block interactions until righted (by alt-clicking)?", "Block interactions", list("Yes", "No")) == "Yes"
+
+/datum/buildmode_mode/tilting/handle_click(mob/user, params, atom/movable/object)
+	var/list/pa = params2list(params)
+	var/left_click = pa.Find("left")
+	var/right_click = pa.Find("right")
+	var/alt_click = pa.Find("alt")
+
+	if(left_click)
+		if(!ismovable(object))
+			return
+		tilter = object
+		to_chat(user, "Selected object '[tilter]' to tilt.")
+	if(right_click)
+		if(!tilter)
+			to_chat(user, SPAN_WARNING("You need to select something to tilt (or untilt) first."))
+			return
+		if(tilter.GetComponent(/datum/component/tilted) && alt_click)
+			tilter.untilt(duration = 0)
+			log_admin("Build Mode: [key_name(user)] has righted [tilter] ([tilter.x],[tilter.y],[tilter.z])")
+			return
+
+		if(!object || isnull(get_turf(object)))
+			to_chat(user, SPAN_WARNING("You need to select a target first."))
+			return
+
+		tilter.fall_and_crush(get_turf(object), crush_damage, prob(crit_chance), 2, forced_crit, weaken_time, knockdown_time, ignore_gravity, should_rotate, rotation_angle, rightable, block_interactions_until_righted)
+
+		log_admin("Build Mode: [key_name(user)] tilted [tilter] onto [ADMIN_COORDJMP(object)]")

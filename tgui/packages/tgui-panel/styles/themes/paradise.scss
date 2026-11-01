@@ -1,0 +1,21 @@
+@use 'sass:meta';
+
+.theme-paradise:root {
+  // Base
+  --color-base: hsl(340, 80%, 30%);
+  --color-section: hsla(0, 0%, 0%, 0.5);
+  --color-base-start: hsl(325, 98%, 25%);
+  --color-base-end: hsl(30, 80%, 30%);
+  --color-primary: hsl(180, 60%, 30%);
+  --color-label: hsl(25, 20%, 60%);
+
+  // Components
+  --reconnect-background: hsl(0, 70%, 50%);
+  --reconnect-text: var(--color-text);
+  --input-border-color: hsl(15, 80%, 55%);
+  --button-background-selected: hsl(20, 60%, 52.5%);
+  --button-background-danger: hsl(270, 100%, 60%);
+
+  // Goonchat styles
+  @include meta.load-css('../tgchat/chat-paradise.scss');
+}

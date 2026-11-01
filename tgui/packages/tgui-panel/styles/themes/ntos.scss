@@ -1,0 +1,11 @@
+@use 'sass:meta';
+
+.theme-ntos:root {
+  // Base
+  --color-base: hsl(212.5, 30%, 15%);
+  --color-section: hsl(215, 30%, 10%);
+  --color-primary: hsl(212.5, 30%, 40%);
+
+  // Chat styles
+  @include meta.load-css('../tgchat/chat-ntos.scss');
+}

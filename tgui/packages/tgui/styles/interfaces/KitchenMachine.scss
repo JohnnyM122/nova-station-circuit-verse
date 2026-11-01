@@ -1,0 +1,9 @@
+.Ingredient__Table {
+  tr:nth-child(even) {
+    background-color: hsla(from var(--color-base) h s calc(l + var(--adjust-color)) / 0.5);
+  }
+
+  td {
+    padding: var(--space-s) var(--space-m);
+  }
+}

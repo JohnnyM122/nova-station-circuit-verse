@@ -1,0 +1,350 @@
+/obj/structure/door_assembly
+	name = "airlock assembly"
+	icon = 'icons/obj/doors/airlocks/station/public.dmi'
+	icon_state = "construction"
+	density = TRUE
+	max_integrity = 200
+	cares_about_temperature = TRUE
+	var/overlays_file = 'icons/obj/doors/airlocks/station/overlays.dmi'
+	var/state = AIRLOCK_ASSEMBLY_NEEDS_WIRES
+	/// String value. Used in user chat messages
+	var/mineral
+	/// mineral object path.
+	var/mineral_type
+
+	var/base_name = "airlock"
+	var/obj/item/airlock_electronics/electronics
+	var/airlock_type = /obj/machinery/door/airlock //the type path of the airlock once completed
+	var/glass_type = /obj/machinery/door/airlock/glass
+	var/glass = FALSE // FALSE = glass can be installed. TRUE = glass is already installed.
+	var/polarized_glass = FALSE
+	var/created_name
+	var/reinforced_glass = FALSE // FALSE = rglass can be installed. TRUE = rglass is already installed.
+	var/noglass = FALSE //airlocks with no glass version, also cannot be modified with sheets
+	var/material_type = /obj/item/stack/sheet/metal
+	var/material_amt = 4
+	var/heat_resistance = 1000
+
+/obj/structure/door_assembly/Initialize(mapload)
+	. = ..()
+	update_appearance(UPDATE_NAME | UPDATE_OVERLAYS)
+	var/direction = get_current_direction()
+	dir = direction ? direction : NORTH
+	update_icon()
+
+/obj/structure/door_assembly/Destroy()
+	QDEL_NULL(electronics)
+	return ..()
+
+/obj/structure/door_assembly/proc/get_current_direction()
+	for(var/direction in GLOB.cardinal)
+		if(iswallturf(get_step(src, direction)))
+			return direction
+	for(var/direction in GLOB.cardinal)
+		var/obj/effect/spawner/window/W = locate(/obj/effect/spawner/window) in get_step(src, direction)
+		if(W?.useFull)
+			return direction
+	for(var/direction in GLOB.cardinal)
+		if((locate(/obj/structure/window/full) in get_step(src, direction)))
+			return direction
+	for(var/direction in GLOB.cardinal)
+		var/turf/T = get_step(src, direction)
+		for(var/obj/machinery/door/airlock/A in T.contents)
+			if(A != src)
+				return direction
+	return dir // Fallback from mapping.
+
+/obj/structure/door_assembly/examine(mob/user)
+	. = ..()
+	if(!anchored)
+		. += SPAN_NOTICE("You can <b>Alt-Click</b> [src] to rotate it.")
+	var/doorname = ""
+	if(created_name)
+		doorname = ", written on it is '[created_name]'"
+	switch(state)
+		if(AIRLOCK_ASSEMBLY_NEEDS_WIRES)
+			if(anchored)
+				. += SPAN_NOTICE("The anchoring bolts are <b>wrenched</b> in place, but the maintenance panel lacks <i>wiring</i>.")
+			else
+				. += SPAN_NOTICE("The assembly is <b>welded together</b>, but the anchoring bolts are <i>unwrenched</i>.")
+		if(AIRLOCK_ASSEMBLY_NEEDS_ELECTRONICS)
+			. += SPAN_NOTICE("The maintenance panel is <b>wired</b>, but the circuit slot is <i>empty</i>.")
+		if(AIRLOCK_ASSEMBLY_NEEDS_SCREWDRIVER)
+			. += SPAN_NOTICE("The circuit is <b>connected loosely</b> to its slot, but the maintenance panel is <i>unscrewed and open</i>.")
+			if(glass)
+				. += SPAN_NOTICE("The assembly has its electrochromic windows <b>[polarized_glass ? "enabled" : "disabled"]</b> and can be <i>configured</i>.")
+	if(!glass && !noglass)
+		. += SPAN_NOTICE("There is a small <i>paper</i> placard on the assembly[doorname]. There are <i>empty</i> slots for glass windows.")
+	else
+		. += SPAN_NOTICE("There is a small <i>paper</i> placard on the assembly[doorname].")
+
+/obj/structure/door_assembly/AltClick(mob/user)
+	if(src.anchored)
+		return
+	if(user.stat || HAS_TRAIT(user, TRAIT_HANDS_BLOCKED) || !Adjacent(user) || is_ventcrawling(user))
+		return
+
+	rotate()
+
+/obj/structure/door_assembly/proc/rotate()
+	setDir(turn(dir, 90))
+
+/obj/structure/door_assembly/item_interaction(mob/living/user, obj/item/W, list/modifiers)
+	. = ITEM_INTERACT_COMPLETE
+	if(is_pen(W))
+		// The door assembly gets renamed to "Assembly - Foobar",
+		// but the `t` returned from the proc is just "Foobar" without the prefix.
+		var/t = rename_interactive(user, W)
+		if(!isnull(t))
+			created_name = t
+		return
+
+	else if(iscoil(W) && state == AIRLOCK_ASSEMBLY_NEEDS_WIRES && anchored)
+		var/obj/item/stack/cable_coil/coil = W
+		if(coil.get_amount() < 1)
+			to_chat(user, SPAN_WARNING("You need one length of cable to wire the airlock assembly!"))
+			return
+		user.visible_message("[user] wires the airlock assembly.", "You start to wire the airlock assembly...")
+		if(do_after(user, 40 * coil.toolspeed, target = src))
+			if(coil.get_amount() < 1 || state != AIRLOCK_ASSEMBLY_NEEDS_WIRES)
+				return
+			coil.use(1)
+			state = AIRLOCK_ASSEMBLY_NEEDS_ELECTRONICS
+			to_chat(user, SPAN_NOTICE("You wire the airlock assembly."))
+
+	else if(istype(W, /obj/item/airlock_electronics) && state == AIRLOCK_ASSEMBLY_NEEDS_ELECTRONICS && !istype(W, /obj/item/airlock_electronics/destroyed))
+		playsound(loc, W.usesound, 100, 1)
+		user.visible_message("[user] installs the electronics into the airlock assembly.", "You start to install electronics into the airlock assembly...")
+
+		if(do_after(user, 40 * W.toolspeed, target = src))
+			var/obj/item/airlock_electronics/new_electronics = W
+			if(state != AIRLOCK_ASSEMBLY_NEEDS_ELECTRONICS || new_electronics.is_installed)
+				return
+			user.drop_item()
+			new_electronics.forceMove(src)
+			to_chat(user, SPAN_NOTICE("You install the airlock electronics."))
+			state = AIRLOCK_ASSEMBLY_NEEDS_SCREWDRIVER
+			name = "near finished airlock assembly"
+			electronics = new_electronics
+			electronics.is_installed = TRUE
+
+	else if(istype(W, /obj/item/stack/sheet) && (!glass || !mineral))
+		var/obj/item/stack/sheet/S = W
+		if(S)
+			if(S.get_amount() >= 1)
+				if(!noglass)
+					if(!glass)
+						if(istype(S, /obj/item/stack/sheet/rglass) || istype(S, /obj/item/stack/sheet/glass))
+							playsound(loc, S.usesound, 100, 1)
+							user.visible_message("[user] adds [S.name] to the airlock assembly.", "You start to install [S.name] into the airlock assembly...")
+							if(do_after(user, 40 * S.toolspeed, target = src))
+								if(S.get_amount() < 1 || glass)
+									return
+								if(S.type == /obj/item/stack/sheet/rglass)
+									to_chat(user, SPAN_NOTICE("You install reinforced glass windows into the airlock assembly."))
+									reinforced_glass = TRUE
+								else
+									to_chat(user, SPAN_NOTICE("You install regular glass windows into the airlock assembly."))
+								S.use(1)
+								glass = TRUE
+					else
+						to_chat(user, SPAN_WARNING("You cannot add [S] to [src]!"))
+				else
+					to_chat(user, SPAN_WARNING("You cannot add [S] to [src]!"))
+	else
+		return ..()
+	update_appearance(UPDATE_NAME | UPDATE_OVERLAYS)
+
+/obj/structure/door_assembly/crowbar_act(mob/user, obj/item/I)
+	if(state != AIRLOCK_ASSEMBLY_NEEDS_SCREWDRIVER)
+		return
+	. = TRUE
+	if(!I.tool_use_check(user, 0))
+		return
+	user.visible_message("[user] is removing the electronics from the airlock assembly...", "You start to remove electronics from the airlock assembly...")
+	if(!I.use_tool(src, user, 40, volume = I.tool_volume) || state != AIRLOCK_ASSEMBLY_NEEDS_SCREWDRIVER)
+		return
+	to_chat(user, SPAN_NOTICE("You remove the airlock electronics."))
+	state = AIRLOCK_ASSEMBLY_NEEDS_ELECTRONICS
+	name = "wired airlock assembly"
+	var/obj/item/airlock_electronics/ae
+	if(!electronics)
+		ae = new/obj/item/airlock_electronics(loc)
+	else
+		ae = electronics
+		electronics = null
+		ae.forceMove(loc)
+		ae.is_installed = FALSE
+	update_appearance(UPDATE_NAME | UPDATE_OVERLAYS)
+
+/obj/structure/door_assembly/screwdriver_act(mob/user, obj/item/I)
+	if(state != AIRLOCK_ASSEMBLY_NEEDS_SCREWDRIVER)
+		return
+	. = TRUE
+	if(!I.tool_use_check(user, 0))
+		return
+	user.visible_message("[user] is finishing the airlock...", \
+							SPAN_NOTICE("You start finishing the airlock..."))
+	. = TRUE
+	if(!I.use_tool(src, user, 40, volume = I.tool_volume) || state != AIRLOCK_ASSEMBLY_NEEDS_SCREWDRIVER)
+		return
+	to_chat(user, SPAN_NOTICE("You finish the airlock."))
+	var/obj/machinery/door/airlock/door
+	if(glass || reinforced_glass)
+		door = new glass_type(loc)
+		door.polarized_glass = polarized_glass
+	else
+		door = new airlock_type(loc)
+	door.setDir(dir)
+	door.electronics = electronics
+	door.unres_sides = electronics.unres_access_from
+	if(electronics.one_access)
+		door.req_access = null
+		door.req_one_access = electronics.selected_accesses
+	else
+		door.req_access = electronics.selected_accesses
+	if(created_name)
+		door.name = created_name
+	else
+		door.name = base_name
+	electronics.forceMove(door)
+	electronics = null
+	qdel(src)
+	update_icon(UPDATE_OVERLAYS)
+
+/obj/structure/door_assembly/wirecutter_act(mob/user, obj/item/I)
+	if(state != AIRLOCK_ASSEMBLY_NEEDS_ELECTRONICS)
+		return
+	. = TRUE
+	if(!I.tool_use_check(user, 0))
+		return
+	user.visible_message("[user] is cutting the wires from the airlock assembly...", "You start to cut the wires from airlock assembly...")
+	if(!I.use_tool(src, user, 40, volume = I.tool_volume) || state != AIRLOCK_ASSEMBLY_NEEDS_ELECTRONICS)
+		return
+	to_chat(user, SPAN_NOTICE("You cut the wires from the airlock assembly."))
+	new/obj/item/stack/cable_coil(get_turf(user), 1)
+	state = AIRLOCK_ASSEMBLY_NEEDS_WIRES
+	update_icon(UPDATE_OVERLAYS)
+
+/obj/structure/door_assembly/wrench_act(mob/user, obj/item/I)
+	if(state != AIRLOCK_ASSEMBLY_NEEDS_WIRES)
+		return
+	. = TRUE
+	if(!I.tool_use_check(user, 0))
+		return
+	if(anchored)
+		user.visible_message("[user] is unsecuring the airlock assembly from the floor...", "You start to unsecure the airlock assembly from the floor...")
+	else
+		user.visible_message("[user] is securing the airlock assembly to the floor...", "You start to secure the airlock assembly to the floor...")
+	if(!I.use_tool(src, user, 40, volume = I.tool_volume) || state != AIRLOCK_ASSEMBLY_NEEDS_WIRES)
+		return
+	to_chat(user, SPAN_NOTICE("You [anchored ? "un" : ""]secure the airlock assembly."))
+	anchored = !anchored
+
+/obj/structure/door_assembly/welder_act(mob/user, obj/item/I)
+	. = TRUE
+	if(!I.tool_use_check(user, 0))
+		return
+	if(glass)
+		user.visible_message(SPAN_NOTICE("[user] welds the glass panel out of [src]."),\
+			SPAN_NOTICE("You start to weld the glass panel out of the [src]..."),\
+			SPAN_WARNING("You hear welding."))
+		if(!I.use_tool(src, user, 40, volume = I.tool_volume))
+			return
+		to_chat(user, SPAN_NOTICE("You weld the glass panel out."))
+		if(reinforced_glass)
+			new /obj/item/stack/sheet/rglass(get_turf(src))
+			reinforced_glass = FALSE
+		else
+			new /obj/item/stack/sheet/glass(get_turf(src))
+		glass = FALSE
+		polarized_glass = FALSE
+	else if(!anchored)
+		visible_message(SPAN_WARNING("[user] disassembles [src]."), \
+			SPAN_NOTICE("You start to disassemble [src]..."),\
+			SPAN_WARNING("You hear welding."))
+		if(!I.use_tool(src, user, 40, volume = I.tool_volume))
+			return
+		to_chat(user, SPAN_NOTICE("You disassemble the airlock assembly."))
+		deconstruct(TRUE)
+	update_icon(UPDATE_OVERLAYS)
+
+/obj/structure/door_assembly/multitool_act(mob/user, obj/item/I)
+	if(noglass)
+		return
+	. = TRUE
+	if(state != AIRLOCK_ASSEMBLY_NEEDS_SCREWDRIVER)
+		to_chat(user, SPAN_NOTICE("The airlock assembly needs its electronics before you can configure the electrochromic windows."))
+		return
+	if(!glass && !noglass)
+		to_chat(user, SPAN_NOTICE("The airlock assembly needs glass before you can configure the electrochromic windows."))
+		return
+
+	if(!I.tool_use_check(user, 0))
+		return
+	user.visible_message("[user] is configuring the windows in the airlock assembly...", "You start to configure the windows in the airlock assembly...")
+	if(!I.use_tool(src, user, 4 SECONDS, volume = I.tool_volume) || state != AIRLOCK_ASSEMBLY_NEEDS_SCREWDRIVER)
+		return
+
+	polarized_glass = !polarized_glass
+
+	to_chat(user, SPAN_NOTICE("You [polarized_glass ? "enable" : "disable"] the electrochromic windows in the airlock assembly."))
+
+/obj/structure/door_assembly/update_overlays()
+	. = ..()
+	if(!glass)
+		. += get_airlock_overlay("fill_construction", icon)
+	else if(glass)
+		. += get_airlock_overlay("glass_construction", overlays_file)
+	. += get_airlock_overlay("panel_c[state+1]", overlays_file)
+
+/obj/structure/door_assembly/update_name()
+	. = ..()
+	name = ""
+	switch(state)
+		if(AIRLOCK_ASSEMBLY_NEEDS_WIRES)
+			if(anchored)
+				name = "secured "
+		if(AIRLOCK_ASSEMBLY_NEEDS_ELECTRONICS)
+			name = "wired "
+		if(AIRLOCK_ASSEMBLY_NEEDS_SCREWDRIVER)
+			name = "near finished "
+	name += "[reinforced_glass ? "window " : ""][glass ? "window " : ""][base_name] assembly"
+
+/obj/structure/door_assembly/proc/transfer_assembly_vars(obj/structure/door_assembly/source, obj/structure/door_assembly/target, previous = FALSE)
+	target.glass = source.glass
+	target.reinforced_glass = source.reinforced_glass
+	target.created_name = source.created_name
+	target.state = source.state
+	target.anchored = source.anchored
+	if(electronics)
+		target.electronics = source.electronics
+		source.electronics.forceMove(target)
+	target.update_appearance(UPDATE_NAME|UPDATE_OVERLAYS)
+	qdel(source)
+
+/obj/structure/door_assembly/deconstruct(disassembled = TRUE)
+	if(!(flags & NODECONSTRUCT))
+		var/turf/T = get_turf(src)
+		var/to_spawn_type
+		if(mineral_type)
+			to_spawn_type = mineral_type
+		else
+			to_spawn_type = material_type
+		if(!disassembled)
+			material_amt = rand(2,4)
+		new to_spawn_type(T, material_amt)
+		if(glass)
+			if(disassembled)
+				if(reinforced_glass)
+					new /obj/item/stack/sheet/rglass(T)
+				else
+					new /obj/item/stack/sheet/glass(T)
+			else
+				new /obj/item/shard(T)
+	qdel(src)
+
+/obj/structure/door_assembly/temperature_expose(exposed_temperature, exposed_volume)
+	..()
+	if(exposed_temperature > (T0C + heat_resistance))
+		take_damage(round(exposed_volume / 100), BURN, 0, 0)

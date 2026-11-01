@@ -1,0 +1,92 @@
+/obj/structure/chair/e_chair
+	name = "electric chair"
+	desc = "Looks absolutely SHOCKING!"
+	icon_state = "echair0"
+	item_chair = null
+	var/obj/item/assembly/shock_kit/shocker = null
+	var/last_time = 1.0
+	var/delay_time = 50
+	var/shocking = FALSE
+
+/obj/structure/chair/e_chair/Initialize(mapload, obj/item/assembly/shock_kit/sk)
+	. = ..()
+	update_icon(UPDATE_OVERLAYS)
+
+	if(sk)
+		shocker = sk
+
+	if(isnull(shocker)) // This e-chair was not custom built.
+		shocker = new(src)
+		var/obj/item/clothing/head/helmet/attached_helmet = new(shocker)
+		var/obj/item/electropack/attached_electropack = new(shocker)
+		attached_electropack.integrated_signaler.frequency = 1445
+		attached_electropack.integrated_signaler.code = 6
+		attached_electropack.master = shocker
+		shocker.attached_helmet = attached_helmet
+		shocker.attached_electropack = attached_electropack
+
+/obj/structure/chair/e_chair/examine(mob/user)
+	. = ..()
+	. += SPAN_WARNING("You can <b>Alt-Click</b> [src] to activate it.")
+
+/obj/structure/chair/e_chair/wrench_act(mob/user, obj/item/I)
+	. = TRUE
+	var/obj/structure/chair/C = new /obj/structure/chair(loc)
+	I.play_tool_sound(src, 50)
+	C.dir = dir
+	shocker.loc = loc
+	shocker.master = null
+	shocker = null
+	visible_message(SPAN_WARNING("[user] deconstructs [src]."))
+	qdel(src)
+
+/obj/structure/chair/e_chair/AltClick(mob/user)
+	if(user.stat || HAS_TRAIT(user, TRAIT_HANDS_BLOCKED) || !Adjacent(user))
+		return
+	if(last_time + delay_time > world.time)
+		to_chat(user, SPAN_WARNING("[src] is not ready yet!"))
+		return
+	to_chat(user, SPAN_NOTICE("You activate [src]."))
+	shock()
+
+/obj/structure/chair/e_chair/rotate()
+	..()
+	update_icon(UPDATE_OVERLAYS)
+
+/obj/structure/chair/e_chair/update_icon_state()
+	icon_state = "echair[shocking]"
+
+/obj/structure/chair/e_chair/update_overlays()
+	. = ..()
+	. += image('icons/obj/chairs.dmi', src, "echair_over", MOB_LAYER + 1, dir)
+
+/obj/structure/chair/e_chair/proc/shock()
+	if(last_time + delay_time > world.time)
+		return
+	last_time = world.time
+
+	shocking = TRUE
+	update_icon(UPDATE_ICON_STATE)
+	spawn(delay_time)
+		shocking = FALSE
+		update_icon(UPDATE_ICON_STATE)
+
+	// special power handling
+	var/area/A = get_area(src)
+	if(!isarea(A))
+		return
+	if(!A.powernet.has_power(PW_CHANNEL_EQUIPMENT))
+		return
+	A.powernet.use_active_power(PW_CHANNEL_EQUIPMENT, 5000)
+	A.update_icon(UPDATE_ICON_STATE)
+
+	flick("echair_shock", src)
+	do_sparks(12, 1, src)
+	visible_message(SPAN_DANGER("The electric chair went off!"), SPAN_DANGER("You hear a deep sharp shock!"))
+	if(has_buckled_mobs())
+		for(var/m in buckled_mobs)
+			var/mob/living/buckled_mob = m
+			buckled_mob.electrocute_act(110, src, 1)
+			to_chat(buckled_mob, SPAN_DANGER("You feel a deep shock course through your body!"))
+			spawn(1)
+				buckled_mob.electrocute_act(110, src, 1)

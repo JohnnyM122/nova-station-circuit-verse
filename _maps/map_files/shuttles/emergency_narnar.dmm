@@ -1,0 +1,1229 @@
+//MAP CONVERTED BY dmm2tgm.py THIS HEADER COMMENT PREVENTS RECONVERSION, DO NOT REMOVE
+"aa" = (
+/obj/machinery/door/airlock/cult/glass/friendly,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"ab" = (
+/obj/structure/chair/comfy/cult/no_metal,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"ac" = (
+/obj/effect/decal/remains/robot,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"ad" = (
+/obj/machinery/computer/emergency_shuttle,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"ae" = (
+/obj/machinery/computer/security,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"af" = (
+/obj/effect/rune/wall,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"ag" = (
+/obj/machinery/computer/communications,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"ah" = (
+/mob/living/simple_animal/hostile/construct/wraith,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"aj" = (
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"ak" = (
+/obj/structure/cult/pylon,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"al" = (
+/turf/template_noop,
+/area/template_noop)
+"am" = (
+/obj/effect/decal/remains/human{
+	desc = "This guy seemed to have died in terrible way! Half his remains are dust.";
+	name = "Human remains"
+	},
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"an" = (
+/obj/machinery/computer/robotics{
+	dir = 4
+	},
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"ao" = (
+/turf/simulated/wall/cult/artificer,
+/area/shuttle/escape)
+"ap" = (
+/obj/item/radio/intercom{
+	pixel_y = 28
+	},
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"ar" = (
+/obj/structure/table/reinforced/cult/no_metal,
+/obj/item/clothing/shoes/cult,
+/obj/item/clothing/suit/hooded/cultrobes/alt,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"as" = (
+/obj/machinery/computer/crew,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"at" = (
+/obj/structure/cult/forge,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"au" = (
+/obj/effect/rune/convert,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"av" = (
+/obj/item/flag/cult,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"aw" = (
+/obj/machinery/computer/card,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"ax" = (
+/obj/structure/closet/walllocker/emerglocker/directional/west,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"ay" = (
+/obj/structure/table/reinforced/cult/no_metal,
+/obj/machinery/recharger{
+	pixel_y = 5
+	},
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"az" = (
+/obj/structure/cult/altar,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"aB" = (
+/obj/machinery/computer/med_data,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"aE" = (
+/obj/effect/decal/cleanable/blood/tracks/mapped{
+	dir = 1
+	},
+/obj/effect/decal/cleanable/blood/splatter,
+/obj/effect/decal/cleanable/blood/tracks/mapped{
+	dir = 10
+	},
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"aF" = (
+/obj/structure/chair/comfy/cult/no_metal{
+	dir = 4
+	},
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"aG" = (
+/obj/structure/table/reinforced/cult/no_metal,
+/obj/item/restraints/handcuffs,
+/obj/item/flash,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"aH" = (
+/obj/machinery/door/airlock/cult/glass/friendly,
+/obj/structure/fans/tiny,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"aI" = (
+/obj/effect/decal/cleanable/blood/writing,
+/obj/item/candle/eternal/lit,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"aJ" = (
+/obj/machinery/computer/secure_data,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"aK" = (
+/obj/effect/decal/remains/xeno,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"aL" = (
+/mob/living/simple_animal/hostile/construct/armoured,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"aM" = (
+/obj/machinery/status_display{
+	pixel_y = 30
+	},
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"aN" = (
+/mob/living/simple_animal/hostile/construct/builder,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"aO" = (
+/mob/living/simple_animal/hostile/construct/behemoth,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"aP" = (
+/obj/machinery/computer/atmos_alert{
+	dir = 8
+	},
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"aQ" = (
+/obj/machinery/computer/station_alert{
+	dir = 8
+	},
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"aS" = (
+/obj/effect/decal/cleanable/blood/tracks/mapped{
+	dir = 5
+	},
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"aV" = (
+/mob/living/simple_animal/hostile/construct/harvester,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"aW" = (
+/obj/structure/chair/comfy/cult/no_metal{
+	dir = 8
+	},
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"aX" = (
+/obj/structure/bed/roller,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"aY" = (
+/obj/effect/decal/cleanable/blood/gibs,
+/obj/effect/decal/cleanable/blood/splatter,
+/obj/effect/decal/cleanable/blood/tracks/mapped{
+	dir = 1
+	},
+/obj/effect/gibspawner/human,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"aZ" = (
+/obj/machinery/computer/operating{
+	dir = 8
+	},
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"bb" = (
+/obj/item/flag/cult,
+/obj/structure/extinguisher_cabinet{
+	pixel_y = 32
+	},
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"bc" = (
+/obj/effect/decal/cleanable/blood/gibs,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"bd" = (
+/obj/machinery/door/airlock/cult/glass/friendly,
+/obj/effect/decal/cleanable/blood/tracks/mapped{
+	dir = 1
+	},
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"be" = (
+/obj/item/radio/intercom{
+	pixel_y = 28
+	},
+/obj/structure/cult/pylon,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"bf" = (
+/obj/structure/bed,
+/obj/item/bedsheet/cult,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"bg" = (
+/obj/machinery/sleeper{
+	dir = 4
+	},
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"bh" = (
+/obj/structure/shuttle/engine/heater,
+/obj/structure/cult/forge,
+/obj/structure/window/reinforced{
+	dir = 1;
+	color = "red"
+	},
+/turf/simulated/floor/plating/airless,
+/area/shuttle/escape)
+"bi" = (
+/obj/structure/table/reinforced/cult/no_metal,
+/obj/item/candle/eternal/lit,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"bj" = (
+/obj/structure/shuttle/engine/propulsion,
+/turf/simulated/floor/plating/airless,
+/area/shuttle/escape)
+"bM" = (
+/obj/machinery/optable,
+/obj/effect/decal/cleanable/blood/gibs,
+/obj/effect/decal/cleanable/blood/splatter,
+/obj/effect/gibspawner/human,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"dw" = (
+/obj/machinery/computer/mech_bay_power_console{
+	dir = 1
+	},
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"dy" = (
+/obj/machinery/door/airlock/cult/glass/friendly{
+	dir = 4
+	},
+/obj/effect/mapping_helpers/airlock/access/all/command/general,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"dG" = (
+/obj/effect/rune/empower,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"el" = (
+/obj/item/radio/intercom{
+	pixel_y = 28
+	},
+/obj/structure/chair/comfy/cult/no_metal,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"eK" = (
+/obj/structure/chair/comfy/cult/no_metal{
+	dir = 1
+	},
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"fk" = (
+/obj/item/flag/cult,
+/obj/structure/extinguisher_cabinet{
+	pixel_x = -28
+	},
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"fQ" = (
+/obj/structure/table/reinforced/cult/no_metal,
+/obj/item/storage/firstaid/o2,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"hj" = (
+/obj/structure/table/reinforced/cult/no_metal,
+/obj/item/storage/firstaid/o2{
+	pixel_x = 4;
+	pixel_y = 6
+	},
+/obj/structure/extinguisher_cabinet{
+	pixel_y = 32
+	},
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"hs" = (
+/obj/item/radio/intercom{
+	pixel_x = -28
+	},
+/obj/structure/chair/comfy/cult/no_metal{
+	dir = 4
+	},
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"hM" = (
+/obj/docking_port/mobile/emergency{
+	dwidth = 15;
+	height = 17;
+	name = "Shuttle 667";
+	timid = 1;
+	width = 34
+	},
+/obj/machinery/door/airlock/cult/glass/friendly,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"jO" = (
+/obj/structure/chair/comfy/cult/no_metal,
+/obj/structure/extinguisher_cabinet{
+	pixel_y = 32
+	},
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"mQ" = (
+/obj/item/flag/cult,
+/obj/structure/extinguisher_cabinet{
+	pixel_x = 28
+	},
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"nj" = (
+/obj/effect/decal/cleanable/blood/tracks/mapped{
+	dir = 1
+	},
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"nr" = (
+/obj/structure/table/reinforced/cult/no_metal,
+/obj/item/radio/intercom{
+	pixel_y = 28
+	},
+/obj/machinery/recharger{
+	pixel_y = 5
+	},
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"qv" = (
+/obj/structure/window/reinforced{
+	dir = 1;
+	color = "red"
+	},
+/obj/structure/shuttle/engine/heater,
+/obj/structure/cult/forge,
+/turf/simulated/floor/plating/airless,
+/area/shuttle/escape)
+"rg" = (
+/obj/structure/showcase/horrific_experiment,
+/obj/effect/decal/cleanable/blood/tracks/mapped{
+	dir = 5
+	},
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"sS" = (
+/obj/machinery/status_display{
+	pixel_y = 30
+	},
+/obj/structure/chair/comfy/cult/no_metal,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"xj" = (
+/obj/structure/chair/comfy/cult/no_metal{
+	dir = 8
+	},
+/obj/structure/extinguisher_cabinet{
+	pixel_x = 28
+	},
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"xk" = (
+/obj/effect/rune/raise_dead,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"xP" = (
+/obj/effect/decal/cleanable/blood/tracks/mapped{
+	dir = 4
+	},
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"zN" = (
+/obj/machinery/computer/aifixer{
+	dir = 4
+	},
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"zP" = (
+/obj/effect/decal/cleanable/blood/tracks/mapped,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"Ac" = (
+/obj/item/candle/eternal/lit,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"AW" = (
+/obj/structure/table/reinforced/cult/no_metal,
+/obj/item/radio/intercom{
+	pixel_y = 28
+	},
+/obj/machinery/cell_charger{
+	pixel_y = 5
+	},
+/obj/item/stock_parts/cell/high{
+	pixel_y = 5
+	},
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"Cj" = (
+/obj/structure/table/reinforced/cult/no_metal,
+/obj/item/storage/firstaid/adv,
+/obj/item/storage/firstaid/adv{
+	pixel_x = 4;
+	pixel_y = 4
+	},
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"Cp" = (
+/obj/effect/decal/cleanable/blood/gibs,
+/obj/effect/decal/cleanable/blood/splatter,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"CL" = (
+/obj/effect/rune/malformed,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"Dq" = (
+/obj/structure/closet/fireaxecabinet{
+	pixel_x = 32
+	},
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"DO" = (
+/obj/item/melee/cultblade/dagger,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"Gi" = (
+/obj/structure/table/reinforced/cult/no_metal,
+/obj/item/reagent_containers/iv_bag/blood/o_minus,
+/obj/item/reagent_containers/iv_bag/blood/o_minus,
+/obj/item/reagent_containers/iv_bag/blood/o_minus,
+/obj/machinery/defibrillator_mount/loaded{
+	pixel_x = 32
+	},
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"GR" = (
+/obj/structure/window/full/reinforced{
+	color = "red"
+	},
+/turf/simulated/floor/plating,
+/area/shuttle/escape)
+"GU" = (
+/obj/structure/closet/walllocker/emerglocker/directional/south,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"Hy" = (
+/obj/structure/chair/comfy/cult/no_metal{
+	dir = 4
+	},
+/obj/structure/extinguisher_cabinet{
+	pixel_x = -28
+	},
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"Hz" = (
+/obj/machinery/door/airlock/cult/glass/friendly{
+	dir = 4
+	},
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"HF" = (
+/obj/item/radio/intercom{
+	pixel_y = 28
+	},
+/obj/structure/dresser,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"Ip" = (
+/obj/structure/table/reinforced/cult/no_metal,
+/obj/item/storage/toolbox/mechanical{
+	pixel_y = 5
+	},
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"Iw" = (
+/obj/machinery/mech_bay_recharge_port{
+	dir = 8
+	},
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"Lc" = (
+/obj/structure/closet/walllocker/emerglocker/directional/west,
+/obj/structure/chair/comfy/cult/no_metal{
+	dir = 4
+	},
+/obj/machinery/recharger/wallcharger{
+	pixel_y = 32
+	},
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"Lm" = (
+/obj/machinery/recharge_station,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"LV" = (
+/obj/effect/decal/remains/human{
+	desc = "This guy seemed to have died in terrible way! Half his remains are dust.";
+	name = "Human remains"
+	},
+/obj/effect/gibspawner/human,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"Mb" = (
+/obj/structure/table/reinforced/cult/no_metal,
+/obj/item/tome,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"MF" = (
+/obj/machinery/door/airlock/cult/glass/friendly{
+	dir = 4
+	},
+/obj/effect/mapping_helpers/airlock/access/any/security/doors,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"MR" = (
+/obj/effect/decal/cleanable/blood/tracks/mapped{
+	dir = 10
+	},
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"OM" = (
+/obj/machinery/door/airlock/cult/glass/friendly,
+/obj/effect/mapping_helpers/airlock/access/any/security/doors,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"Qu" = (
+/obj/effect/turf_decal/delivery/red/hollow,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"QF" = (
+/obj/structure/closet/walllocker/emerglocker/directional/east,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"Rc" = (
+/obj/machinery/status_display,
+/turf/simulated/wall/cult/artificer,
+/area/shuttle/escape)
+"RW" = (
+/obj/machinery/iv_drip,
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"SF" = (
+/obj/structure/table/reinforced/cult/no_metal,
+/obj/item/storage/surgical_tray,
+/obj/item/clothing/gloves/color/latex/nitrile{
+	color = "red"
+	},
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"UE" = (
+/obj/effect/decal/cleanable/blood/gibs,
+/obj/effect/decal/cleanable/blood/splatter,
+/obj/effect/decal/cleanable/blood/tracks/mapped{
+	dir = 10
+	},
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+"XC" = (
+/obj/effect/decal/cleanable/blood/innards,
+/obj/effect/decal/cleanable/blood/gibs/body,
+/obj/effect/rune/narsie{
+	used = 1
+	},
+/turf/simulated/floor/engine/cult,
+/area/shuttle/escape)
+
+(1,1,1) = {"
+al
+al
+al
+al
+al
+al
+al
+al
+al
+ao
+ao
+ao
+ao
+OM
+ao
+hM
+ao
+GR
+GR
+GR
+ao
+aa
+ao
+aa
+ao
+ao
+ao
+GR
+GR
+GR
+ao
+ao
+ao
+al
+"}
+(2,1,1) = {"
+al
+al
+al
+al
+al
+al
+al
+al
+ao
+ao
+Lc
+hs
+aF
+aj
+ao
+aM
+ak
+aF
+aF
+aF
+ak
+aj
+ax
+aj
+ao
+ak
+ab
+Mb
+bi
+ar
+eK
+ak
+ao
+ao
+"}
+(3,1,1) = {"
+al
+al
+ao
+ao
+ao
+ao
+al
+al
+ao
+sS
+aj
+am
+Ac
+aj
+GR
+aj
+aj
+aj
+aj
+aj
+aj
+aj
+aj
+aj
+ao
+HF
+aj
+aW
+aW
+aW
+aj
+dw
+qv
+bj
+"}
+(4,1,1) = {"
+al
+ao
+Rc
+an
+zN
+ao
+ao
+al
+ao
+ab
+am
+au
+am
+eK
+GR
+ab
+aj
+aj
+aj
+aj
+aj
+aj
+aj
+aj
+Hz
+aj
+aj
+aj
+CL
+aj
+aj
+Qu
+bh
+bj
+"}
+(5,1,1) = {"
+ao
+ao
+nr
+aW
+aW
+aG
+ao
+ao
+ao
+jO
+aj
+aj
+aj
+ak
+ao
+el
+aj
+am
+aj
+aj
+aj
+aj
+aj
+eK
+ao
+bf
+bf
+bf
+bf
+Lm
+Lm
+Iw
+bh
+bj
+"}
+(6,1,1) = {"
+GR
+aJ
+eK
+aj
+aj
+aj
+ak
+ao
+ao
+ao
+GR
+OM
+GR
+ao
+ao
+ab
+aj
+aj
+aj
+am
+aj
+aK
+aj
+eK
+ao
+ao
+ao
+ao
+ao
+ao
+ao
+ao
+ao
+ao
+"}
+(7,1,1) = {"
+GR
+ae
+eK
+aj
+aj
+aj
+GU
+ao
+ay
+fQ
+aj
+aj
+ak
+ao
+fk
+aj
+aj
+aL
+aI
+aj
+aI
+aN
+aj
+aj
+Hy
+aF
+aF
+aF
+ak
+at
+at
+av
+ao
+al
+"}
+(8,1,1) = {"
+GR
+aw
+eK
+aj
+Ac
+aj
+af
+ao
+av
+aj
+aj
+aj
+aj
+ao
+aj
+aj
+aj
+aI
+aj
+aj
+aj
+aI
+aj
+aj
+aj
+aj
+aj
+aj
+aj
+aj
+aj
+az
+GR
+al
+"}
+(9,1,1) = {"
+GR
+ad
+eK
+aj
+az
+aj
+af
+dy
+aj
+aj
+LV
+aj
+aj
+MF
+aj
+aj
+ah
+aj
+aj
+XC
+aj
+aj
+am
+aj
+aj
+Ac
+dG
+Ac
+dG
+DO
+aj
+az
+GR
+al
+"}
+(10,1,1) = {"
+GR
+ag
+eK
+aj
+Ac
+aj
+af
+ao
+bb
+aj
+aj
+aj
+aj
+ao
+aj
+aj
+aj
+aI
+aj
+aj
+aj
+aI
+aj
+aj
+aj
+aj
+aj
+aj
+aj
+aj
+aj
+az
+GR
+al
+"}
+(11,1,1) = {"
+GR
+as
+eK
+aj
+am
+aj
+GU
+ao
+bi
+Dq
+aj
+aj
+ak
+ao
+mQ
+aj
+aj
+aO
+aI
+aj
+aI
+aV
+aj
+aj
+xj
+aW
+aW
+aW
+ak
+at
+at
+av
+ao
+al
+"}
+(12,1,1) = {"
+GR
+aB
+eK
+aj
+aj
+aj
+ak
+ao
+ao
+ao
+GR
+OM
+GR
+ao
+ao
+ab
+aj
+aj
+aj
+am
+aj
+xP
+aj
+eK
+ao
+ao
+ao
+ao
+ao
+ao
+ao
+ao
+ao
+ao
+"}
+(13,1,1) = {"
+ao
+ao
+AW
+aF
+aF
+Ip
+ao
+ao
+ao
+hj
+aj
+aj
+aj
+ak
+ao
+ab
+aj
+ac
+aj
+aj
+aj
+xP
+aj
+eK
+GR
+Cj
+aX
+aX
+aX
+RW
+bg
+bg
+bh
+bj
+"}
+(14,1,1) = {"
+al
+ao
+Rc
+aP
+aQ
+ao
+ao
+al
+ao
+ab
+aj
+au
+aj
+eK
+GR
+ab
+aj
+aj
+aj
+aj
+am
+aS
+zP
+nj
+bd
+MR
+bc
+bc
+xk
+Ac
+aj
+aj
+bh
+bj
+"}
+(15,1,1) = {"
+al
+al
+ao
+ao
+ao
+ao
+al
+al
+ao
+ab
+aj
+aj
+ac
+eK
+GR
+aj
+aj
+aj
+aj
+aj
+aj
+aj
+aj
+aj
+GR
+aS
+aE
+aY
+UE
+Cp
+aj
+aj
+bh
+bj
+"}
+(16,1,1) = {"
+al
+al
+al
+al
+al
+al
+al
+al
+ao
+ao
+ap
+aj
+aj
+bi
+ao
+aM
+ak
+aW
+aW
+aW
+ak
+aj
+QF
+aj
+ao
+be
+rg
+aZ
+bM
+SF
+Gi
+ak
+ao
+ao
+"}
+(17,1,1) = {"
+al
+al
+al
+al
+al
+al
+al
+al
+al
+ao
+aH
+ao
+aH
+ao
+ao
+GR
+ao
+GR
+GR
+GR
+ao
+GR
+ao
+GR
+ao
+ao
+ao
+GR
+GR
+GR
+ao
+ao
+ao
+al
+"}

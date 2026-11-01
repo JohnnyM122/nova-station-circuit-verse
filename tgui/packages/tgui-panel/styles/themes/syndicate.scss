@@ -1,0 +1,21 @@
+@use 'sass:meta';
+
+.theme-syndicate:root {
+  // Base
+  --color-base: hsl(0, 95%, 15.5%);
+  --color-section: hsl(0, 95%, 8.6%);
+  --color-primary: hsl(120, 34%, 35%);
+  --color-label: hsl(0, 20%, 60%);
+
+  // Components
+  --button-background-selected: hsl(0, 90%, 37.5%);
+  --button-background-caution: hsl(28, 87%, 39%);
+  --button-background-danger: hsl(61, 100%, 30%);
+  --notice-box-background: hsl(0, 98%, 28%);
+  --notice-box-color: var(--color-text-fixed-white);
+  --progress-bar-background: hsla(0, 0%, 0%, 0.5);
+  --tooltip-background-lightness: 25;
+
+  // Chat styles
+  @include meta.load-css('../tgchat/chat-syndicate.scss');
+}

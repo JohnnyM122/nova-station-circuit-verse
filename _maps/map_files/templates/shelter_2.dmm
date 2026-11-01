@@ -1,0 +1,243 @@
+//MAP CONVERTED BY dmm2tgm.py THIS HEADER COMMENT PREVENTS RECONVERSION, DO NOT REMOVE
+"aa" = (
+/turf/simulated/wall/mineral/titanium/survival,
+/area/survivalpod/luxurypod)
+"ab" = (
+/obj/structure/sign/mining/survival{
+	dir = 8
+	},
+/turf/simulated/wall/mineral/titanium/survival,
+/area/survivalpod/luxurypod)
+"ac" = (
+/obj/machinery/smartfridge/survival_pod,
+/turf/simulated/floor/pod,
+/area/survivalpod/luxurypod)
+"ad" = (
+/turf/simulated/floor/pod,
+/area/survivalpod/luxurypod)
+"ae" = (
+/obj/machinery/door/window/survival_pod{
+	dir = 1
+	},
+/turf/simulated/floor/carpet/black,
+/area/survivalpod/luxurypod)
+"af" = (
+/obj/machinery/light,
+/turf/simulated/floor/carpet/black,
+/area/survivalpod/luxurypod)
+"ag" = (
+/obj/structure/sign/mining/survival{
+	dir = 1
+	},
+/turf/simulated/wall/mineral/titanium/survival,
+/area/survivalpod/luxurypod)
+"ah" = (
+/obj/structure/fans,
+/turf/simulated/floor/pod,
+/area/survivalpod/luxurypod)
+"aj" = (
+/obj/structure/table/survival_pod,
+/obj/item/storage/firstaid/regular,
+/obj/item/storage/firstaid/brute{
+	pixel_x = 4;
+	pixel_y = -2
+	},
+/turf/simulated/floor/pod,
+/area/survivalpod/luxurypod)
+"ak" = (
+/obj/structure/table/wood/fancy/black{
+	pixel_y = -9
+	},
+/obj/structure/window/reinforced/survival_pod{
+	dir = 1
+	},
+/obj/machinery/kitchen_machine/microwave,
+/turf/simulated/floor/carpet/black,
+/area/survivalpod/luxurypod)
+"am" = (
+/obj/structure/sign/mining/survival,
+/turf/simulated/wall/mineral/titanium/survival,
+/area/survivalpod/luxurypod)
+"ao" = (
+/obj/structure/window/reinforced/survival_pod{
+	dir = 8;
+	pixel_y = -8
+	},
+/obj/machinery/door/window/survival_pod{
+	dir = 1
+	},
+/turf/simulated/floor/carpet/black,
+/area/survivalpod/luxurypod)
+"aq" = (
+/obj/structure/window/reinforced/survival_pod{
+	dir = 8;
+	pixel_y = -8
+	},
+/turf/simulated/floor/carpet/black,
+/area/survivalpod/luxurypod)
+"ar" = (
+/turf/simulated/floor/carpet/black,
+/area/survivalpod/luxurypod)
+"as" = (
+/obj/item/gps/computer,
+/turf/simulated/floor/pod,
+/area/survivalpod/luxurypod)
+"at" = (
+/obj/structure/bed/pod,
+/obj/item/bedsheet/brown,
+/turf/simulated/floor/pod,
+/area/survivalpod/luxurypod)
+"au" = (
+/obj/structure/tubes,
+/obj/item/kirbyplants/large,
+/turf/simulated/floor/pod,
+/area/survivalpod/luxurypod)
+"av" = (
+/obj/structure/window/reinforced/survival_pod{
+	dir = 1
+	},
+/obj/structure/displaycase{
+	desc = "A display case containing an expensive forgery, probably.";
+	pixel_y = -4;
+	start_showpiece_type = /obj/item/fakeartefact;
+	req_access = list(48)
+	},
+/turf/simulated/floor/carpet/black{
+	dir = 1
+	},
+/area/survivalpod/luxurypod)
+"ax" = (
+/obj/structure/sign/mining/survival{
+	dir = 4
+	},
+/turf/simulated/wall/mineral/titanium/survival,
+/area/survivalpod/luxurypod)
+"az" = (
+/obj/structure/window/reinforced/survival_pod{
+	dir = 1
+	},
+/obj/item/cardboard_cutout{
+	desc = "A cardboard cutout of a xenomorph maid.";
+	icon_state = "cutout_lusty";
+	name = "lusty xenomorph maid"
+	},
+/turf/simulated/floor/carpet/black,
+/area/survivalpod/luxurypod)
+"aA" = (
+/obj/structure/table/wood/fancy/black,
+/obj/machinery/light{
+	dir = 4
+	},
+/obj/item/reagent_containers/drinks/drinkingglass{
+	pixel_x = 6;
+	pixel_y = 3
+	},
+/obj/item/reagent_containers/drinks/bottle/wine,
+/turf/simulated/floor/carpet/black,
+/area/survivalpod/luxurypod)
+"aB" = (
+/obj/structure/table/wood/fancy/black,
+/obj/item/reagent_containers/drinks/drinkingglass{
+	pixel_x = -4;
+	pixel_y = 1
+	},
+/obj/effect/spawner/random/food_or_drink/three_course_meal,
+/turf/simulated/floor/carpet/black,
+/area/survivalpod/luxurypod)
+"aC" = (
+/obj/structure/chair/comfy/black{
+	dir = 1
+	},
+/turf/simulated/floor/carpet/black,
+/area/survivalpod/luxurypod)
+"aD" = (
+/obj/structure/sign/mining,
+/turf/simulated/wall/mineral/titanium/survival,
+/area/survivalpod/luxurypod)
+"aF" = (
+/obj/machinery/sleeper/survival_pod,
+/obj/machinery/economy/vending/wallmed/directional/west,
+/turf/simulated/floor/pod,
+/area/survivalpod/luxurypod)
+"aL" = (
+/obj/structure/sink/kitchen/directional/west,
+/turf/simulated/floor/carpet/black,
+/area/survivalpod/luxurypod)
+"fL" = (
+/obj/structure/fans/tiny,
+/obj/machinery/door/airlock/survival_pod/glass/manual_rotation,
+/turf/simulated/floor/pod,
+/area/survivalpod/luxurypod)
+"hp" = (
+/obj/structure/toilet/directional/north,
+/turf/simulated/floor/pod,
+/area/survivalpod/luxurypod)
+"pv" = (
+/obj/structure/curtain/black,
+/obj/machinery/shower/directional/north,
+/turf/simulated/floor/pod,
+/area/survivalpod/luxurypod)
+
+(1,1,1) = {"
+aa
+ab
+aa
+ab
+aa
+ab
+aa
+"}
+(2,1,1) = {"
+ag
+ah
+aF
+aj
+ak
+aL
+am
+"}
+(3,1,1) = {"
+aa
+ac
+ad
+ad
+ae
+af
+aa
+"}
+(4,1,1) = {"
+ag
+as
+at
+au
+av
+ar
+fL
+"}
+(5,1,1) = {"
+aa
+pv
+ao
+aq
+ar
+ar
+aa
+"}
+(6,1,1) = {"
+ag
+hp
+az
+aA
+aB
+aC
+aD
+"}
+(7,1,1) = {"
+aa
+ax
+aa
+ax
+aa
+ax
+aa
+"}

@@ -1,0 +1,22 @@
+.NanoMap__container {
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+.NanoMap__marker {
+  z-index: 10;
+  padding: 0px;
+  margin: 0px;
+}
+
+.NanoMap__zoomer {
+  z-index: 20;
+  background-color: var(--color-section);
+  position: absolute;
+  top: 30px;
+  left: 0;
+  padding: 0.5rem;
+  width: 24%;
+}

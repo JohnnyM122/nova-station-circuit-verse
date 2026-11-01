@@ -1,0 +1,602 @@
+//MAP CONVERTED BY dmm2tgm.py THIS HEADER COMMENT PREVENTS RECONVERSION, DO NOT REMOVE
+"at" = (
+/obj/structure/sign/vacuum/external{
+	pixel_y = -32
+	},
+/obj/effect/spawner/random/dirt/often,
+/turf/simulated/floor/plating,
+/area/shuttle/abandoned)
+"bE" = (
+/obj/effect/spawner/random/pool/whiteship_mob,
+/turf/simulated/floor/mineral/titanium,
+/area/shuttle/abandoned)
+"cf" = (
+/obj/effect/spawner/random/oil/often,
+/obj/machinery/atmospherics/pipe/simple/hidden{
+	dir = 6
+	},
+/obj/effect/spawner/random/pool/whiteship_mob,
+/turf/simulated/floor/plating,
+/area/shuttle/abandoned)
+"em" = (
+/obj/effect/spawner/airlock/w_to_e/long/square,
+/turf/simulated/wall/mineral/titanium,
+/area/shuttle/abandoned)
+"eE" = (
+/obj/machinery/computer/nonfunctional{
+	dir = 4
+	},
+/turf/simulated/floor/mineral/plastitanium,
+/area/shuttle/abandoned)
+"eW" = (
+/obj/structure/table,
+/obj/item/radio{
+	pixel_x = -6;
+	pixel_y = 6
+	},
+/obj/item/radio{
+	pixel_y = 4
+	},
+/obj/item/radio{
+	pixel_x = 6;
+	pixel_y = 6
+	},
+/turf/simulated/floor/mineral/titanium,
+/area/shuttle/abandoned)
+"gq" = (
+/obj/machinery/door/airlock/multi_tile/glass,
+/turf/simulated/floor/mineral/plastitanium,
+/area/shuttle/abandoned)
+"hz" = (
+/obj/structure/shuttle/engine/propulsion{
+	dir = 4;
+	icon_state = "burst_r"
+	},
+/turf/simulated/floor/plating/airless,
+/area/shuttle/abandoned)
+"jk" = (
+/obj/machinery/light/small{
+	dir = 1
+	},
+/turf/simulated/floor/mineral/titanium,
+/area/shuttle/abandoned)
+"ka" = (
+/turf/simulated/floor/wood,
+/area/shuttle/abandoned)
+"kO" = (
+/obj/structure/sign/poster/official/random/directional/north,
+/turf/simulated/floor/mineral/titanium,
+/area/shuttle/abandoned)
+"lp" = (
+/turf/simulated/floor/plating/airless,
+/area/shuttle/abandoned)
+"qK" = (
+/obj/structure/table/reinforced,
+/obj/item/whiteship_port_generator,
+/turf/simulated/floor/mineral/plastitanium,
+/area/shuttle/abandoned)
+"ri" = (
+/obj/structure/table,
+/obj/item/storage/toolbox/mechanical,
+/obj/item/multitool{
+	pixel_x = -6
+	},
+/turf/simulated/floor/plating,
+/area/shuttle/abandoned)
+"rB" = (
+/obj/machinery/light{
+	dir = 4
+	},
+/obj/structure/chair/comfy/shuttle{
+	dir = 8
+	},
+/turf/simulated/floor/mineral/plastitanium,
+/area/shuttle/abandoned)
+"sk" = (
+/obj/structure/sign/poster/official/random/directional/south,
+/turf/simulated/floor/mineral/titanium,
+/area/shuttle/abandoned)
+"ux" = (
+/turf/simulated/floor/plating,
+/area/shuttle/abandoned)
+"uA" = (
+/obj/structure/extinguisher_cabinet{
+	name = "north bump";
+	pixel_y = 30
+	},
+/turf/simulated/floor/mineral/titanium,
+/area/shuttle/abandoned)
+"vz" = (
+/obj/effect/spawner/random/dirt/often,
+/obj/machinery/atmospherics/pipe/simple/hidden{
+	dir = 5
+	},
+/turf/simulated/floor/mineral/titanium,
+/area/shuttle/abandoned)
+"vB" = (
+/turf/simulated/floor/mineral/titanium,
+/area/shuttle/abandoned)
+"wF" = (
+/turf/simulated/floor/mineral/plastitanium,
+/area/shuttle/abandoned)
+"xz" = (
+/obj/structure/chair/comfy/shuttle{
+	dir = 8
+	},
+/obj/effect/spawner/random/pool/whiteship_mob,
+/turf/simulated/floor/mineral/plastitanium,
+/area/shuttle/abandoned)
+"ys" = (
+/obj/structure/table,
+/obj/item/storage/box/lights/mixed,
+/obj/item/stock_parts/cell{
+	charge = 100;
+	maxcharge = 15000;
+	pixel_x = -3;
+	pixel_y = -3
+	},
+/turf/simulated/floor/plating,
+/area/shuttle/abandoned)
+"yC" = (
+/obj/docking_port/stationary/whiteship{
+	dir = 8;
+	id = "whiteship_away";
+	name = "Deep Space"
+	},
+/obj/docking_port/mobile/whiteship,
+/turf/simulated/floor/plating,
+/area/shuttle/abandoned)
+"yF" = (
+/obj/machinery/light/small,
+/turf/simulated/floor/mineral/titanium,
+/area/shuttle/abandoned)
+"zH" = (
+/obj/machinery/light/small,
+/obj/machinery/atmospherics/unary/portables_connector{
+	dir = 8
+	},
+/obj/machinery/atmospherics/portable/canister/air,
+/turf/simulated/floor/plating,
+/area/shuttle/abandoned)
+"zM" = (
+/turf/template_noop,
+/area/template_noop)
+"zO" = (
+/turf/simulated/wall/mineral/titanium,
+/area/shuttle/abandoned)
+"zV" = (
+/obj/structure/closet/crate,
+/obj/item/flashlight/flare,
+/obj/item/flashlight/flare,
+/obj/item/flashlight/flare,
+/obj/item/flashlight/flare/glowstick/blue,
+/obj/item/flashlight/flare/glowstick/blue,
+/obj/item/flashlight/flare/glowstick/blue,
+/turf/simulated/floor/mineral/titanium,
+/area/shuttle/abandoned)
+"AS" = (
+/obj/machinery/light/small{
+	dir = 4
+	},
+/obj/item/salvage/ruin/pirate,
+/turf/simulated/floor/mineral/titanium,
+/area/shuttle/abandoned)
+"CE" = (
+/obj/structure/shuttle/engine/heater{
+	dir = 4
+	},
+/obj/structure/window/reinforced{
+	dir = 8
+	},
+/turf/simulated/floor/plating/airless,
+/area/shuttle/abandoned)
+"Fr" = (
+/obj/effect/spawner/window/shuttle,
+/turf/simulated/floor/plating,
+/area/shuttle/abandoned)
+"FK" = (
+/obj/effect/map_effect/marker/mapmanip/submap/insert/space_ruin/white_ship/medbay,
+/turf/template_noop,
+/area/template_noop)
+"Gs" = (
+/obj/structure/table/reinforced,
+/obj/item/analyzer,
+/turf/simulated/floor/mineral/plastitanium,
+/area/shuttle/abandoned)
+"HU" = (
+/obj/effect/map_effect/marker/mapmanip/submap/insert/space_ruin/white_ship/storage,
+/turf/simulated/floor/plating,
+/area/shuttle/abandoned)
+"Kd" = (
+/obj/effect/spawner/random/dirt/often,
+/obj/machinery/atmospherics/pipe/simple/hidden,
+/turf/simulated/floor/mineral/titanium,
+/area/shuttle/abandoned)
+"Mp" = (
+/obj/item/gps/ruin{
+	gpstag = "NT Medical Ship";
+	pixel_x = -32
+	},
+/turf/simulated/floor/plating,
+/area/shuttle/abandoned)
+"Of" = (
+/turf/simulated/floor/mineral/titanium/blue,
+/area/shuttle/abandoned)
+"Pu" = (
+/obj/machinery/light/small{
+	dir = 1
+	},
+/obj/effect/spawner/random/dirt/often,
+/turf/simulated/floor/plating,
+/area/shuttle/abandoned)
+"Qb" = (
+/obj/effect/map_effect/marker/mapmanip/submap/insert/space_ruin/white_ship/gun_room,
+/turf/simulated/wall/mineral/titanium,
+/area/shuttle/abandoned)
+"SS" = (
+/obj/structure/chair/comfy/shuttle{
+	dir = 8
+	},
+/turf/simulated/floor/mineral/plastitanium,
+/area/shuttle/abandoned)
+"Vd" = (
+/obj/effect/spawner/random/dirt/often,
+/turf/simulated/floor/plating,
+/area/shuttle/abandoned)
+"Vi" = (
+/obj/effect/spawner/random/dirt/often,
+/obj/machinery/door/airlock/titanium{
+	dir = 4
+	},
+/obj/machinery/atmospherics/pipe/simple/hidden,
+/turf/simulated/floor/plating,
+/area/shuttle/abandoned)
+"Yr" = (
+/obj/machinery/computer/shuttle/white_ship{
+	dir = 4
+	},
+/turf/simulated/floor/mineral/plastitanium,
+/area/shuttle/abandoned)
+"Yu" = (
+/obj/machinery/door/airlock/titanium/glass{
+	dir = 4
+	},
+/turf/simulated/floor/mineral/titanium,
+/area/shuttle/abandoned)
+
+(1,1,1) = {"
+zM
+zM
+zM
+zM
+zM
+zM
+zM
+zM
+zM
+zM
+zM
+zM
+zM
+zM
+"}
+(2,1,1) = {"
+zM
+zM
+zM
+zM
+zM
+zO
+Fr
+Fr
+zO
+zM
+zM
+zM
+zM
+zM
+"}
+(3,1,1) = {"
+zM
+zM
+zM
+zM
+zO
+zO
+eE
+Yr
+zO
+zO
+zM
+zM
+zM
+zM
+"}
+(4,1,1) = {"
+zM
+zM
+zM
+zM
+zO
+Gs
+xz
+xz
+qK
+zO
+zM
+zM
+zM
+zM
+"}
+(5,1,1) = {"
+zM
+zM
+zM
+zM
+zO
+rB
+wF
+wF
+SS
+zO
+zM
+zM
+zM
+zM
+"}
+(6,1,1) = {"
+zM
+zM
+zO
+zO
+zO
+zO
+wF
+gq
+zO
+zO
+zO
+zO
+FK
+zM
+"}
+(7,1,1) = {"
+zM
+zM
+zO
+eW
+zV
+zO
+jk
+vB
+zO
+Of
+Of
+zO
+zM
+zM
+"}
+(8,1,1) = {"
+zM
+zM
+zO
+AS
+bE
+Yu
+vB
+vB
+zO
+Of
+Of
+zO
+zM
+zM
+"}
+(9,1,1) = {"
+zM
+zO
+zO
+zO
+zO
+Qb
+kO
+vB
+Of
+Of
+Of
+zO
+zO
+zM
+"}
+(10,1,1) = {"
+zM
+ux
+ka
+ka
+ka
+zO
+uA
+vB
+zO
+Of
+Of
+Of
+zO
+zM
+"}
+(11,1,1) = {"
+zM
+ux
+ka
+ka
+ka
+ka
+vB
+yF
+zO
+Of
+Of
+Of
+zO
+zM
+"}
+(12,1,1) = {"
+zM
+ux
+ka
+ka
+ka
+zO
+vB
+vB
+zO
+zO
+zO
+zO
+zO
+zM
+"}
+(13,1,1) = {"
+zM
+ux
+ka
+ka
+ka
+zO
+vB
+vB
+zO
+Mp
+ux
+ux
+HU
+zM
+"}
+(14,1,1) = {"
+zM
+ux
+ka
+ka
+ka
+zO
+vB
+sk
+zO
+ux
+ux
+ux
+ux
+zM
+"}
+(15,1,1) = {"
+zM
+zO
+zO
+zO
+zO
+zO
+jk
+vB
+ux
+ux
+ux
+zO
+zO
+zM
+"}
+(16,1,1) = {"
+zM
+zM
+zO
+ri
+cf
+Vi
+Kd
+vz
+zO
+ux
+ux
+zO
+zM
+zM
+"}
+(17,1,1) = {"
+zM
+zM
+zO
+ys
+zH
+zO
+Vd
+Vd
+em
+ux
+ux
+zO
+zM
+zM
+"}
+(18,1,1) = {"
+zM
+zM
+zO
+CE
+CE
+zO
+Vd
+Vd
+zO
+lp
+lp
+zO
+zM
+zM
+"}
+(19,1,1) = {"
+zM
+zM
+zO
+hz
+hz
+zO
+Pu
+at
+zO
+lp
+lp
+zO
+zM
+zM
+"}
+(20,1,1) = {"
+zM
+zM
+zM
+zM
+zM
+zO
+yC
+ux
+zO
+zM
+zM
+zM
+zM
+zM
+"}
+(21,1,1) = {"
+zM
+zM
+zM
+zM
+zM
+zM
+zM
+zM
+zM
+zM
+zM
+zM
+zM
+zM
+"}

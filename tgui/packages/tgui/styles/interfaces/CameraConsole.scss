@@ -1,0 +1,53 @@
+@use '../base.scss';
+
+.CameraConsole {
+  &__toolbar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--camera-toolbar-height);
+    line-height: var(--camera-toolbar-height);
+    margin: var(--space-s) var(--space-xl) 0;
+
+    &--right {
+      left: unset;
+      margin: var(--space-sm) var(--space-m) 0;
+    }
+  }
+
+  &__left {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: base.em(220px);
+  }
+
+  &__right {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: base.em(220px);
+    right: 0;
+    background-color: var(--color-section);
+
+    &:root {
+      --camera-toolbar-height: 2em;
+    }
+  }
+
+  &__map {
+    position: absolute;
+    top: base.em(26px);
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: var(--space-m);
+    text-align: center;
+
+    .NoticeBox {
+      margin-top: calc(50% - 2em);
+    }
+  }
+}
