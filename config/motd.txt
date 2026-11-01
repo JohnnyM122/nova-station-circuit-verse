@@ -1,45 +1,67 @@
-<center><h1>Welcome to Nova Station!</h1>
-<h2>Hosted by the Circuit Verse Community</h2></center>
+<center><h1>Welcome to Nova Station</h1>
+<h2>Hosted by Circuit Verse Community</h2></center>
 <hr>
-<p>Welcome aboard, Crew Member!</p>
-<p>Thank you for joining us on Nova Station. We're excited to have you here as part of our growing community!</p>
-<h2>A Work in Progress &mdash; Please Be Patient</h2>
-<p>Nova Station is currently under active development. We're working behind the scenes to improve the server, implement new features, resolve bugs, and build an enjoyable experience for everyone.</p>
-<p>Please understand that development is currently progressing at a slower pace. This is an ongoing project, and updates may not always arrive as quickly as we'd like. We appreciate your patience, understanding, and continued support while we work toward our vision.</p>
+<p>Welcome aboard, Crew!</p>
+<p>You're joining <b>Nova Station</b>, a community-driven Space Station 13 project hosted by Circuit Verse Community. Our goal is to create an enjoyable, immersive, and evolving station experience for everyone.</p>
+<p>Whether you're a seasoned spaceman or a newcomer stepping onto the station for the first time, we're glad to have you with us!</p>
+<h2>Development Status &mdash; Work in Progress</h2>
+<p>Nova Station is currently under active development. Our team is working toward building and improving the server, introducing planned modifications, and developing new features.</p>
+<p>Please understand that development may progress slowly at times. We are a developing project, and improvements will take time. Some features may be incomplete, unavailable, or subject to change.</p>
+<p><b>We appreciate your patience, understanding, and continued support as Nova Station grows.</b></p>
 <h2>Codebase &amp; Development</h2>
-<p>Nova Station is built upon the <b>Paradise Station codebase</b>, which serves as the foundation for our server.</p>
+<p>Nova Station is built upon the <b>Paradise Station codebase</b>, which serves as the foundation for our project.</p>
+<p>Our development team intends to introduce custom modifications, improvements, and additional features to help establish Nova Station's own identity and gameplay experience.</p>
+<p><b>Project repositories:</b></p>
 <ul>
-<li><b>Original Codebase:</b> <a href="https://github.com/ParadiseSS13/Paradise">Paradise Station GitHub</a></li>
-<li><b>Nova Station Current Code:</b> <a href="https://github.com/JohnnyM122/nova-station-circuit-verse">Circuit Verse &mdash; Nova Station GitHub</a></li>
+<li>Original Paradise Codebase: <a href="https://github.com/ParadiseSS13/Paradise">Paradise Station GitHub</a></li>
+<li>Nova Station Current Code: <a href="https://github.com/JohnnyM122/nova-station-circuit-verse">Circuit Verse &mdash; Nova Station GitHub</a></li>
 </ul>
-<p>While we currently utilize Paradise Station's existing code, we have plans to introduce our own modifications, improvements, and custom features as development progresses.</p>
-<p>Our goal is to gradually establish a distinct identity and experience for Nova Station while building upon the existing foundation.</p>
-<p>Please remember that some features may be unfinished, modified, or subject to change as development continues.</p>
+<p>Please remember that the server is actively evolving. Existing mechanics and features may be modified as development continues.</p>
 <h2>Server Rules &amp; Expectations</h2>
-<p>At this time, Nova Station does not have a formally established set of server rules. However, that does not mean anything goes.</p>
-<p>Until official rules are published, we ask all players to:</p>
+<p>At this time, Nova Station does not have a formally established or finalized server rulebook.</p>
+<p>Until official rules are introduced, all players are expected to exercise common sense, maturity, and respect toward one another.</p>
+<p>Please keep the following expectations in mind:</p>
 <ul>
-<li>Use common sense and good judgment.</li>
-<li>Treat fellow players with respect.</li>
-<li>Be considerate of others and avoid intentionally ruining their experience.</li>
+<li>Treat fellow players and staff with respect.</li>
+<li>Avoid harassment, intentional disruption, and unnecessary hostility.</li>
 <li>Do not exploit bugs, glitches, or unintended mechanics.</li>
-<li>Avoid harassment, excessive toxicity, and disruptive behavior.</li>
-<li>Respect the decisions and directions of server staff.</li>
+<li>Use good judgment when interacting with other players.</li>
+<li>Help maintain an enjoyable environment for everyone.</li>
+<li>Follow reasonable instructions from authorized staff members.</li>
 </ul>
+<p>A lack of a finalized rulebook does not mean there are no expectations for player conduct.</p>
 <h2>Staff Authority &amp; Enforcement</h2>
-<p>Although formal rules have not yet been established, server staff retain full authority to address disruptive behavior and issue punishments as they deem necessary.</p>
-<p>Depending on the circumstances, staff may issue verbal warnings, kicks, temporary bans, or permanent bans.</p>
-<p>Staff decisions are intended to protect the community and maintain a welcoming environment. Please cooperate with staff when concerns arise.</p>
+<p>Nova Station staff members are responsible for maintaining a welcoming, fair, and enjoyable environment.</p>
+<p>Staff reserve the right to investigate incidents and issue disciplinary action when they determine it is necessary to protect the server and its community.</p>
+<p>Depending on the circumstances, disciplinary action may include:</p>
+<ul>
+<li>Verbal or written warnings.</li>
+<li>Removal from the server.</li>
+<li>Temporary suspensions or bans.</li>
+<li>Permanent bans.</li>
+</ul>
+<p>Staff decisions will be based on the circumstances of each situation and the overall interests of the community.</p>
+<p><b>Please respect staff decisions and cooperate with their instructions.</b></p>
 <h2>Help Us Build Nova Station</h2>
-<p>We're building more than just a Space Station 13 server. We're building a community.</p>
-<p>Feedback, suggestions, bug reports, and constructive criticism are always welcome. If you encounter an issue or have an idea that could improve the experience, please reach out to a member of the staff team or visit our Discord.</p>
-<p>We are also interested in individuals who would like to contribute to the community and help shape its future.</p>
+<p>Nova Station is a growing project, and community involvement matters!</p>
+<p>We welcome constructive feedback, bug reports, suggestions, and ideas that can help improve the server.</p>
+<p>If you encounter issues or have ideas for future features, consider sharing them with our team through the Circuit Verse Community Discord.</p>
+<p>We're building this station together, one step at a time.</p>
+<h2>Lobby Music Credits</h2>
+<p>The lobby music featured on Nova Station is provided by <b>Bensound</b>.</p>
+<ul>
+<li><b>Music Provider:</b> <a href="https://www.bensound.com">Bensound</a></li>
+<li><b>Artist:</b> Benjamin Tissot</li>
+<li><b>License Code:</b> <code>AVSUQ9NEE3ZPSNZ3</code></li>
+</ul>
+<p>Special thanks to Bensound and Benjamin Tissot for providing the music featured in our lobby experience.</p>
 <h2>Stay Connected</h2>
-<p>For announcements, development updates, community discussions, support, and staff applications, please visit our Discord community.</p>
+<p>Want to follow development, meet the community, report issues, or get involved with the project?</p>
+<p>Join the <b>Circuit Verse Community Discord</b> to stay informed about Nova Station and our other community projects.</p>
+<p>We are always looking for enthusiastic people who want to contribute to our growing community!</p>
 <hr>
-<center><b>Nova Station</b><br>
-<i>An independent Space Station 13 project.</i><br>
-<b>Hosted by the Circuit Verse Community</b>
-<p>Thank you for being here. Thank you for your patience. And most importantly, thank you for helping us build something worth coming back to.</p>
-<h3>Have a safe shift, Crew.</h3>
+<center><h3>Have a Safe Shift, Crew.</h3>
+<b>Nova Station Operations</b><br>
+<b>Circuit Verse Community</b>
+<p><i>Building something bigger, one shift at a time.</i></p>
 <i>Central Command Out.</i></center>

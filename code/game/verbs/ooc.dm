@@ -20,7 +20,7 @@ GLOBAL_VAR_INIT(admin_ooc_colour, "#b82e00")
 	return "#FFD700"
 /client/verb/donator_who()
 	set name = "Donator Who"
-	set desc = "List donators and their donator levels."
+	set desc = "List donators, their levels, and whether they are online."
 	set category = "OOC"
 	var/list/donator_levels = load_donator_levels()
 	// Include currently connected legacy database donators as well as the configured list.
@@ -39,7 +39,8 @@ GLOBAL_VAR_INIT(admin_ooc_colour, "#b82e00")
 	var/list/entries = list()
 	for(var/donor_ckey in donator_ckeys)
 		var/level = donator_levels[donor_ckey]
-		entries += "<font color='[donator_level_color(level)]'>&#9733;</font> [donor_ckey] - Level [level]"
+		var/status = GLOB.directory[donor_ckey] ? "<font color='#4CAF50'>Online</font>" : "<font color='#9E9E9E'>Offline</font>"
+		entries += "<font color='[donator_level_color(level)]'>&#9733;</font> [donor_ckey] - Level [level] - [status]"
 	to_chat(src, "<b>Donators ([length(entries)]):</b><br>[entries.Join("<br>")]")
 
 /client/verb/ooc(msg = "" as text)
