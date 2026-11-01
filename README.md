@@ -7,7 +7,7 @@ This public repository tracks the server source, maps, redistributable assets, N
 ## Nova Station setup notes
 
 - Copy config/example/config.toml to config/config.toml for a local instance, then review and keep any private settings in that ignored local file.
-- The example config assigns BYOND ckey chad98 the Hosting Provider rank (+EVERYTHING).
+- Add authorized BYOND ckeys and ranks only in the ignored local config/config.toml; keep admin assignments private.
 - The server branch is built with BYOND 516.1673. Use the included Paradise build instructions for compiling the source, then start DreamDaemon with the desired port.
 - The Bensound Sci-Fi OGG used by the live server is not included in this public repository because raw-track redistribution rights have not been verified. If you have a license that covers the intended use, install it locally as sound/music/bensound-scifi.ogg before running the custom lobby playlist. See [Bensound's license terms](https://www.bensound.com/terms-and-conditions).
 - Never add player data, logs, credentials, active server settings, compiled outputs, or external licensed media to this public repository.
