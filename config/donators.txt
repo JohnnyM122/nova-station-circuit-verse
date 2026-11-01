@@ -1,0 +1,5 @@
+# Nova Station donator list
+# One entry per line, formatted as: ckey,level
+# Levels must be whole numbers from 1 through 4.
+# Example (remove the # to activate): example_ckey,1
+# Donator Who lists the ckeys and levels in this file publicly.

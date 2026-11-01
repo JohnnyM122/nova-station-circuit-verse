@@ -6,6 +6,41 @@ GLOBAL_VAR_INIT(member_ooc_colour, "#035417")
 GLOBAL_VAR_INIT(mentor_ooc_colour, "#00B0EB")
 GLOBAL_VAR_INIT(moderator_ooc_colour, "#184880")
 GLOBAL_VAR_INIT(admin_ooc_colour, "#b82e00")
+/// Returns a gold shade for a donor's OOC star and roster entry.
+/proc/donator_level_color(level)
+	switch(level)
+		if(1)
+			return "#FFE082"
+		if(2)
+			return "#FFD54F"
+		if(3)
+			return "#FFC107"
+		if(4)
+			return "#FFB300"
+	return "#FFD700"
+/client/verb/donator_who()
+	set name = "Donator Who"
+	set desc = "List donators and their donator levels."
+	set category = "OOC"
+	var/list/donator_levels = load_donator_levels()
+	// Include currently connected legacy database donators as well as the configured list.
+	for(var/client/C in GLOB.clients)
+		if(C.holder || !C.donator_level)
+			continue
+		if(!donator_levels[C.ckey] || C.donator_level > donator_levels[C.ckey])
+			donator_levels[C.ckey] = C.donator_level
+	var/list/donator_ckeys = list()
+	for(var/donor_ckey in donator_levels)
+		donator_ckeys += donor_ckey
+	donator_ckeys = sortList(donator_ckeys)
+	if(!length(donator_ckeys))
+		to_chat(src, "No donators are currently listed.")
+		return
+	var/list/entries = list()
+	for(var/donor_ckey in donator_ckeys)
+		var/level = donator_levels[donor_ckey]
+		entries += "<font color='[donator_level_color(level)]'>&#9733;</font> [donor_ckey] - Level [level]"
+	to_chat(src, "<b>Donators ([length(entries)]):</b><br>[entries.Join("<br>")]")
 
 /client/verb/ooc(msg = "" as text)
 	set name = "OOC"
@@ -67,8 +102,7 @@ GLOBAL_VAR_INIT(admin_ooc_colour, "#b82e00")
 
 			if(donator_level > 0)
 				if(prefs.toggles & PREFTOGGLE_DONATOR_PUBLIC)
-					var/icon/donator = icon('icons/ooc_tag_16x.png')
-					display_name = "[bicon(donator)][display_name]"
+					display_name = "<font color='[donator_level_color(donator_level)]'>&#9733;</font> [display_name]"
 
 			if(holder)
 				if(holder.fakekey)
