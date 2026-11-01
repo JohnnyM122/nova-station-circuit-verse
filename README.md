@@ -10,7 +10,7 @@ This public repository tracks the server source, maps, redistributable assets, N
 - Manage donor access in `config/donators.txt` with one `ckey,level` entry per line; levels are 1 through 4. `Donator Who` lists configured entries publicly with their levels and online status; file levels override legacy database tiers. Online legacy database donators are listed too.
 - Donators who enable Donator Publicity see a gold star before their OOC name; its shade reflects their level.
 - Add authorized BYOND ckeys and ranks only in the ignored local config/config.toml; keep admin assignments private.
-- The server branch is built with BYOND 516.1673. Use the included Paradise build instructions for compiling the source, then start DreamDaemon with the desired port.
+- The server branch is built with BYOND 516.1673. Use the included Paradise build instructions for compiling the source, then start DreamDaemon with the desired port and `-invisible` to keep the live server off the BYOND hub while allowing direct `byond://IP:port` connections.
 - The Bensound Sci-Fi OGG used by the live server is not included in this public repository because raw-track redistribution rights have not been verified. If you have a license that covers the intended use, install it locally as sound/music/bensound-scifi.ogg before running the custom lobby playlist. See [Bensound's license terms](https://www.bensound.com/terms-and-conditions).
 - Never add player data, logs, credentials, active server settings, compiled outputs, or external licensed media to this public repository.
 
