@@ -71,4 +71,4 @@
 			return
 		src << link(GLOB.configuration.url.donations_url)
 	else
-		to_chat(src, SPAN_DANGER("The rules URL is not set in the server configuration."))
+		to_chat(src, SPAN_DANGER("The donation link is not configured yet."))

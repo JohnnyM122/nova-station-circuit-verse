@@ -859,7 +859,7 @@ exploit_url = "https://www.paradisestation.org/forum/179-exploit-reports/"
 # Discord address
 discord_url = "https://discord.gg/KmZgUPET9C"
 # Donations address
-donations_url = "https://www.patreon.com/ParadiseStation"
+donations_url = ""
 # Ban appeals URL - usually for a forum or wherever people should go to contact your admins
 ban_appeals_url = "https://www.paradisestation.org/forum/55-unban-requests/"
 # URL for the CentComm ban DB. Doesnt change much. Ckey is slapped on the end

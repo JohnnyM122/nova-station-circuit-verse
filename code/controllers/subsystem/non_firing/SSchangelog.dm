@@ -68,14 +68,7 @@ SUBSYSTEM_DEF(changelog)
 
 
 /datum/controller/subsystem/changelog/proc/UpdatePlayerChangelogButton(client/C)
-	// If SQL aint even enabled, or we aint ready just set the button to default style
-	if(!SSdbcore.IsConnected() || !ss_ready)
-		return
-
-	// If we are ready, process the button style
-	if(C.prefs.lastchangelog != current_cl_timestamp)
-		winset(C, "rpane.changelog", "border=line;background-color=#bb7700;text-color=#FFFFFF;font-style=bold")
-		to_chat(C, SPAN_BOLDNOTICE("Changelog has changed since your last visit."))
+	return
 
 /datum/controller/subsystem/changelog/proc/OpenChangelog(client/C)
 	// If SQL isnt enabled, dont even queue them, just tell them it wont work
