@@ -296,10 +296,10 @@ min_security_hijack_midround = 2
 # General setup for the server (branding, options, etc)
 
 # Name for the server in the list
-server_name = "ParaCode Test"
+server_name = "Nova Station 13"
 # Tag line for the server. This appears as supplementary text
 # EG: The perfect mix of RP & action
-server_tag_line = "ParaCode Testing Server"
+server_tag_line = "Hosted by Circuit Verse Community"
 # Server features. Shows in a newline
 server_features = "Medium RP, varied species/jobs"
 # Allow OOC character metadata notes
