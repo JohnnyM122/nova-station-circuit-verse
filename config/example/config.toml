@@ -70,6 +70,10 @@ enable_localhost_autoadmin = true
 # +STAFF_OBSERVER = Staff observer access (see admin logs and all player PMs, and chat in msay, asay, and dsay)
 # +MANAGEMENT = Lists the staff member under Management Staff in Staff Who
 admin_ranks = [
+  {name = "Chief Mentor", rights = [
+    "+MENTOR",
+    "+CHIEF_MENTOR",
+  ]},
   # Format: {name = "My Rank", rights = ["+LIST", "+OF", "+RIGHTS"]}
   {name = "Mentor", rights = [
     "+MENTOR",
@@ -123,6 +127,7 @@ admin_rank_colour_map = [
   {name = "Trial Admin", colour = "#7fb6fc"},
   {name = "Developer", colour = "#61b413"},
   {name = "Mentor", colour = "#f1c40f"},
+  {name = "Chief Mentor", colour = "#e67e22"},
 ]
 # Map of common CIDs that should not be banned, plus their reasons
 common_cid_map = [
