@@ -2,7 +2,17 @@
 
 /datum/admins/proc/DB_ban_record(bantype, mob/banned_mob, duration = -1, reason, job = "", rounds = 0, banckey = null, banip = null, bancid = null)
 
-	if(!check_rights(R_BAN))	return
+	var/can_issue_ban = FALSE
+	if(check_rights(R_BAN, FALSE))
+		can_issue_ban = TRUE
+	else if(check_rights(R_MOD, FALSE) && (bantype in list(BANTYPE_TEMP, BANTYPE_JOB_TEMP)) && duration > 0 && duration <= 20160)
+		can_issue_ban = TRUE
+	else if(check_rights(R_CHIEF_MENTOR, FALSE) && (bantype == BANTYPE_JOB_TEMP) && duration > 0 && duration <= 20160)
+		can_issue_ban = TRUE
+
+	if(!can_issue_ban)
+		to_chat(usr, SPAN_WARNING("You do not have permission to issue this type or duration of ban."))
+		return
 
 	if(!SSdbcore.IsConnected())
 		to_chat(usr, SPAN_BOLDANNOUNCEOOC("Database connection failure when attempting to make DB ban. Please freeze them and write their ckey in notepad, so they can be banned when the DB returns."))
@@ -454,7 +464,7 @@
 	if(!usr.client)
 		return
 
-	if(!check_rights(R_BAN))
+	if(!check_rights(R_BAN|R_MOD|R_CHIEF_MENTOR))
 		return
 
 	if(!SSdbcore.IsConnected())

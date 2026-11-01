@@ -1,4 +1,4 @@
-USER_CONTEXT_MENU(show_player_panel, R_ADMIN|R_MOD, "\[Admin\] Show Player Panel", mob/M)
+USER_CONTEXT_MENU(show_player_panel, R_ADMIN|R_MOD|R_CHIEF_MENTOR, "\[Admin\] Show Player Panel", mob/M)
 	if(!M)
 		to_chat(client, "You seem to be selecting a mob that doesn't exist anymore.")
 		return
@@ -62,10 +62,16 @@ USER_CONTEXT_MENU(show_player_panel, R_ADMIN|R_MOD, "\[Admin\] Show Player Panel
 	if(M.ckey)
 		body += "<b>Enabled AntagHUD</b>: [M.has_ahudded() ? "<b><font color='red'>TRUE</font></b>" : "false"]<br>"
 		body += "<b>Roundstart observer</b>: [M.is_roundstart_observer() ? "<b>true</b>" : "false"]<br>"
-		body += "<A href='byond://?_src_=holder;boot2=[mob_uid]'>Kick</A> | "
-		body += "<A href='byond://?_src_=holder;newban=[mob_uid];dbbanaddckey=[M.ckey]'>Ban</A> | "
-		body += "<A href='byond://?_src_=holder;jobban2=[mob_uid];dbbanaddckey=[M.ckey]'>Jobban</A> | "
-		body += "<A href='byond://?_src_=holder;shownoteckey=[M.ckey]'>Notes</A> | "
+		if(check_rights(R_ADMIN|R_MOD|R_CHIEF_MENTOR, FALSE))
+			body += "<A href='byond://?_src_=holder;boot2=[mob_uid]'>Kick</A> | "
+		if(check_rights(R_BAN|R_MOD, FALSE))
+			body += "<A href='byond://?_src_=holder;newban=[mob_uid];dbbanaddckey=[M.ckey]'>Ban</A> | "
+		if(check_rights(R_BAN|R_MOD|R_CHIEF_MENTOR, FALSE))
+			body += "<A href='byond://?_src_=holder;jobban2=[mob_uid];dbbanaddckey=[M.ckey]'>Jobban</A> | "
+		if(check_rights(R_ADMIN|R_MOD|R_CHIEF_MENTOR, FALSE))
+			body += "<A href='byond://?_src_=holder;shownoteckey=[M.ckey]'>Notes</A> | "
+		if(check_rights(R_MOD|R_CHIEF_MENTOR|R_BAN, FALSE))
+			body += "<A href='byond://?_src_=holder;request_ban=[mob_uid];req_ckey=[M.ckey]'><b>Request Ban Approval</b></A> | "
 		if(GLOB.configuration.url.forum_playerinfo_url)
 			body += "<A href='byond://?_src_=holder;webtools=[M.ckey]'>WebInfo</A> | "
 	if(M.client)

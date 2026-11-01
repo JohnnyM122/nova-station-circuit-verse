@@ -66,7 +66,7 @@ USER_VERB(dev_say, R_ADMIN|R_DEV_TEAM|R_MAINTAINER, "Devsay", "Devsay", VERB_CAT
 
 	SSblackbox.record_feedback("tally", "admin_verb", 1, "Devsay") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
 
-USER_VERB(staff_say, R_ADMIN|R_MENTOR|R_DEV_TEAM|R_MAINTAINER|R_MOD|R_STAFF_OBSERVER|R_MANAGEMENT, "Staffsay", "Staffsay", VERB_CATEGORY_HIDDEN, msg as text)
+USER_VERB(staff_say, R_ADMIN|R_MENTOR|R_DEV_TEAM|R_MAINTAINER|R_MOD|R_STAFF_OBSERVER|R_MANAGEMENT|R_CHIEF_MENTOR, "Staffsay", "Staffsay", VERB_CATEGORY_HIDDEN, msg as text)
 	if(!check_rights())
 		return
 
@@ -103,7 +103,7 @@ USER_VERB(staff_say, R_ADMIN|R_MENTOR|R_DEV_TEAM|R_MAINTAINER|R_MOD|R_STAFF_OBSE
 
 	SSblackbox.record_feedback("tally", "admin_verb", 1, "Staffsay") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
 
-USER_VERB(mentor_say, R_ADMIN|R_MENTOR|R_MOD|R_STAFF_OBSERVER, "Msay", "Use mentorsay.", VERB_CATEGORY_HIDDEN, msg as text)
+USER_VERB(mentor_say, R_ADMIN|R_MENTOR|R_MOD|R_STAFF_OBSERVER|R_CHIEF_MENTOR, "Msay", "Use mentorsay.", VERB_CATEGORY_HIDDEN, msg as text)
 	if(GLOB.say_status["msay"] != SAY_ENABLED)
 		to_chat(client, "<b>Mentor chat has been disabled.</b>")
 		return
@@ -127,7 +127,7 @@ USER_VERB(mentor_say, R_ADMIN|R_MENTOR|R_MOD|R_STAFF_OBSERVER, "Msay", "Use ment
 
 	var/display_color = client.get_staffsay_color()
 	for(var/client/C in GLOB.admins)
-		if(check_rights(R_ADMIN|R_MOD|R_MENTOR|R_STAFF_OBSERVER, 0, C.mob))
+		if(check_rights(R_ADMIN|R_MOD|R_MENTOR|R_STAFF_OBSERVER|R_CHIEF_MENTOR, 0, C.mob))
 			var/display_name = client.key
 			if(client.holder.fakekey)
 				if(C.holder && C.holder.rights & R_ADMIN)

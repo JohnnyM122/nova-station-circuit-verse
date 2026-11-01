@@ -1,6 +1,6 @@
 //Verbs
 
-USER_VERB(open_mentor_tickets, R_MENTOR|R_ADMIN|R_MOD|R_STAFF_OBSERVER, "Mentor Help", "Opens the mhelp panel", VERB_CATEGORY_ADMIN)
+USER_VERB(open_mentor_tickets, R_MENTOR|R_ADMIN|R_MOD|R_STAFF_OBSERVER|R_CHIEF_MENTOR, "Mentor Help", "Opens the mhelp panel", VERB_CATEGORY_ADMIN)
 	SSmentor_tickets.showUI(client.mob)
 
 USER_VERB(resolve_all_mentor_tickets, R_ADMIN, "Resolve All Open Mentor Tickets", "Resolves all open mhelps", VERB_CATEGORY_HIDDEN)

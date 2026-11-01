@@ -121,7 +121,7 @@
 	for(var/client/C in GLOB.admins)
 		if(!C?.holder)
 			continue
-		if(C.holder.fakekey && !check_rights(R_ADMIN|R_MOD|R_STAFF_OBSERVER|R_MANAGEMENT, FALSE)) // Only staff with admin/observer/management perms can see stealthmins
+		if(C.holder.fakekey && !check_rights(R_ADMIN|R_MOD|R_STAFF_OBSERVER|R_MANAGEMENT|R_CHIEF_MENTOR, FALSE)) // Only staff with admin/observer/management perms can see stealthmins
 			continue
 		if(C.holder.big_brother && !check_rights(R_PERMISSIONS, FALSE)) // Normal admins can't see Big Brother
 			continue
@@ -134,7 +134,7 @@
 			line += "<b>[C]</b> is a [C.holder.rank]"
 
 		if(holder) // Only for those with perms see the extra bit
-			if(C.holder.fakekey && check_rights(R_ADMIN|R_MOD|R_STAFF_OBSERVER|R_MANAGEMENT, FALSE))
+			if(C.holder.fakekey && check_rights(R_ADMIN|R_MOD|R_STAFF_OBSERVER|R_MANAGEMENT|R_CHIEF_MENTOR, FALSE))
 				line += " <i>(as [C.holder.fakekey])</i>"
 
 			if(isobserver(C.mob))
@@ -150,7 +150,7 @@
 		line += "<br>"
 		var/entry_text = line.Join("")
 
-		var/all_role_bits = (R_MANAGEMENT | R_ADMIN | R_MOD | R_DEV_TEAM | R_MAINTAINER | R_MENTOR | R_STAFF_OBSERVER)
+		var/all_role_bits = (R_MANAGEMENT | R_ADMIN | R_MOD | R_DEV_TEAM | R_MAINTAINER | R_MENTOR | R_STAFF_OBSERVER | R_CHIEF_MENTOR)
 		var/has_everything_wildcard = ((C.holder.rights & all_role_bits) == all_role_bits)
 
 		if(has_everything_wildcard)
@@ -172,7 +172,7 @@
 		else if(check_rights_client(R_MOD, FALSE, C))
 			num_mods_online++
 			modmsg += entry_text
-		else if(check_rights_client(R_MENTOR, FALSE, C))
+		else if(check_rights_client(R_MENTOR|R_CHIEF_MENTOR, FALSE, C))
 			num_mentors_online++
 			mentormsg += entry_text
 		else if(check_rights_client(R_STAFF_OBSERVER, FALSE, C))

@@ -40,6 +40,7 @@ GLOBAL_PROTECT(admin_ranks) // this shit is being protected for obvious reasons
 				if("viewlogs")					rights |= R_VIEWLOGS
 				if("staff_observer","staffobserver","observer")	rights |= R_STAFF_OBSERVER
 				if("management","manager")		rights |= R_MANAGEMENT
+				if("chief_mentor","chiefmentor") rights |= R_CHIEF_MENTOR
 
 		GLOB.admin_ranks[rankname] = rights
 		previous_rights = rights

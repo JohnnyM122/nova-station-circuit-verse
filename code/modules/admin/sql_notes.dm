@@ -1,5 +1,5 @@
 /proc/add_note(target_ckey, notetext, timestamp, adminckey, logged = 1, checkrights = 1, show_after = TRUE, automated = FALSE, sanitise_html = TRUE, public = FALSE) // Dont you EVER disable 'sanitise_html', only automated systems should use this
-	if(checkrights && !check_rights(R_ADMIN|R_MOD))
+	if(checkrights && !check_rights(R_ADMIN|R_MOD|R_CHIEF_MENTOR))
 		return
 	if(IsAdminAdvancedProcCall() && !sanitise_html)
 		// *sigh*
@@ -130,7 +130,7 @@
 	show_note(ckey)
 
 /proc/edit_note(note_id)
-	if(!check_rights(R_ADMIN|R_MOD))
+	if(!check_rights(R_ADMIN|R_MOD|R_CHIEF_MENTOR))
 		return
 	if(!SSdbcore.IsConnected())
 		if(usr)
@@ -176,7 +176,7 @@
 		qdel(query_update_note)
 
 /proc/show_note(target_ckey, index, linkless = 0)
-	if(!check_rights(R_ADMIN|R_MOD))
+	if(!check_rights(R_ADMIN|R_MOD|R_CHIEF_MENTOR))
 		return
 	var/list/output = list("<!DOCTYPE html>")
 	var/list/navbar = list()
@@ -270,7 +270,7 @@
 /proc/toggle_note_publicity(note_id)
 	if(!usr)
 		return
-	if(!check_rights(R_ADMIN|R_MOD))
+	if(!check_rights(R_ADMIN|R_MOD|R_CHIEF_MENTOR))
 		return
 	if(!SSdbcore.IsConnected())
 		if(usr)

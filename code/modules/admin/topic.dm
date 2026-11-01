@@ -846,7 +846,7 @@
 
 	//JOBBAN'S INNARDS
 	else if(href_list["jobban3"])
-		if(!check_rights(R_BAN))	return
+		if(!check_rights(R_BAN|R_MOD|R_CHIEF_MENTOR))	return
 
 		var/mob/M = locateUID(href_list["jobban4"])
 		if(!ismob(M))
@@ -930,9 +930,13 @@
 		if(length(notbannedlist)) //at least 1 unbanned job exists in joblist so we have stuff to ban.
 			switch(alert("Temporary Ban of [M.last_known_ckey]?", null,"Yes","No", "Cancel"))
 				if("Yes")
-					var/mins = input(usr,"How long (in minutes)?","Ban time",1440) as num|null
+					var/mins = input(usr,"How long (in minutes)? (Max 20160 for Mod/Chief Mentor)","Ban time",1440) as num|null
 					if(!mins)
 						return
+					if(!check_rights(R_BAN, FALSE))
+						if(mins > 20160)
+							alert(usr, "Moderators and Chief Mentors can only issue temporary job bans up to 20,160 minutes (14 days). Capping duration at 20,160 minutes. Use 'Request Ban Approval' to request a longer ban.", "Duration Capped")
+							mins = 20160
 					var/reason = input(usr,"Please state the reason","Reason","") as message|null
 					if(!reason)
 						return
@@ -958,6 +962,9 @@
 					href_list["jobban2"] = 1 // lets it fall through and refresh
 					return 1
 				if("No")
+					if(!check_rights(R_BAN, FALSE))
+						alert(usr, "You do not have permission to issue permanent job bans directly. You can issue a temporary job ban up to 14 days (20,160 minutes) or use 'Request Ban Approval' to request an Admin approve a permanent job ban.", "Permission Denied")
+						return 1
 					var/reason = input(usr,"Please state the reason","Reason","") as message|null
 					if(reason)
 						var/msg
@@ -984,7 +991,7 @@
 					return
 
 	else if(href_list["boot2"])
-		if(!check_rights(R_ADMIN|R_MOD))
+		if(!check_rights(R_ADMIN|R_MOD|R_CHIEF_MENTOR))
 			return
 		var/mob/M = locateUID(href_list["boot2"])
 		if(!ismob(M))
@@ -1066,8 +1073,31 @@
 			usr << browse("<!DOCTYPE html>[edit_log]","window=noteedits")
 		qdel(query_noteedits)
 
+	else if(href_list["request_ban"])
+		if(!check_rights(R_MOD|R_CHIEF_MENTOR|R_BAN))
+			return
+		var/mob/M = locateUID(href_list["request_ban"])
+		var/req_ckey = href_list["req_ckey"]
+		if(ismob(M) && M.last_known_ckey)
+			req_ckey = M.last_known_ckey
+		usr.client.prompt_ban_request(req_ckey, M)
+
+	else if(href_list["approve_ban_req"])
+		if(!check_rights(R_BAN|R_ADMIN))
+			to_chat(usr, SPAN_WARNING("You do not have permission to approve ban requests."))
+			return
+		var/req_id = text2num(href_list["approve_ban_req"])
+		handle_ban_request_approval(usr, req_id)
+
+	else if(href_list["deny_ban_req"])
+		if(!check_rights(R_BAN|R_ADMIN))
+			to_chat(usr, SPAN_WARNING("You do not have permission to deny ban requests."))
+			return
+		var/req_id = text2num(href_list["deny_ban_req"])
+		handle_ban_request_denial(usr, req_id)
+
 	else if(href_list["newban"])
-		if(!check_rights(R_BAN))	return
+		if(!check_rights(R_BAN|R_MOD))	return
 
 		if(!SSdbcore.IsConnected())
 			alert(usr, "Bans require the database to be connected.<br>If this is a local server, please ban from within Dream Daemon.", "Error", "Ok")
@@ -1080,10 +1110,15 @@
 
 		switch(alert("Temporary Ban of [M.last_known_ckey] / [ban_ckey_param]?", null,"Yes","No", "Cancel"))
 			if("Yes")
-				var/mins = input(usr,"How long (in minutes)?","Ban time",1440) as num|null
+				var/mins = input(usr,"How long (in minutes)? (Max 20160 for Moderators)","Ban time",1440) as num|null
 				if(!mins)
 					return
-				if(mins >= 525600) mins = 525599
+				if(!check_rights(R_BAN, FALSE))
+					if(mins > 20160)
+						alert(usr, "Moderators can only issue temporary bans up to 20,160 minutes (14 days). Capping duration at 20,160 minutes. Use 'Request Ban Approval' to request an Admin approve a longer ban.", "Duration Capped")
+						mins = 20160
+				else if(mins >= 525600)
+					mins = 525599
 				var/reason = input(usr,"Please state the reason","Reason") as message|null
 				if(!reason)
 					return
@@ -1101,6 +1136,9 @@
 
 				qdel(M.client)
 			if("No")
+				if(!check_rights(R_BAN, FALSE))
+					alert(usr, "Moderators cannot issue permanent bans directly. You can issue a temporary ban up to 14 days (20,160 minutes) or use 'Request Ban Approval' to request an Admin approve a permanent ban.", "Permission Denied")
+					return
 				var/reason = input(usr,"Please state the reason","Reason") as message|null
 				if(!reason)
 					return
@@ -1167,7 +1205,7 @@
 		qdel(query_watchedits)
 
 	else if(href_list["mute"])
-		if(!check_rights(R_ADMIN|R_MOD))
+		if(!check_rights(R_ADMIN|R_MOD|R_CHIEF_MENTOR))
 			return
 
 		var/mob/M = locateUID(href_list["mute"])

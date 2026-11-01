@@ -118,6 +118,7 @@ GLOBAL_LIST_INIT(admin_permission_names, alist(
 	R_VIEWLOGS = "VIEWLOGS",
 	R_STAFF_OBSERVER = "STAFF_OBSERVER",
 	R_MANAGEMENT = "MANAGEMENT",
+	R_CHIEF_MENTOR = "CHIEF_MENTOR",
 ))
 GLOBAL_PROTECT(admin_permission_names)
 

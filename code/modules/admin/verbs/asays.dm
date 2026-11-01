@@ -15,7 +15,7 @@ GLOBAL_LIST_EMPTY(staffsays)
 	src.message = message
 	src.time = time
 
-USER_VERB(view_msays, R_ADMIN|R_MENTOR|R_MOD|R_STAFF_OBSERVER, "Mod/Mentor Chat", "View current round Mod/Mentor Chat.", VERB_CATEGORY_ADMIN)
+USER_VERB(view_msays, R_ADMIN|R_MENTOR|R_MOD|R_STAFF_OBSERVER|R_CHIEF_MENTOR, "Mod/Mentor Chat", "View current round Mod/Mentor Chat.", VERB_CATEGORY_ADMIN)
 	client.display_says(GLOB.msays, "msay")
 
 USER_VERB(view_devsays, R_ADMIN|R_DEV_TEAM|R_MAINTAINER, "DevChat", "View current round DevChat.", VERB_CATEGORY_ADMIN)
@@ -24,7 +24,7 @@ USER_VERB(view_devsays, R_ADMIN|R_DEV_TEAM|R_MAINTAINER, "DevChat", "View curren
 USER_VERB(view_asays, R_ADMIN|R_STAFF_OBSERVER, "StaffChat", "View current round StaffChat.", VERB_CATEGORY_ADMIN)
 	client.display_says(GLOB.asays, "asay")
 
-USER_VERB(view_staffsays, R_ADMIN|R_DEV_TEAM|R_MAINTAINER|R_MENTOR|R_MOD|R_STAFF_OBSERVER|R_MANAGEMENT, "Staffsays", "View current round Staffsays.", VERB_CATEGORY_ADMIN)
+USER_VERB(view_staffsays, R_ADMIN|R_DEV_TEAM|R_MAINTAINER|R_MENTOR|R_MOD|R_STAFF_OBSERVER|R_MANAGEMENT|R_CHIEF_MENTOR, "Staffsays", "View current round Staffsays.", VERB_CATEGORY_ADMIN)
 	client.display_says(GLOB.staffsays, "staffsay")
 
 /client/proc/display_says(list/say_list, title)

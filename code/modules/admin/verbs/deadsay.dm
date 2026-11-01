@@ -1,4 +1,4 @@
-USER_VERB(dsay, R_ADMIN|R_MOD|R_STAFF_OBSERVER, "Dsay", "Deadsay", VERB_CATEGORY_HIDDEN, msg as text)
+USER_VERB(dsay, R_ADMIN|R_MOD|R_STAFF_OBSERVER|R_CHIEF_MENTOR, "Dsay", "Deadsay", VERB_CATEGORY_HIDDEN, msg as text)
 	if(!client.mob)
 		return
 
@@ -20,6 +20,9 @@ USER_VERB(dsay, R_ADMIN|R_MOD|R_STAFF_OBSERVER, "Dsay", "Deadsay", VERB_CATEGORY
 
 	if(check_rights(R_MENTOR, 0))
 		stafftype = "MENTOR"
+
+	if(check_rights(R_CHIEF_MENTOR, 0))
+		stafftype = "CHIEF MENTOR"
 
 	if(check_rights(R_DEV_TEAM|R_MAINTAINER, 0))
 		stafftype = "DEVELOPER"

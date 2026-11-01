@@ -44,9 +44,10 @@
 #define R_VIEWLOGS			(1<<19)
 #define R_STAFF_OBSERVER	(1<<20)
 #define R_MANAGEMENT		(1<<21)
+#define R_CHIEF_MENTOR		(1<<22)
 // Update the following two defines and GLOB.admin_permission_names if you add more
 
-#define R_MAXPERMISSION (1<<21) // This holds the maximum value for a permission. It is used in iteration, so keep it updated.
+#define R_MAXPERMISSION (1<<22) // This holds the maximum value for a permission. It is used in iteration, so keep it updated.
 
 #define R_HOST			(~0) // Sum of all permissions to allow easy setting.
 

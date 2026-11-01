@@ -237,7 +237,7 @@ USER_VERB(invisimin, R_ADMIN, "Invisimin", "Toggles ghost-like invisibility (Don
 
 	SSblackbox.record_feedback("tally", "admin_verb", 1, "Invisimin") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
 
-USER_VERB(player_panel, R_ADMIN|R_MOD, "Player Panel", "Opens the player panel.", VERB_CATEGORY_ADMIN)
+USER_VERB(player_panel, R_ADMIN|R_MOD|R_CHIEF_MENTOR, "Player Panel", "Opens the player panel.", VERB_CATEGORY_ADMIN)
 	client.holder.player_panel_new()
 	SSblackbox.record_feedback("tally", "admin_verb", 1, "Player Panel") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
 
@@ -252,7 +252,7 @@ USER_VERB(check_antagonists_tgui, R_ADMIN, "TGUI - Antagonists", "Open the TGUI 
 	log_admin("[key_name(client)] checked antagonists")
 	SSblackbox.record_feedback("tally", "admin_verb", 1, "Check Antags2") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
 
-USER_VERB(ban_panel, R_BAN, "Ban Panel", "Opens the ban panel.", VERB_CATEGORY_ADMIN)
+USER_VERB(ban_panel, R_BAN|R_MOD|R_CHIEF_MENTOR, "Ban Panel", "Opens the ban panel.", VERB_CATEGORY_ADMIN)
 	client.holder.DB_ban_panel()
 	SSblackbox.record_feedback("tally", "admin_verb", 1, "Ban Panel") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
 
@@ -504,10 +504,10 @@ USER_VERB(show_traitor_panel, R_ADMIN|R_MOD, "Show Traitor Panel", "Edit mob's m
 	M.mind.edit_memory()
 	SSblackbox.record_feedback("tally", "admin_verb", 1, "Show Traitor Panel") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
 
-USER_VERB(player_notes, R_ADMIN|R_MOD, "Player Notes", "Open Player Notes panel.", VERB_CATEGORY_ADMIN)
+USER_VERB(player_notes, R_ADMIN|R_MOD|R_CHIEF_MENTOR, "Player Notes", "Open Player Notes panel.", VERB_CATEGORY_ADMIN)
 	show_note()
 
-USER_VERB(player_notes_target, R_ADMIN|R_MOD, "Show Player Notes", "Show Player Notes panel for a given ckey.", VERB_CATEGORY_ADMIN, key as text)
+USER_VERB(player_notes_target, R_ADMIN|R_MOD|R_CHIEF_MENTOR, "Show Player Notes", "Show Player Notes panel for a given ckey.", VERB_CATEGORY_ADMIN, key as text)
 	show_note(key)
 
 USER_VERB(vpn_whitelist, R_BAN, "VPN Ckey Whitelist", "Modify ckey's presence on VPN whitelist", VERB_CATEGORY_ADMIN)

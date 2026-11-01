@@ -53,7 +53,7 @@ GLOBAL_VAR_INIT(disable_explosions, FALSE)
  */
 /proc/message_mentorTicket(msg, important = FALSE)
 	for(var/client/C in GLOB.admins)
-		if(check_rights(R_ADMIN | R_MENTOR | R_MOD | R_STAFF_OBSERVER, 0, C.mob))
+		if(check_rights(R_ADMIN | R_MENTOR | R_MOD | R_STAFF_OBSERVER | R_CHIEF_MENTOR, 0, C.mob))
 			if(important || (C.prefs && !(C.prefs.toggles & PREFTOGGLE_CHAT_NO_TICKETLOGS)))
 				to_chat(C, msg, MESSAGE_TYPE_MENTORPM, confidential = TRUE)
 			if(important)
