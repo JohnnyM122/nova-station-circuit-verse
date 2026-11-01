@@ -32,6 +32,9 @@
 		// Then check in the current directory.
 		if(fexists("./librustlibs[RUSTLIBS_SUFFIX].so"))
 			return __rustlib = "./librustlibs[RUSTLIBS_SUFFIX].so"
+		// Fallback to the repository's bundled 32-bit Linux library if present.
+		if(fexists("./tools/ci/librustlibs_ci.so"))
+			return __rustlib = "./tools/ci/librustlibs_ci.so"
 		// And elsewhere.
 		return __rustlib = "librustlibs[RUSTLIBS_SUFFIX].so"
 	else

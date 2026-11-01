@@ -6,14 +6,12 @@ This public repository tracks the server source, maps, redistributable assets, N
 
 ## Nova Station setup notes
 
-- Copy `config/example/config.toml` to `config/config.toml` for a local instance, then review and keep any private settings and database credentials in that ignored local file.
-- Database-backed staff accounts and player job unlocks (`SQL_VERSION` 74): import `SQL/paradise_schema.sql` and apply `SQL/updates/73-74.sql` (`player_access_flags`). Admins with `R_ADMIN` can immediately unlock or toggle Head-of-Staff whitelist and job playtime/account-age overrides per player via **Admin -> Unlock Player Jobs**, the **Player Panel (`F7`)**, or a player's **`PP`** options panel. See `docs/nova-station-database.md` for details.
-- Role & station updates: the `NanoTrasen Official` (`NT Official`) role carries full station and CentComm access, spawns with `NT Official` attire and `NT Drobe` vendor support, and includes a dedicated `NT Official's Office` with an ID modification console and restricted office access (`ACCESS_TRAINER`).
-- Client interface: the top-panel `Changelog` button is removed, and the `Website` and `Donate` buttons remain unlinked by default until `forum_url` or `donations_url` is set in `config/config.toml`.
+- Copy config/example/config.toml to config/config.toml for a local instance, then review and keep any private settings in that ignored local file.
 - Manage donor access in `config/donators.txt` with one `ckey,level` entry per line; levels are 1 through 4. `Donator Who` lists configured entries publicly with their levels and online status; file levels override legacy database tiers. Online legacy database donators are listed too.
 - Donators who enable Donator Publicity see a gold star before their OOC name; its shade reflects their level.
-- The server branch is built with BYOND 516.1673. Use the included Paradise build instructions for compiling the source, then start DreamDaemon with the desired port and `-invisible` to keep the live server off the BYOND hub while allowing direct `byond://IP:port` connections.
-- Lobby music: Carl Van Red, "End Stretch," from [Free Music Archive](https://freemusicarchive.org/music/carlvanred/), licensed under CC BY (Creative Commons Attribution). Place the audio file locally at `sound/music/carlvanred-end-stretch.mp3` on the host server; external licensed media is excluded from this public repository.
+- Add authorized BYOND ckeys and ranks only in the ignored local config/config.toml; keep admin assignments private.
+- The server branch is built with BYOND 516.1673. Use the included Paradise build instructions for compiling the source, then start DreamDaemon on port `7777` with `-trusted -invisible` (e.g. `DreamDaemon paradise.dmb 7777 -trusted -invisible`) to keep the live server off the BYOND hub while allowing direct `byond://IP:7777` connections. On Linux, `code/__DEFINES/rust.dm` automatically falls back to `./tools/ci/librustlibs_ci.so` when a custom `./librustlibs.so` is not present.
+- Lobby music: Carl Van Red, "End Stretch," from [Free Music Archive](https://freemusicarchive.org/music/carlvanred/), licensed under CC BY (Creative Commons Attribution). The supplied track is included as `sound/music/carlvanred-end-stretch.mp3`; see the original track page for applicable attribution requirements.
 - Never add player data, logs, credentials, active server settings, compiled outputs, or external licensed media to this public repository.
 
 ---
