@@ -12,6 +12,7 @@
 	var/datum/tgui_window/window
 	var/broken = FALSE
 	var/initialized_at
+	var/automatic_chat_retry_attempted = FALSE
 	/// Each client notifies on protected playback, so this prevents spamming admins.
 	var/static/admins_warned = FALSE
 
@@ -69,7 +70,13 @@
  * Called when initialization has timed out.
  */
 /datum/tgui_panel/proc/on_initialize_timed_out()
-	// Currently does nothing but sending a message to old chat.
+	if(is_ready())
+		return
+	if(!automatic_chat_retry_attempted && client)
+		automatic_chat_retry_attempted = TRUE
+		log_tgui(client, "Chat panel load timed out; retrying once automatically.")
+		client.nuke_chat()
+		return
 	SEND_TEXT(client, SPAN_USERDANGER("Failed to load fancy chat, click <a href='byond://?src=[UID()];reload_tguipanel=1'>HERE</a> to attempt to reload it."))
 
 /**
