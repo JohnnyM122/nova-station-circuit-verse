@@ -587,7 +587,7 @@ mc_highpop_threshold_disable = 60
 # In context of this, speed = delay. Lower number = higher speed.
 
 # Base run speed before modifiers
-base_run_speed = -0.25
+base_run_speed = 0.17
 # Base walk speed before modifiers
 base_walk_speed = 1.25
 # Move delay added from crawling

@@ -1,7 +1,7 @@
 /// Config holder for values relating to mob movement speeds
 /datum/configuration_section/movement_configuration
 	/// Base run speed before modifiers
-	var/base_run_speed = -0.25
+	var/base_run_speed = 0.17
 	/// Base walk speed before modifiers
 	var/base_walk_speed = 1.25
 	///crawling speed modifier
