@@ -116,4 +116,5 @@ dmdoc/
 !/config/motd.txt
 !/config/title_screens/
 !/config/title_screens/images/
-!/config/title_screens/images/NovaStation.png/config/title_screens/NovaStation.preopaque-*.png
+!/config/title_screens/images/NovaStation.png
+/config/title_screens/NovaStation.preopaque-*.png
