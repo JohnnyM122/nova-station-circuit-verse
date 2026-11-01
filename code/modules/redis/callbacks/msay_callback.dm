@@ -7,6 +7,6 @@
 	if(data["source"] == GLOB.configuration.system.instance_id) // Ignore self messages
 		return
 	for(var/client/C in GLOB.admins)
-		if(check_rights(R_ADMIN|R_MOD|R_MENTOR, FALSE, C.mob))
+		if(check_rights(R_ADMIN|R_MOD|R_MENTOR|R_STAFF_OBSERVER, FALSE, C.mob))
 			to_chat(C, SPAN_MENTOR_CHANNEL("MENTOR: <small>[data["author"]]@[data["source"]]</small>: [html_encode(data["message"])]"))
 

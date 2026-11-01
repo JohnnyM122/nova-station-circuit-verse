@@ -66,6 +66,9 @@ enable_localhost_autoadmin = true
 # +VIEWRUNTIMES = Allows a player to view the runtimes of the server, but not use other debug verbs
 # +MAINTAINER = Access to super dangerous debug verbs that can break an entire round. Use sparingly.
 # +DEV_TEAM = Access to dev team chat
+# +VIEWLOGS = Allows viewing and downloading round/server log files
+# +STAFF_OBSERVER = Staff observer access (see admin logs and all player PMs, and chat in msay, asay, and dsay)
+# +MANAGEMENT = Lists the staff member under Management Staff in Staff Who
 admin_ranks = [
   # Format: {name = "My Rank", rights = ["+LIST", "+OF", "+RIGHTS"]}
   {name = "Mentor", rights = [
@@ -584,9 +587,9 @@ mc_highpop_threshold_disable = 60
 # In context of this, speed = delay. Lower number = higher speed.
 
 # Base run speed before modifiers
-base_run_speed = 1
+base_run_speed = -0.25
 # Base walk speed before modifiers
-base_walk_speed = 4
+base_walk_speed = 1.25
 # Move delay added from crawling
 crawling_speed_reduction = 4
 # Move delay for humanoids
@@ -859,7 +862,7 @@ exploit_url = "https://www.paradisestation.org/forum/179-exploit-reports/"
 # Discord address
 discord_url = "https://discord.gg/KmZgUPET9C"
 # Donations address
-donations_url = ""
+donations_url = "https://www.patreon.com/ParadiseStation"
 # Ban appeals URL - usually for a forum or wherever people should go to contact your admins
 ban_appeals_url = "https://www.paradisestation.org/forum/55-unban-requests/"
 # URL for the CentComm ban DB. Doesnt change much. Ckey is slapped on the end

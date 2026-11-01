@@ -5,7 +5,7 @@ GLOBAL_LIST_INIT(say_status, list(
 	"msay" = SAY_ENABLED,
 ))
 
-USER_VERB(admin_say, R_ADMIN, "Asay", "Asay", VERB_CATEGORY_HIDDEN, msg as text)
+USER_VERB(admin_say, R_ADMIN|R_STAFF_OBSERVER, "Asay", "Asay", VERB_CATEGORY_HIDDEN, msg as text)
 	msg = emoji_parse(copytext_char(sanitize(msg), 1, MAX_MESSAGE_LEN))
 	if(!msg)
 		return
@@ -24,7 +24,7 @@ USER_VERB(admin_say, R_ADMIN, "Asay", "Asay", VERB_CATEGORY_HIDDEN, msg as text)
 
 	var/display_color = client.get_staffsay_color()
 	for(var/client/C in GLOB.admins)
-		if(R_ADMIN & C.holder.rights)
+		if((R_ADMIN | R_STAFF_OBSERVER) & C.holder.rights)
 			// Lets see if this admin was pinged in the asay message
 			var/temp_message = do_chat_ping(C, msg)
 			temp_message = SPAN_EMOJI_ENABLED("[temp_message]")
@@ -32,7 +32,7 @@ USER_VERB(admin_say, R_ADMIN, "Asay", "Asay", VERB_CATEGORY_HIDDEN, msg as text)
 
 	SSblackbox.record_feedback("tally", "admin_verb", 1, "Asay") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
 
-USER_VERB(dev_say, R_ADMIN|R_DEV_TEAM, "Devsay", "Devsay", VERB_CATEGORY_HIDDEN, msg as text)
+USER_VERB(dev_say, R_ADMIN|R_DEV_TEAM|R_MAINTAINER, "Devsay", "Devsay", VERB_CATEGORY_HIDDEN, msg as text)
 	msg = emoji_parse(copytext_char(sanitize(msg), 1, MAX_MESSAGE_LEN))
 
 	if(!msg)
@@ -52,7 +52,7 @@ USER_VERB(dev_say, R_ADMIN|R_DEV_TEAM, "Devsay", "Devsay", VERB_CATEGORY_HIDDEN,
 
 	var/display_color = client.get_staffsay_color()
 	for(var/client/C in GLOB.admins)
-		if(check_rights(R_ADMIN|R_MOD|R_DEV_TEAM, 0, C.mob))
+		if(check_rights(R_ADMIN|R_MOD|R_DEV_TEAM|R_MAINTAINER, 0, C.mob))
 			var/display_name = client.key
 			if(client.holder.fakekey)
 				if(C.holder && C.holder.rights & R_ADMIN)
@@ -66,7 +66,7 @@ USER_VERB(dev_say, R_ADMIN|R_DEV_TEAM, "Devsay", "Devsay", VERB_CATEGORY_HIDDEN,
 
 	SSblackbox.record_feedback("tally", "admin_verb", 1, "Devsay") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
 
-USER_VERB(staff_say, R_ADMIN|R_MENTOR|R_DEV_TEAM, "Staffsay", "Staffsay", VERB_CATEGORY_HIDDEN, msg as text)
+USER_VERB(staff_say, R_ADMIN|R_MENTOR|R_DEV_TEAM|R_MAINTAINER|R_MOD|R_STAFF_OBSERVER|R_MANAGEMENT, "Staffsay", "Staffsay", VERB_CATEGORY_HIDDEN, msg as text)
 	if(!check_rights())
 		return
 
@@ -103,7 +103,7 @@ USER_VERB(staff_say, R_ADMIN|R_MENTOR|R_DEV_TEAM, "Staffsay", "Staffsay", VERB_C
 
 	SSblackbox.record_feedback("tally", "admin_verb", 1, "Staffsay") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
 
-USER_VERB(mentor_say, R_ADMIN|R_MENTOR|R_MOD, "Msay", "Use mentorsay.", VERB_CATEGORY_HIDDEN, msg as text)
+USER_VERB(mentor_say, R_ADMIN|R_MENTOR|R_MOD|R_STAFF_OBSERVER, "Msay", "Use mentorsay.", VERB_CATEGORY_HIDDEN, msg as text)
 	if(GLOB.say_status["msay"] != SAY_ENABLED)
 		to_chat(client, "<b>Mentor chat has been disabled.</b>")
 		return
@@ -127,7 +127,7 @@ USER_VERB(mentor_say, R_ADMIN|R_MENTOR|R_MOD, "Msay", "Use mentorsay.", VERB_CAT
 
 	var/display_color = client.get_staffsay_color()
 	for(var/client/C in GLOB.admins)
-		if(check_rights(R_ADMIN|R_MOD|R_MENTOR, 0, C.mob))
+		if(check_rights(R_ADMIN|R_MOD|R_MENTOR|R_STAFF_OBSERVER, 0, C.mob))
 			var/display_name = client.key
 			if(client.holder.fakekey)
 				if(C.holder && C.holder.rights & R_ADMIN)

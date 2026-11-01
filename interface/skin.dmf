@@ -127,8 +127,8 @@ menu "menu"
 	elem
 		name = "&Help"
 	elem
-		name = "&Admin help"
-		command = "adminhelp"
+		name = "&StaffHelp"
+		command = "StaffHelp"
 		category = "&Help"
 
 window "mainwindow"
@@ -268,14 +268,13 @@ window "rpane"
 		command = "webmap"
 	elem "changelog"
 		type = BUTTON
-		pos = 0,0
-		size = 0x0
-		is-visible = false
-		text = ""
-		command = ""
+		pos = 385,7
+		size = 70x16
+		text = "Changelog"
+		command = "Changelog"
 	elem "discordb"
 		type = BUTTON
-		pos = 385,7
+		pos = 457,7
 		size = 60x16
 		font-style = "bold"
 		text-color = #ffffff
@@ -284,7 +283,7 @@ window "rpane"
 		command = "discord"
 	elem "donate"
 		type = BUTTON
-		pos = 447,7
+		pos = 519,7
 		size = 60x16
 		font-style = "bold"
 		text-color = #ffffff

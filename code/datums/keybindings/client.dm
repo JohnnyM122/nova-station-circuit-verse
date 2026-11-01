@@ -1,7 +1,7 @@
 /datum/keybinding/client
 
 /datum/keybinding/client/admin_help
-	name = "Admin Help"
+	name = "StaffHelp"
 	keys = list("F1")
 
 /datum/keybinding/client/admin_help/down(client/C)

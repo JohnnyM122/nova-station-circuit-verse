@@ -1,9 +1,9 @@
 /// Config holder for values relating to mob movement speeds
 /datum/configuration_section/movement_configuration
 	/// Base run speed before modifiers
-	var/base_run_speed = 1
+	var/base_run_speed = -0.25
 	/// Base walk speed before modifiers
-	var/base_walk_speed = 4
+	var/base_walk_speed = 1.25
 	///crawling speed modifier
 	var/crawling_speed_reduction = 4
 	/// Move delay for humanoids

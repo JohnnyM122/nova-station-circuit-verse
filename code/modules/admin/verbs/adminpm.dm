@@ -1,13 +1,13 @@
 /// Allows right clicking mobs to send an admin PM to their client.
 /// Forwards the selected mob's client to cmd_admin_pm.
-USER_CONTEXT_MENU(admin_pm_target, R_ADMIN|R_MENTOR, "\[Admin\] Admin PM Mob", mob/M as mob)
+USER_CONTEXT_MENU(admin_pm_target, R_ADMIN|R_MENTOR, "\[Admin\] Staff PM Mob", mob/M as mob)
 	if(!ismob(M) || !M.client)
 		return
 	client.cmd_admin_pm(M.client, null)
 	SSblackbox.record_feedback("tally", "admin_verb", 1, "Admin PM Mob") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
 
 /// Shows a list of clients we could send PMs to, then forwards our choice to cmd_admin_pm.
-USER_VERB(admin_pm_panel, R_ADMIN|R_MENTOR, "Admin PM Name", "Send a PM by player name.", VERB_CATEGORY_ADMIN)
+USER_VERB(admin_pm_panel, R_ADMIN|R_MENTOR, "Staff PM Name", "Send a PM by player name.", VERB_CATEGORY_ADMIN)
 	var/list/client/targets[0]
 	for(var/client/T)
 		if(T.mob)
@@ -20,14 +20,14 @@ USER_VERB(admin_pm_panel, R_ADMIN|R_MENTOR, "Admin PM Name", "Send a PM by playe
 		else
 			targets["(No Mob) - [T]"] = T
 	var/list/sorted = sortList(targets)
-	var/target = input(client, "To whom shall we send a message?", "Admin PM", null) as null|anything in sorted
+	var/target = input(client, "To whom shall we send a message?", "Staff PM", null) as null|anything in sorted
 	if(!target)
 		return
 	client.cmd_admin_pm(targets[target], null)
 	SSblackbox.record_feedback("tally", "admin_verb", 1, "Admin PM Name") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
 
 /// Shows a list of clients we could send PMs to, then forwards our choice to cmd_admin_pm.
-USER_VERB(admin_pm_by_key_panel, R_ADMIN|R_MENTOR, "Admin PM Key", "Send a PM by key.", VERB_CATEGORY_ADMIN)
+USER_VERB(admin_pm_by_key_panel, R_ADMIN|R_MENTOR, "Staff PM Key", "Send a PM by key.", VERB_CATEGORY_ADMIN)
 	var/list/client/targets[0]
 	for(var/client/T)
 		if(T?.holder?.big_brother && !check_rights_client(R_PERMISSIONS, FALSE, client)) // normal admins can't see BB
@@ -42,7 +42,7 @@ USER_VERB(admin_pm_by_key_panel, R_ADMIN|R_MENTOR, "Admin PM Key", "Send a PM by
 		else
 			targets["(No Mob) - [T]"] = T
 	var/list/sorted = sortList(targets)
-	var/target = input(client, "To whom shall we send a message?", "Admin PM", null) as null|anything in sorted
+	var/target = input(client, "To whom shall we send a message?", "Staff PM", null) as null|anything in sorted
 	if(!target)
 		return
 	client.cmd_admin_pm(targets[target], null)
@@ -226,10 +226,10 @@ USER_VERB(admin_pm_by_key_panel, R_ADMIN|R_MENTOR, "Admin PM Key", "Send a PM by
 			continue
 		if(X.key != key && X.key != C.key)
 			if(message_type == MESSAGE_TYPE_MENTORPM)
-				if(check_rights(R_ADMIN|R_MOD|R_MENTOR, 0, X.mob))
+				if(check_rights(R_ADMIN|R_MOD|R_MENTOR|R_STAFF_OBSERVER, 0, X.mob))
 					to_chat(X, third_party_message, MESSAGE_TYPE_MENTORPM)
 			else
-				if(check_rights(R_ADMIN|R_MOD, 0, X.mob))
+				if(check_rights(R_ADMIN|R_MOD|R_STAFF_OBSERVER, 0, X.mob))
 					to_chat(X, third_party_message, MESSAGE_TYPE_ADMINPM)
 
 	if(length(tickets))

@@ -1,68 +1,86 @@
-<center><h1>Welcome to Nova Station</h1>
-<h2>Hosted by Circuit Verse Community</h2></center>
-<hr>
-<p>Welcome aboard, Crew!</p>
+<center>
+<h1>Welcome aboard, Crew!</h1>
+</center>
 <p>You're joining <b>Nova Station</b>, a community-driven Space Station 13 project hosted by Circuit Verse Community. Our goal is to create an enjoyable, immersive, and evolving station experience for everyone.</p>
 <p>Whether you're a seasoned spaceman or a newcomer stepping onto the station for the first time, we're glad to have you with us!</p>
-<h2>Development Status &mdash; Work in Progress</h2>
-<p>Nova Station is currently under active development. Our team is working toward building and improving the server, introducing planned modifications, and developing new features.</p>
-<p>Please understand that development may progress slowly at times. We are a developing project, and improvements will take time. Some features may be incomplete, unavailable, or subject to change.</p>
-<p><b>We appreciate your patience, understanding, and continued support as Nova Station grows.</b></p>
-<h2>Codebase &amp; Development</h2>
-<p>Nova Station is built upon the <b>Paradise Station codebase</b>, which serves as the foundation for our project.</p>
-<p>Our development team intends to introduce custom modifications, improvements, and additional features to help establish Nova Station's own identity and gameplay experience.</p>
-<p><b>Project repositories:</b></p>
-<ul>
-<li>Original Paradise Codebase: <a href="https://github.com/ParadiseSS13/Paradise">Paradise Station GitHub</a></li>
-<li>Nova Station Current Code: <a href="https://github.com/JohnnyM122/nova-station-circuit-verse">Circuit Verse &mdash; Nova Station GitHub</a></li>
-</ul>
-<p>Please remember that the server is actively evolving. Existing mechanics and features may be modified as development continues.</p>
-<h2>Server Rules &amp; Expectations</h2>
-<p>At this time, Nova Station does not have a formally established or finalized server rulebook.</p>
-<p>Until official rules are introduced, all players are expected to exercise common sense, maturity, and respect toward one another.</p>
-<p>Please keep the following expectations in mind:</p>
-<ul>
-<li>Treat fellow players and staff with respect.</li>
-<li>Avoid harassment, intentional disruption, and unnecessary hostility.</li>
-<li>Do not exploit bugs, glitches, or unintended mechanics.</li>
-<li>Use good judgment when interacting with other players.</li>
-<li>Help maintain an enjoyable environment for everyone.</li>
-<li>Follow reasonable instructions from authorized staff members.</li>
-</ul>
-<p>A lack of a finalized rulebook does not mean there are no expectations for player conduct.</p>
-<h2>Staff Authority &amp; Enforcement</h2>
-<p>Nova Station staff members are responsible for maintaining a welcoming, fair, and enjoyable environment.</p>
-<p>Staff reserve the right to investigate incidents and issue disciplinary action when they determine it is necessary to protect the server and its community.</p>
-<p>Depending on the circumstances, disciplinary action may include:</p>
-<ul>
-<li>Verbal or written warnings.</li>
-<li>Removal from the server.</li>
-<li>Temporary suspensions or bans.</li>
-<li>Permanent bans.</li>
-</ul>
-<p>Staff decisions will be based on the circumstances of each situation and the overall interests of the community.</p>
-<p><b>Please respect staff decisions and cooperate with their instructions.</b></p>
-<h2>Help Us Build Nova Station</h2>
-<p>Nova Station is a growing project, and community involvement matters!</p>
-<p>We welcome constructive feedback, bug reports, suggestions, and ideas that can help improve the server.</p>
-<p>If you encounter issues or have ideas for future features, consider sharing them with our team through the Circuit Verse Community Discord.</p>
-<p>We're building this station together, one step at a time.</p>
-<h2>Lobby Music Credits</h2>
-<p>The lobby track <b>End Stretch</b> is featured on Nova Station 13 through Free Music Archive.</p>
-<ul>
-<li><b>Music Provider:</b> <a href="https://freemusicarchive.org/">Free Music Archive</a></li>
-<li><b>Artist:</b> <a href="https://freemusicarchive.org/music/carlvanred/">Carl Van Red</a></li>
-<li><b>License:</b> CC BY (Creative Commons Attribution)</li>
-</ul>
-<p>We thank Free Music Archive and Carl Van Red for making music available for our lobby experience.</p>
-<p>Please refer to the original track's licensing information for applicable attribution requirements.</p>
-<h2>Stay Connected</h2>
-<p>Want to follow development, meet the community, report issues, or get involved with the project?</p>
-<p>Join the <b>Circuit Verse Community Discord</b> to stay informed about Nova Station and our other community projects.</p>
-<p>We are always looking for enthusiastic people who want to contribute to our growing community!</p>
 <hr>
-<center><h3>Have a Safe Shift, Crew.</h3>
-<b>Nova Station Operations</b><br>
-<b>Circuit Verse Community</b>
-<p><i>Building something bigger, one shift at a time.</i></p>
-<i>Central Command Out.</i></center>
+
+<h2>Official Server Rules Are Here!</h2>
+<p>We're pleased to announce that <b>Nova Station now has an official server rule set!</b></p>
+<p>Our official rules are finally available for all players to review.</p>
+<p>&#128214; <b>Read the Official Server Rules:</b><br>
+[INSERT RULES LINK HERE]</p>
+<p>You can also access the complete rulebook at any time by clicking the <b>Rules</b> button located in the top-right corner of your screen.</p>
+<p>All players are expected to familiarize themselves with the official rules and follow the standards established for our community.</p>
+<hr>
+
+<h2>Codebase &amp; Development</h2>
+<p>Nova Station is currently built upon the <b>Paradise Station</b> codebase, which serves as the foundation for our project.</p>
+<p>Our development goals include maintaining a stable server environment, improving gameplay, introducing custom features, and gradually building a unique Nova Station experience.</p>
+<p><b>Project Repository:</b><br>
+<a href="https://github.com/JohnnyM122/nova-station-circuit-verse">https://github.com/JohnnyM122/nova-station-circuit-verse</a></p>
+<p><b>Original Codebase:</b><br>
+<a href="https://github.com/ParadiseSS13/Paradise">https://github.com/ParadiseSS13/Paradise</a></p>
+<p>We appreciate the developers and contributors whose work makes projects like Nova Station possible.</p>
+<hr>
+
+<h2>Development Status &ndash; Work in Progress</h2>
+<p><span style="display: inline-block; background-color: #d97706; color: #ffffff; font-weight: bold; font-size: 0.85em; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px;">Work in Progress</span></p>
+<p>Nova Station is an actively developing project. Not every feature, system, or gameplay experience may be fully implemented or finalized.</p>
+<p>Players may encounter:</p>
+<ul>
+<li>Incomplete or experimental features.</li>
+<li>Bugs, glitches, or unexpected behavior.</li>
+<li>Gameplay systems that are subject to change.</li>
+<li>Temporary interruptions during development and maintenance.</li>
+</ul>
+<p>Your patience, feedback, and bug reports are greatly appreciated as we continue working toward improving the station.</p>
+<p><b>Remember:</b> This is an evolving project, and your participation helps us make it better!</p>
+<hr>
+
+<h2>Join Our Discord Community!</h2>
+<p>Want to stay connected with Nova Station outside of the game?</p>
+<p>Our Discord is the central hub for community announcements, development updates, discussions, player support, and staff applications.</p>
+<p>&#128172; <b>Join the Nova Station Discord:</b><br>
+[INSERT DISCORD INVITE HERE]</p>
+<p>We encourage every player to join so they don't miss important announcements, updates, or community events.</p>
+<hr>
+
+<h2>We're Hiring!</h2>
+<p>Interested in becoming part of the Nova Station team?</p>
+<p>We're always interested in meeting community members who want to contribute to the project and help create a welcoming environment.</p>
+<p>Staff applications are available through our official Discord!</p>
+<p>Whether you're interested in moderation, administration, or helping with the development of our community, we'd love to hear from you.</p>
+<hr>
+
+<h2>Stay Connected</h2>
+<p>Nova Station is more than just a game server. It's a growing community built around collaboration, creativity, and shared experiences.</p>
+<p>Stay connected with us for:</p>
+<ul>
+<li>Server announcements and updates.</li>
+<li>Development progress and news.</li>
+<li>Community discussions.</li>
+<li>Staff recruitment and applications.</li>
+<li>Future events and activities.</li>
+</ul>
+<p><b>Official Discord:</b><br>
+[INSERT DISCORD INVITE HERE]</p>
+<p>Thank you for being part of Nova Station and supporting Circuit Verse Community!</p>
+<hr>
+
+<h2>Lobby Music Credits</h2>
+<p>The music featured in the Nova Station lobby is provided through the following resources:</p>
+<p><b>Music Platform:</b> Free Music Archive<br>
+<a href="https://freemusicarchive.org/">https://freemusicarchive.org/</a></p>
+<p><b>Artist:</b> Carl Van Red<br>
+<a href="https://freemusicarchive.org/music/carlvanred/">https://freemusicarchive.org/music/carlvanred/</a></p>
+<p><b>License:</b> Creative Commons Attribution (CC BY)</p>
+<p>We appreciate the artists and creators who make their music available for community projects.</p>
+<p>Please support independent musicians and respect their licensing requirements.</p>
+<hr>
+
+<center>
+<p><b>Nova Station</b><br>
+<i>Hosted by Circuit Verse Community</i></p>
+<p><i>Thank you for joining us. Enjoy your shift, Crew!</i></p>
+</center>

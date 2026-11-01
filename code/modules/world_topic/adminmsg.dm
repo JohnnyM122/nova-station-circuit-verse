@@ -32,7 +32,7 @@
 
 	for(var/client/A in GLOB.admins)
 		// GLOB.admins includes anyone with a holder datum (mentors too). This makes sure only admins see ahelps
-		if(check_rights(R_ADMIN, FALSE, A.mob))
+		if(check_rights(R_ADMIN|R_STAFF_OBSERVER, FALSE, A.mob))
 			if(A != C)
 				to_chat(A, amessage, MESSAGE_TYPE_ADMINPM)
 

@@ -62,24 +62,24 @@
 /datum/keybinding/client/communication/msay
 	name = MENTOR_CHANNEL
 	keys = list("F4")
-	required_rights = R_MENTOR | R_ADMIN
+	required_rights = R_MENTOR | R_MOD | R_ADMIN | R_STAFF_OBSERVER
 
 /datum/keybinding/client/communication/asay
 	name = ADMIN_CHANNEL
 	keys = list("F5")
-	required_rights = R_ADMIN
+	required_rights = R_ADMIN | R_STAFF_OBSERVER
 
 /datum/keybinding/client/communication/dsay
 	name = DSAY_CHANNEL
 	keys = list("F10")
-	required_rights = R_ADMIN
+	required_rights = R_ADMIN | R_MOD | R_STAFF_OBSERVER
 
 /datum/keybinding/client/communication/devsay
 	name = DEV_CHANNEL
 	keys = list("F2")
-	required_rights = R_DEV_TEAM | R_ADMIN
+	required_rights = R_DEV_TEAM | R_MAINTAINER | R_ADMIN
 
 /datum/keybinding/client/communication/staffsay
 	name = STAFF_CHANNEL
 	keys = list("-")
-	required_rights = R_DEV_TEAM | R_MENTOR | R_ADMIN
+	required_rights = R_DEV_TEAM | R_MAINTAINER | R_MENTOR | R_MOD | R_ADMIN | R_STAFF_OBSERVER | R_MANAGEMENT

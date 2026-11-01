@@ -102,16 +102,30 @@
 
 /client/verb/adminwho()
 	set category = VERB_CATEGORY_ADMIN
-	set name = "Adminwho"
+	set name = "Staff Who"
 
+	var/list/managementmsg = list()
 	var/list/adminmsg = list()
-	var/list/mentormsg = list()
+	var/list/modmsg = list()
 	var/list/devmsg = list()
-	var/num_mentors_online = 0
+	var/list/mentormsg = list()
+	var/list/observermsg = list()
+
+	var/num_management_online = 0
 	var/num_admins_online = 0
+	var/num_mods_online = 0
 	var/num_devs_online = 0
+	var/num_mentors_online = 0
+	var/num_observers_online = 0
 
 	for(var/client/C in GLOB.admins)
+		if(!C?.holder)
+			continue
+		if(C.holder.fakekey && !check_rights(R_ADMIN|R_MOD|R_STAFF_OBSERVER|R_MANAGEMENT, FALSE)) // Only staff with admin/observer/management perms can see stealthmins
+			continue
+		if(C.holder.big_brother && !check_rights(R_PERMISSIONS, FALSE)) // Normal admins can't see Big Brother
+			continue
+
 		var/list/line = list()
 		var/rank_colour = client2rankcolour(C)
 		if(rank_colour)
@@ -120,7 +134,7 @@
 			line += "<b>[C]</b> is a [C.holder.rank]"
 
 		if(holder) // Only for those with perms see the extra bit
-			if(C.holder.fakekey && check_rights(R_ADMIN, FALSE))
+			if(C.holder.fakekey && check_rights(R_ADMIN|R_MOD|R_STAFF_OBSERVER|R_MANAGEMENT, FALSE))
 				line += " <i>(as [C.holder.fakekey])</i>"
 
 			if(isobserver(C.mob))
@@ -134,36 +148,67 @@
 				line += " (AFK)"
 
 		line += "<br>"
-		if(check_rights(R_ADMIN, FALSE, C.mob)) // Is this client an admin?
-			if(C?.holder?.fakekey && !check_rights(R_ADMIN, FALSE)) // Only admins can see stealthmins
-				continue
+		var/entry_text = line.Join("")
 
-			if(C?.holder?.big_brother && !check_rights(R_PERMISSIONS, FALSE)) // Normal admins can't see Big Brother
-				continue
-			num_admins_online++
-			adminmsg += line.Join("")
+		var/all_role_bits = (R_MANAGEMENT | R_ADMIN | R_MOD | R_DEV_TEAM | R_MAINTAINER | R_MENTOR | R_STAFF_OBSERVER)
+		var/has_everything_wildcard = ((C.holder.rights & all_role_bits) == all_role_bits)
 
-		else if(check_rights(R_DEV_TEAM, FALSE, C.mob)) // Is this client a developer?
+		if(has_everything_wildcard)
+			if(findtext(C.holder.rank, "Maintainer") || findtext(C.holder.rank, "Dev"))
+				num_devs_online++
+				devmsg += entry_text
+			else
+				num_management_online++
+				managementmsg += entry_text
+		else if(check_rights_client(R_MANAGEMENT, FALSE, C))
+			num_management_online++
+			managementmsg += entry_text
+		else if(check_rights_client(R_DEV_TEAM|R_MAINTAINER, FALSE, C))
 			num_devs_online++
-			devmsg += line.Join("")
-
-		else if(check_rights(R_MENTOR, FALSE, C.mob)) // Is this client a mentor?
+			devmsg += entry_text
+		else if(check_rights_client(R_ADMIN, FALSE, C))
+			num_admins_online++
+			adminmsg += entry_text
+		else if(check_rights_client(R_MOD, FALSE, C))
+			num_mods_online++
+			modmsg += entry_text
+		else if(check_rights_client(R_MENTOR, FALSE, C))
 			num_mentors_online++
-			mentormsg += line.Join("")
+			mentormsg += entry_text
+		else if(check_rights_client(R_STAFF_OBSERVER, FALSE, C))
+			num_observers_online++
+			observermsg += entry_text
+		else
+			num_observers_online++
+			observermsg += entry_text
 
 	var/list/final_message = list()
+	if(num_management_online)
+		final_message += "<b>Management Staff ([num_management_online]):</b><br>"
+		final_message += managementmsg
+		final_message += "<br>"
 	if(num_admins_online)
-		final_message += "<b>Current Admins ([num_admins_online]):</b><br>"
+		final_message += "<b>Administration ([num_admins_online]):</b><br>"
 		final_message += adminmsg
 		final_message += "<br>"
+	if(num_mods_online)
+		final_message += "<b>Moderation Staff ([num_mods_online]):</b><br>"
+		final_message += modmsg
+		final_message += "<br>"
 	if(num_devs_online)
-		final_message += "<b>Current Developers ([num_devs_online]):</b><br>"
+		final_message += "<b>Development &amp; Maintenance Team ([num_devs_online]):</b><br>"
 		final_message += devmsg
 		final_message += "<br>"
 	if(num_mentors_online)
-		final_message += "<b>Current Mentors ([num_mentors_online]):</b><br>"
+		final_message += "<b>Mentors ([num_mentors_online]):</b><br>"
 		final_message += mentormsg
 		final_message += "<br>"
-	if(!num_admins_online || !num_mentors_online)
-		final_message += SPAN_NOTICE("Even with no [!num_admins_online ? "admins" : ""][!num_admins_online && !num_mentors_online ? " or " : ""][!num_mentors_online ? "mentors" : ""] are online, make a ticket anyways. [!num_admins_online ? "Adminhelps" : ""][!num_admins_online && !num_mentors_online ? " and " : ""][!num_mentors_online ? "Mentorhelps" : ""] will be relayed to discord, and staff will still be informed.")
+	if(num_observers_online)
+		final_message += "<b>Staff Observers ([num_observers_online]):</b><br>"
+		final_message += observermsg
+		final_message += "<br>"
+
+	var/num_ticket_admins = num_management_online + num_admins_online + num_mods_online
+	if(!num_ticket_admins || !num_mentors_online)
+		final_message += SPAN_NOTICE("Even with no [!num_ticket_admins ? "admins" : ""][!num_ticket_admins && !num_mentors_online ? " or " : ""][!num_mentors_online ? "mentors" : ""] online, make a ticket anyways. [!num_ticket_admins ? "Adminhelps" : ""][!num_ticket_admins && !num_mentors_online ? " and " : ""][!num_mentors_online ? "Mentorhelps" : ""] will be relayed to Discord, and staff will still be informed.")
 	to_chat(src, final_message.Join(""))

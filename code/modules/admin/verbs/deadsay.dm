@@ -1,4 +1,4 @@
-USER_VERB(dsay, R_ADMIN|R_MOD, "Dsay", "Deadsay", VERB_CATEGORY_HIDDEN, msg as text)
+USER_VERB(dsay, R_ADMIN|R_MOD|R_STAFF_OBSERVER, "Dsay", "Deadsay", VERB_CATEGORY_HIDDEN, msg as text)
 	if(!client.mob)
 		return
 
@@ -15,10 +15,13 @@ USER_VERB(dsay, R_ADMIN|R_MOD, "Dsay", "Deadsay", VERB_CATEGORY_HIDDEN, msg as t
 
 	var/stafftype = null
 
+	if(check_rights(R_STAFF_OBSERVER, 0))
+		stafftype = "STAFF OBSERVER"
+
 	if(check_rights(R_MENTOR, 0))
 		stafftype = "MENTOR"
 
-	if(check_rights(R_DEV_TEAM, 0))
+	if(check_rights(R_DEV_TEAM|R_MAINTAINER, 0))
 		stafftype = "DEVELOPER"
 
 	if(check_rights(R_MOD, 0))
@@ -26,6 +29,9 @@ USER_VERB(dsay, R_ADMIN|R_MOD, "Dsay", "Deadsay", VERB_CATEGORY_HIDDEN, msg as t
 
 	if(check_rights(R_ADMIN, 0))
 		stafftype = "ADMIN"
+
+	if(check_rights(R_MANAGEMENT, 0))
+		stafftype = "MANAGEMENT"
 
 	msg = emoji_parse(sanitize(copytext_char(msg, 1, MAX_MESSAGE_LEN)))
 	log_admin("[key_name(client)] : [msg]")
