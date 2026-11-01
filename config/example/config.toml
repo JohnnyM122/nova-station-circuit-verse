@@ -70,6 +70,9 @@ enable_localhost_autoadmin = true
 # +STAFF_OBSERVER = Staff observer access (see admin logs and all player PMs, and chat in msay, asay, and dsay)
 # +MANAGEMENT = Lists the staff member under Management Staff in Staff Who
 admin_ranks = [
+  {name = "Community Founder", rights = [
+    "+EVERYTHING",
+  ]},
   {name = "Chief Mentor", rights = [
     "+MENTOR",
     "+CHIEF_MENTOR",
@@ -113,11 +116,14 @@ admin_ranks = [
   ]},
 ]
 # List of people and the admin rank they are assigned to
-admin_assignments = []
+admin_assignments = [
+  {ckey = "chad98", rank = "Community Founder"}
+]
 # Allow admins to set their own OOC colour
 allow_admin_ooc_colour = true
 # Map of admin rank colours to their respective rank. Note you can use hex or colour name here.
 admin_rank_colour_map = [
+  {name = "Community Founder", colour = "#00e5ff"},
   {name = "CV Founder", colour = "#00e5ff"},
   {name = "Head of Staff", colour = "#e74c3c"},
   {name = "Maintainer", colour = "#992d22"},
