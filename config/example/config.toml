@@ -114,6 +114,7 @@ admin_assignments = []
 allow_admin_ooc_colour = true
 # Map of admin rank colours to their respective rank. Note you can use hex or colour name here.
 admin_rank_colour_map = [
+  {name = "CV Founder", colour = "#00e5ff"},
   {name = "Head of Staff", colour = "#e74c3c"},
   {name = "Maintainer", colour = "#992d22"},
   {name = "Server Dev", colour = "#1abc9c"},
