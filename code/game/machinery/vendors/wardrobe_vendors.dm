@@ -1193,8 +1193,8 @@
 	refill_canister = /obj/item/vending_refill/lawdrobe
 
 /obj/machinery/economy/vending/traindrobe
-	name = "\improper TrainDrobe"
-	desc = "This wardrobe dispenses the attire of Nanotrasen's finest teaching force."
+	name = "\improper NT Drobe"
+	desc = "This wardrobe dispenses the attire of NanoTrasen Officials."
 	icon_state = "traindrobe"
 	icon_lightmask = "base_drobe"
 	icon_panel = "drobe"
@@ -1205,7 +1205,7 @@
 		"You're gonna LEARN today!",
 		"What am I supposed to do?",
 	)
-	vend_reply = "Thank you for using the TrainDrobe!"
+	vend_reply = "Thank you for using the NT Drobe!"
 	products = list(
 		/obj/item/clothing/gloves/color/white = 2,
 		/obj/item/clothing/gloves/color/black = 2,

@@ -475,10 +475,10 @@
 	)
 
 
-//NT Career Trainer
+//NT Official
 /obj/item/clothing/head/beret/nct/black
-	name = "\improper NT Career Trainer's beret"
-	desc = "A beret worn by the mentors and trainers of the Career Training Team. This one is black!"
+	name = "\improper NT Official's beret"
+	desc = "A beret worn by NanoTrasen Officials. This one is black!"
 	icon_state = "beret_trainerblack"
 
 	sprite_sheets = list(
@@ -488,8 +488,8 @@
 	)
 
 /obj/item/clothing/head/beret/nct/green
-	name = "\improper NT Career Trainer's beret"
-	desc = "A beret worn by the mentors and trainers of the Career Training Team. This one is green!"
+	name = "\improper NT Official's beret"
+	desc = "A beret worn by NanoTrasen Officials. This one is green!"
 	icon_state = "beret_trainergreen"
 
 	sprite_sheets = list(

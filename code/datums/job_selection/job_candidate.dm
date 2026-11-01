@@ -91,6 +91,8 @@ RESTRICT_TYPE(/datum/job_candidate)
 	return active_character.GetJobDepartment(job, level) & job.flag
 
 /datum/job_candidate/proc/is_account_old_enough(datum/job/job)
+	if(real_ckey && ((real_ckey in GLOB.job_playtime_override_ckeys) || ((job.title in GLOB.command_positions) && (real_ckey in GLOB.head_job_whitelist_ckeys))))
+		return TRUE
 	if(GLOB.configuration.jobs.restrict_jobs_on_account_age && isnum(account_age_in_days) && isnum(job.minimal_player_age))
 		return max(0, job.minimal_player_age - account_age_in_days) == 0
 
@@ -190,6 +192,10 @@ RESTRICT_TYPE(/datum/job_candidate)
 	return FALSE
 
 /datum/job_candidate/proc/get_job_exp_restrictions(datum/job/job)
+	if(job.title in GLOB.command_head_positions && (!real_ckey || !(real_ckey in GLOB.head_job_whitelist_ckeys)))
+		return "Requires head staff job whitelist"
+	if(real_ckey && ((real_ckey in GLOB.job_playtime_override_ckeys) || ((job.title in GLOB.command_positions) && (real_ckey in GLOB.head_job_whitelist_ckeys))))
+		return null
 	if(is_job_playable(job))
 		return null
 
@@ -221,6 +227,10 @@ RESTRICT_TYPE(/datum/job_candidate)
 	return FALSE
 
 /datum/job_candidate/proc/is_job_playable(datum/job/job)
+	if(job.title in GLOB.command_head_positions && (!real_ckey || !(real_ckey in GLOB.head_job_whitelist_ckeys)))
+		return FALSE
+	if(real_ckey && ((real_ckey in GLOB.job_playtime_override_ckeys) || ((job.title in GLOB.command_positions) && (real_ckey in GLOB.head_job_whitelist_ckeys))))
+		return TRUE
 	if(!length(job.exp_map))
 		return TRUE // No EXP map, playable
 	if(!GLOB.configuration.jobs.enable_exp_restrictions)

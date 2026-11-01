@@ -1583,7 +1583,7 @@
 	wiki_article_title = "Standard_Operating_Procedure_(Science)"
 
 /obj/item/book/manual/sop_ntinstructor
-	name = "Career Trainer SOP"
+	name = "NanoTrasen Official SOP"
 	desc = "A set of guidelines for Instructors."
 	icon_state = "sop_legal"
 	author = "Nanotrasen"
@@ -1604,12 +1604,12 @@
 				<h1><U><B>Instructor SOP</B></U></h1><BR>
 				<p>
 				<ol>
-				<li>NT Career Trainers are to wear their company-provided uniform and <b>jacket OR their issued beret/hat</b> at all times while on duty. They are free to choose a beret that best matches their primary field of knowledge if they so desire. Additionally, Identifying equipment SHOULD not be distributed to crew members. </li>
-				<li>NT Career Trainers are to be available to all Crewmembers, regardless of Department. You may not only assist a singular Department. </li>
-				<li>NT Career Trainers are not to do a Trainee's work for them. </li>
-				<li>NT Career Trainers are to use NCT Data Chips only to acquire the access necessary for providing training. They are not to use said access for other purposes. </li>
-				<li>In the event of a lost or stolen NCT Data Chip, the NT Career Trainer is to report the incident to their local Nanotrasen Representative or Station Captain. </li>
-				<li>NT Career Trainers are permitted to carry a flash for self-defense.</li>
+				<li>NanoTrasen Officials are to wear their company-provided uniform and <b>jacket OR their issued beret/hat</b> at all times while on duty. They are free to choose a beret that best matches their primary field of knowledge if they so desire. Additionally, Identifying equipment SHOULD not be distributed to crew members. </li>
+				<li>NanoTrasen Officials are to be available to all Crewmembers, regardless of Department. You may not only assist a singular Department. </li>
+				<li>NanoTrasen Officials are not to do a Trainee's work for them. </li>
+				<li>NanoTrasen Officials are to use NT Official Access Chips only to acquire the access necessary for providing training. They are not to use said access for other purposes. </li>
+				<li>In the event of a lost or stolen NT Official Access Chip, the NanoTrasen Official is to report the incident to their local Nanotrasen Representative or Station Captain. </li>
+				<li>NanoTrasen Officials are permitted to carry a flash for self-defense.</li>
 				</ol>
 				</body>
 				</html>

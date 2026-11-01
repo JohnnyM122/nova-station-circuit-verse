@@ -392,10 +392,10 @@
 	icon_state = "surgcap_black"
 	dog_fashion = /datum/dog_fashion/head/surgery
 
-// NT Career Trainer
+// NT Official
 /obj/item/clothing/head/drilltrainer
-	name = "campaign hat"
-	desc = "A wide-brimmed campaign hat with a drill sergeant feel, worn by Career Trainers to project knowledge and guide new employees with classic style."
+	name = "\improper NT Official's campaign hat"
+	desc = "A wide-brimmed campaign hat with a drill sergeant feel, worn by NanoTrasen Officials to project knowledge and guide crew members with classic style."
 	icon_state = "trainercampaign"
 	sprite_sheets = list("Vox" = 'icons/mob/clothing/species/vox/head.dmi')
 

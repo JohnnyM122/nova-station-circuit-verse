@@ -351,8 +351,8 @@
 	return TRUE
 
 /obj/item/clothing/head/helmet/space/plasmaman/trainer
-	name = "\improper NT Career Trainer envirosuit helmet"
-	desc = "A plasmaman envirohelm designed for the nanotrasen career trainer."
+	name = "\improper NT Official envirosuit helmet"
+	desc = "A plasmaman envirohelm designed for the NanoTrasen Official."
 	icon_state = "trainer_envirohelm"
 
 /obj/item/clothing/head/helmet/space/plasmaman/centcom

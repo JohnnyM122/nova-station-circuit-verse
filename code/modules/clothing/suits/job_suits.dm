@@ -473,9 +473,9 @@
 	icon_state = "surgical"
 	allowed = list(/obj/item/scalpel, /obj/item/surgical_drapes, /obj/item/cautery, /obj/item/hemostat, /obj/item/retractor)
 
-//NT Career Trainer
+//NT Official
 /obj/item/clothing/suit/storage/nct
-	name = "\improper NT Career Trainer's jacket"
+	name = "\improper NT Official's jacket"
 	desc = "A sharp black coat with beige trim around the cuffs and collar, offering a mix of professionalism and approachability."
 	icon_state = "trainercoat"
 	blood_overlay_type = "coat"

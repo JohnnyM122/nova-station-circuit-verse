@@ -136,7 +136,7 @@
 /datum/gear/accessory/armband_job/procedure
 	display_name = "Armband, procedure"
 	path = /obj/item/clothing/accessory/armband/procedure
-	allowed_roles = list("Captain", "Nanotrasen Representative", "Magistrate", "Internal Affairs Agent", "Nanotrasen Career Trainer")
+	allowed_roles = list("Captain", "Nanotrasen Representative", "Magistrate", "Internal Affairs Agent", "NanoTrasen Official")
 
 /datum/gear/accessory/armband_job/service
 	display_name = "Armband, service"

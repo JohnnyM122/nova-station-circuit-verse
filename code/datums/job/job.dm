@@ -124,6 +124,8 @@
 /datum/job/proc/available_in_days(client/C)
 	if(!C)
 		return 0
+	if((C.ckey in GLOB.job_playtime_override_ckeys) || ((title in GLOB.command_positions) && (C.ckey in GLOB.head_job_whitelist_ckeys)))
+		return 0
 	if(!GLOB.configuration.jobs.restrict_jobs_on_account_age)
 		return 0
 	if(!isnum(C.player_age))

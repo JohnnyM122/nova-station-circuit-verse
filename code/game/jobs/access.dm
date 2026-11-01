@@ -88,6 +88,8 @@
 			return get_all_centcom_access() + get_all_accesses()
 		if("Supreme Commander")
 			return get_all_centcom_access() + get_all_accesses()
+		if("NanoTrasen Official")
+			return get_all_centcom_access() + get_all_accesses()
 
 /proc/get_syndicate_access(job)
 	switch(job)
@@ -142,7 +144,7 @@
 		if(REGION_SUPPLY) //supply
 			return list(ACCESS_EXPEDITION, ACCESS_MAILSORTING, ACCESS_MINING, ACCESS_MINING_STATION, ACCESS_MINERAL_STOREROOM, ACCESS_SMITH, ACCESS_CARGO, ACCESS_CARGO_BAY, ACCESS_SUPPLY_SHUTTLE, ACCESS_QM, ACCESS_HEADS_VAULT)
 		if(REGION_COMMAND) //command
-			return list(ACCESS_HEADS, ACCESS_RC_ANNOUNCE, ACCESS_KEYCARD_AUTH, ACCESS_CHANGE_IDS, ACCESS_AI_UPLOAD, ACCESS_TELEPORTER, ACCESS_EVA, ACCESS_TCOMSAT, ACCESS_ALL_PERSONAL_LOCKERS, ACCESS_HEADS_VAULT, ACCESS_BLUESHIELD, ACCESS_NTREP, ACCESS_HOP, ACCESS_CAPTAIN)
+			return list(ACCESS_HEADS, ACCESS_RC_ANNOUNCE, ACCESS_KEYCARD_AUTH, ACCESS_CHANGE_IDS, ACCESS_AI_UPLOAD, ACCESS_TELEPORTER, ACCESS_EVA, ACCESS_TCOMSAT, ACCESS_ALL_PERSONAL_LOCKERS, ACCESS_HEADS_VAULT, ACCESS_BLUESHIELD, ACCESS_NTREP, ACCESS_TRAINER, ACCESS_HOP, ACCESS_CAPTAIN)
 		if(REGION_CENTCOMM) //because why the heck not
 			return get_all_centcom_access() + get_all_accesses()
 		if(REGION_MISC)
@@ -313,7 +315,7 @@
 		if(ACCESS_WEAPONS)
 			return "Weapon Permit"
 		if(ACCESS_TRAINER)
-			return "Nanotrasen Career Trainer"
+			return "NanoTrasen Official"
 		if(ACCESS_EVIDENCE)
 			return "Evidence Lockers"
 		if(ACCESS_CENT_GENERAL)
@@ -372,6 +374,7 @@
 		"Nanotrasen Navy Representative",
 		"Nanotrasen Navy Officer",
 		"Nanotrasen Navy Captain",
+		"NanoTrasen Official",
 		"Supreme Commander")
 
 /proc/get_all_ERT_jobs()

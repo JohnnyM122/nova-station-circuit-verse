@@ -73,7 +73,7 @@ SUBSYSTEM_DEF(ticker)
 
 /datum/controller/subsystem/ticker/Initialize()
 	login_music = pick(\
-    'sound/music/bensound-scifi.ogg',)
+    'sound/music/carlvanred-end-stretch.mp3',)
 
 
 /datum/controller/subsystem/ticker/fire()

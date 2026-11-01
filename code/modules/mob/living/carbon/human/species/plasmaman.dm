@@ -151,7 +151,7 @@
 		if("Assistant")
 			O = new /datum/outfit/plasmaman/assistant
 
-		if("Nanotrasen Career Trainer")
+		if("NanoTrasen Official")
 			O = new /datum/outfit/plasmaman/trainer
 
 		if("Nanotrasen Navy Officer")

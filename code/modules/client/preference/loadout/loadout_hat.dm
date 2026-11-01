@@ -213,7 +213,7 @@
 /datum/gear/hat/cowboyhat/command
 	display_name = "Cowboy hat, command"
 	path = /obj/item/clothing/head/cowboyhat/command
-	allowed_roles = list("Captain", "Head of Personnel", "Head of Security", "Chief Engineer", "Research Director", "Chief Medical Officer", "Quartermaster", "Nanotrasen Representative", "Magistrate", "Blueshield Officer", "Nanotrasen Career Trainer")
+	allowed_roles = list("Captain", "Head of Personnel", "Head of Security", "Chief Engineer", "Research Director", "Chief Medical Officer", "Quartermaster", "Nanotrasen Representative", "Magistrate", "Blueshield Officer", "NanoTrasen Official")
 
 /datum/gear/hat/beret_purple
 	display_name = "Beret, purple"

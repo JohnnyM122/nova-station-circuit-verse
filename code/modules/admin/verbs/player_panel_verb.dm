@@ -21,6 +21,13 @@ USER_CONTEXT_MENU(show_player_panel, R_ADMIN|R_MOD, "\[Admin\] Show Player Panel
 		else
 			body += "\[[M.client.holder ? M.client.holder.rank : "Player"]\] "
 		body += "\[<A href='byond://?_src_=holder;getplaytimewindow=[mob_uid]'>" + M.client.get_exp_type(EXP_TYPE_CREW) + " as [EXP_TYPE_CREW]</a>\]"
+		if(check_rights(R_ADMIN, FALSE))
+			var/is_head_whitelisted = (M.ckey in GLOB.head_job_whitelist_ckeys)
+			var/has_playtime_override = (M.ckey in GLOB.job_playtime_override_ckeys)
+			var/both_unlocked = (is_head_whitelisted && has_playtime_override)
+			body += "<br><b>Job Time Locks & Head Roles:</b> \[<A href='byond://?_src_=holder;unlock_all_jobs=[M.ckey];unlock_val=[both_unlocked ? 0 : 1];pp_mob=[mob_uid]'><b>[both_unlocked ? "Revoke All Job Unlocks" : "Unlock All Jobs & Time Locks"]</b></A>\]"
+			body += "<br><b>Head-of-Staff Whitelist:</b> [is_head_whitelisted ? "<b><font color='green'>ENABLED</font></b>" : "<font color='red'>DISABLED</font>"] \[<A href='byond://?_src_=holder;toggle_head_job_whitelist=[M.ckey];pp_mob=[mob_uid]'>[is_head_whitelisted ? "Revoke" : "Grant"]</A>\] | "
+			body += "<b>Playtime Override:</b> [has_playtime_override ? "<b><font color='green'>ENABLED</font></b>" : "<font color='red'>DISABLED</font>"] \[<A href='byond://?_src_=holder;toggle_job_playtime_override=[M.ckey];pp_mob=[mob_uid]'>[has_playtime_override ? "Revoke" : "Grant"]</A>\]"
 		body += "<br>BYOND account registration date: [M.client.byondacc_date || "ERROR"] [M.client.byondacc_age <= GLOB.configuration.general.byond_account_age_threshold ? "<b>" : ""]([M.client.byondacc_age] days old)[M.client.byondacc_age <= GLOB.configuration.general.byond_account_age_threshold ? "</b>" : ""]"
 		body += "<br>BYOND client version: [M.client.byond_version].[M.client.byond_build]"
 		body += "<br>Global Ban DB Lookup: [GLOB.configuration.url.centcom_ban_db_url ? "<a href='byond://?_src_=holder;open_ccbdb=[M.client.ckey]'>Lookup</a>" : "<i>Disabled</i>"]"
@@ -214,3 +221,51 @@ USER_CONTEXT_MENU(show_player_panel, R_ADMIN|R_MOD, "\[Admin\] Show Player Panel
 
 	client << browse(body, "window=adminplayeropts;size=550x615")
 	SSblackbox.record_feedback("tally", "admin_verb", 1, "Show Player Panel") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
+
+USER_VERB(admin_unlock_player_jobs, R_ADMIN, "Unlock Player Jobs", "Override job time locks and head of staff whitelist for a player.", VERB_CATEGORY_ADMIN)
+	var/list/choices = list()
+	for(var/client/C in GLOB.clients)
+		var/c_ckey = C.ckey
+		var/h_on = (c_ckey in GLOB.head_job_whitelist_ckeys) ? "ON" : "OFF"
+		var/p_on = (c_ckey in GLOB.job_playtime_override_ckeys) ? "ON" : "OFF"
+		var/label = "[C.key] ([C.mob ? C.mob.name : "No Mob"]) - \[Head: [h_on] | Playtime: [p_on]\]"
+		choices[label] = c_ckey
+	choices["\[Enter CKEY Manually\]"] = "__manual__"
+
+	var/picked_label = input(client, "Select a player to unlock/override job time locks and head of staff roles:", "Unlock Player Jobs") as null|anything in choices
+	if(!picked_label)
+		return
+
+	var/target_ckey = choices[picked_label]
+	if(target_ckey == "__manual__")
+		target_ckey = ckey(input(client, "Enter the player's CKEY:", "Unlock Player Jobs") as null|text)
+	else
+		target_ckey = ckey(target_ckey)
+	if(!length(target_ckey))
+		return
+
+	var/is_head = (target_ckey in GLOB.head_job_whitelist_ckeys)
+	var/is_playtime = (target_ckey in GLOB.job_playtime_override_ckeys)
+	var/list/actions = list(
+		"Unlock All Jobs & Time Locks (Head Roles + Playtime)",
+		"Toggle Head-of-Staff Whitelist (Currently: [is_head ? "ENABLED" : "DISABLED"])",
+		"Toggle Job Playtime & Age Override (Currently: [is_playtime ? "ENABLED" : "DISABLED"])",
+		"Revoke All Job Unlocks"
+	)
+	var/action = input(client, "Choose job unlock action for [target_ckey]:", "Unlock Player Jobs") as null|anything in actions
+	if(!action)
+		return
+
+	if(findtext(action, "Unlock All"))
+		is_head = TRUE
+		is_playtime = TRUE
+	else if(findtext(action, "Toggle Head-of-Staff"))
+		is_head = !is_head
+	else if(findtext(action, "Toggle Job Playtime"))
+		is_playtime = !is_playtime
+	else if(findtext(action, "Revoke All"))
+		is_head = FALSE
+		is_playtime = FALSE
+
+	client.holder.apply_player_job_unlocks(target_ckey, is_head, is_playtime)
+

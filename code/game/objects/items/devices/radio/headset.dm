@@ -298,7 +298,7 @@
 	ks2type = /obj/item/encryptionkey/heads/ntrep
 
 /obj/item/radio/headset/headset_nct
-	name = "\improper Nanotrasen career trainer radio headset"
+	name = "\improper NanoTrasen Official radio headset"
 	desc = "This is used by your well-taught corporate training team."
 	icon_state = "com_headset"
 	ks2type = /obj/item/encryptionkey/headset_nct

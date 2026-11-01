@@ -24,7 +24,6 @@
 		ACCESS_SEC_DOORS,
 		ACCESS_SECURITY,
 		ACCESS_WEAPONS,
-		ACCESS_TRAINER,
 	)
 	alt_titles = list("Judge")
 	blacklisted_disabilities = list(

@@ -48,7 +48,7 @@
 <p>If you encounter issues or have ideas for future features, consider sharing them with our team through the Circuit Verse Community Discord.</p>
 <p>We're building this station together, one step at a time.</p>
 <h2>Lobby Music Credits</h2>
-<p>The lobby music featured on <b>Nova Station 13</b> is provided through Free Music Archive.</p>
+<p>The lobby track <b>End Stretch</b> is featured on Nova Station 13 through Free Music Archive.</p>
 <ul>
 <li><b>Music Provider:</b> <a href="https://freemusicarchive.org/">Free Music Archive</a></li>
 <li><b>Artist:</b> <a href="https://freemusicarchive.org/music/carlvanred/">Carl Van Red</a></li>

@@ -118,6 +118,7 @@ SUBSYSTEM_DEF(dbcore)
 		#endif
 		if(Connect())
 			SEND_TEXT(world.log, "Database connection established")
+			LoadPlayerAccessFlags()
 		else
 			// log_sql() because then an error will be logged in the same place
 			log_sql("Your server failed to establish a connection with the database")
@@ -130,6 +131,23 @@ SUBSYSTEM_DEF(dbcore)
   * Tells the DLL to clean up any open connections.
   * This will also reset the failed connection counter
   */
+/datum/controller/subsystem/dbcore/proc/LoadPlayerAccessFlags()
+	GLOB.head_job_whitelist_ckeys.Cut()
+	GLOB.job_playtime_override_ckeys.Cut()
+	if(!IsConnected())
+		return FALSE
+	var/datum/db_query/access_flags_query = NewQuery("SELECT ckey, head_job_whitelist, job_playtime_override FROM player_access_flags")
+	if(!access_flags_query.warn_execute())
+		qdel(access_flags_query)
+		return FALSE
+	while(access_flags_query.NextRow())
+		var/target_ckey = ckey(access_flags_query.item[1])
+		if(text2num(access_flags_query.item[2]))
+			GLOB.head_job_whitelist_ckeys[target_ckey] = TRUE
+		if(text2num(access_flags_query.item[3]))
+			GLOB.job_playtime_override_ckeys[target_ckey] = TRUE
+	qdel(access_flags_query)
+	return TRUE
 /datum/controller/subsystem/dbcore/proc/Disconnect()
 	failed_connections = 0
 	if(connection)

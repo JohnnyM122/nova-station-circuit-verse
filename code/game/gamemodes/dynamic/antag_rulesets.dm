@@ -30,7 +30,7 @@
 		"Nanotrasen Representative",
 		"Magistrate",
 		"Internal Affairs Agent",
-		"Nanotrasen Career Trainer",
+		"NanoTrasen Official",
 		"Nanotrasen Navy Officer",
 		"Special Operations Officer",
 		"Trans-Solar Federation General",

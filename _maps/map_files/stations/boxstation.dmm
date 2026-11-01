@@ -15683,7 +15683,7 @@
 "bhG" = (
 /obj/item/flag/nt,
 /obj/machinery/camera{
-	c_tag = "Career Trainer's Office"
+	c_tag = "NT Official's Office"
 	},
 /obj/effect/turf_decal/tiles/department/virology/side{
 	dir = 9
@@ -65528,6 +65528,7 @@
 /turf/simulated/floor/plasteel/white,
 /area/station/medical/medbay2)
 "mUR" = (
+/obj/machinery/computer/card/centcom,
 /obj/effect/turf_decal/tiles/department/virology/side{
 	dir = 5
 	},
@@ -66485,7 +66486,7 @@
 /obj/machinery/atmospherics/pipe/simple/hidden/scrubbers,
 /obj/machinery/atmospherics/pipe/simple/hidden/supply,
 /obj/machinery/door/airlock/command/glass{
-	name = "Trainer's Office";
+	name = "NT Official's Office";
 	id_tag = "nct";
 	dir = 4
 	},
@@ -69667,7 +69668,7 @@
 	dir = 1
 	},
 /obj/machinery/door/window/reinforced/normal{
-	name = "NCT";
+	name = "NT Official";
 	dir = 1
 	},
 /obj/effect/turf_decal/tiles/department/virology/side{

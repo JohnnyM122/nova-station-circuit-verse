@@ -447,7 +447,7 @@ INITIALIZE_IMMEDIATE(/obj/effect/landmark/newplayer_start) //Without this you sp
 	icon_state = "Warden"
 
 /obj/effect/landmark/start/nanotrasen_career_trainer
-	name ="Nanotrasen Career Trainer"
+	name ="NanoTrasen Official"
 	icon_state = "NCT"
 
 /obj/effect/landmark/start/set_tag()

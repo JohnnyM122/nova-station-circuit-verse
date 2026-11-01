@@ -95,6 +95,8 @@ USER_VERB(check_player_exp, R_ADMIN|R_MOD|R_MENTOR, "Check Player Playtime", "Re
 		return 0
 	if(!role)
 		return 0
+	if(C.ckey in GLOB.job_playtime_override_ckeys)
+		return 0
 	if(!GLOB.configuration.jobs.enable_exp_restrictions)
 		return 0
 	if(GLOB.configuration.jobs.enable_exp_admin_bypass && check_rights(R_ADMIN, 0, C.mob))
@@ -113,6 +115,12 @@ USER_VERB(check_player_exp, R_ADMIN|R_MOD|R_MENTOR, "Check Player Playtime", "Re
 /datum/job/proc/is_playable(client/C)
 	if(!C)
 		return FALSE // No client
+	if(title in GLOB.command_head_positions && !(C.ckey in GLOB.head_job_whitelist_ckeys))
+		return FALSE // Command head roles require a player job whitelist entry.
+	if((title in GLOB.command_positions) && (C.ckey in GLOB.head_job_whitelist_ckeys))
+		return TRUE // Head-job whitelist unlocks head and command roles immediately.
+	if(C.ckey in GLOB.job_playtime_override_ckeys)
+		return TRUE // An admin-approved trusted player may bypass job playtime only.
 	if(!length(exp_map))
 		return TRUE // No EXP map, playable
 	if(!GLOB.configuration.jobs.enable_exp_restrictions)
@@ -135,6 +143,8 @@ USER_VERB(check_player_exp, R_ADMIN|R_MOD|R_MENTOR, "Check Player Playtime", "Re
 	return success
 
 /datum/job/proc/get_exp_restrictions(client/C)
+	if(title in GLOB.command_head_positions && (!C || !(C.ckey in GLOB.head_job_whitelist_ckeys)))
+		return "Requires head staff job whitelist"
 	// Its playable. There are no restrictions!
 	if(is_playable(C))
 		return null

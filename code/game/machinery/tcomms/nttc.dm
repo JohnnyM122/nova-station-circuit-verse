@@ -209,7 +209,7 @@
 		"Performer" = "srvradio",
 		"Performance Artist" = "srvradio",
 		// Procedure
-		"Nanotrasen Career Trainer" = "proradio",
+		"NanoTrasen Official" = "proradio",
 	)
 	/// List of Command jobs
 	var/list/heads = list("Captain", "Station Commander", "Head of Command", "Commanding Officer", "Head of Personnel", "Head of Service", "Crew Relations Officer", "Nanotrasen Representative", "Blueshield", "Blueshield Officer", "Bodyguard", "Command Escort", "Chief Engineer", "Engineering Director", "Senior Engineer", "Engine Foreman", "Chief Medical Officer", "Medical Director", "Senior Physician", "Research Director", "Chief Research Officer", "Senior Researcher", "Head of Security", "Sheriff", "Security Director", "Magistrate", "Judge", "Quartermaster", "Chief Logistics Officer", "Supply Director", "Requisitions Foreman", "AI")

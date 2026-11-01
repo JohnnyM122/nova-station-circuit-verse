@@ -25,6 +25,11 @@ GLOBAL_DATUM_INIT(command_announcer, /obj/item/radio/intercom/command, create_co
 ///Library Catalog global is for storing a library catalog datum that will track book, category, and report lists for the library
 GLOBAL_DATUM_INIT(library_catalog, /datum/library_catalog, new())
 
+/// Ckeys allowed to select command head jobs.
+GLOBAL_LIST_EMPTY(head_job_whitelist_ckeys)
+/// Ckeys whose job playtime requirements have been waived by an admin.
+GLOBAL_LIST_EMPTY(job_playtime_override_ckeys)
+
 GLOBAL_LIST_INIT(paper_tag_whitelist, list("center","p","div","span","h1","h2","h3","h4","h5","h6","hr","pre",	\
 	"big","small","font","i","u","b","s","sub","sup","tt","br","hr","ol","ul","li","caption","col",	\
 	"table","td","th","tr"))

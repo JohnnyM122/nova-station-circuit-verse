@@ -341,7 +341,7 @@ SUBSYSTEM_DEF(jobs)
 
 /datum/controller/subsystem/jobs/proc/get_job_titles_for_id_computer()
 	. = list()
-	.["top"] = list("Captain", "Custom")
+	.["top"] = list("Captain", "NanoTrasen Official", "Custom")
 	.["assistant"] = GLOB.assistant_positions
 	.["medical"] = GLOB.medical_positions
 	.["engineering"] = GLOB.engineering_positions

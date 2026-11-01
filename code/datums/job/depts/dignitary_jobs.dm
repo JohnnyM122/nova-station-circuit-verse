@@ -50,7 +50,6 @@
 		ACCESS_SUPPLY_SHUTTLE,
 		ACCESS_THEATRE,
 		ACCESS_WEAPONS,
-		ACCESS_TRAINER,
 	)
 	blacklisted_disabilities = list(
 		DISABILITY_FLAG_DEAF,
@@ -119,7 +118,7 @@
 					Difficulties: Healing, combat, communication"
 
 /datum/job/nanotrasentrainer
-	title = "Nanotrasen Career Trainer"
+	title = "NanoTrasen Official"
 	flag = JOB_INSTRUCTOR
 	department_flag = JOBCAT_ENGSEC
 	total_positions = 2
@@ -129,22 +128,8 @@
 	selection_color = "#ddddff"
 	mentor_only = TRUE
 	job_department_flags = DEP_FLAG_COMMAND
-	transfer_allowed = FALSE
-	access = list(
-		ACCESS_ALL_PERSONAL_LOCKERS,
-		ACCESS_CARGO,
-		ACCESS_MAILSORTING,
-		ACCESS_ENGINEERING_GENERAL,
-		ACCESS_COURT,
-		ACCESS_EVA,
-		ACCESS_MAINT_TUNNELS,
-		ACCESS_MEDICAL,
-		ACCESS_RESEARCH,
-		ACCESS_SEC_DOORS,
-		ACCESS_THEATRE,
-		ACCESS_INTERNAL_AFFAIRS,
-		ACCESS_TRAINER,
-	)
+	transfer_allowed = TRUE
+	access = list()
 	blacklisted_disabilities = list(
 		DISABILITY_FLAG_DEAF,
 		DISABILITY_FLAG_MUTE,
@@ -155,5 +140,8 @@
 	important_information = "Your job is to try to assist as many crew members as possible regardless of department. You are NOT permitted to give command staff advice on any command SOP questions or aid in legal advice."
 	standard_paycheck = CREW_PAY_MEDIUM
 	difficulty = MEDIUM_DIFFICULTY
-	description = "Nanotrasen Career Trainers (NCTs for short) are currently a mentor/admin only job. They are held to a higher standard, like any other staff-only job.\n\n\
+	description = "NanoTrasen Officials (NT Officials for short) are currently a mentor/admin only job. They are held to a higher standard, like any other staff-only job.\n\n\
 					Difficulties: Training crew."
+
+/datum/job/nanotrasentrainer/get_access()
+	return get_all_accesses() + get_all_centcom_access()

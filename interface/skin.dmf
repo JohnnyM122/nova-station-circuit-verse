@@ -246,8 +246,8 @@ window "rpane"
 		type = BUTTON
 		pos = 167,7
 		size = 50x16
-		text = "Forum"
-		command = "forum"
+		text = "Website"
+		command = "website"
 	elem "rulesb"
 		type = BUTTON
 		pos = 219,7

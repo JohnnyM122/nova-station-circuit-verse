@@ -938,7 +938,7 @@
 /area/station/medical/reception)
 "agr" = (
 /obj/machinery/door/airlock/command/glass{
-	name = "Trainer's Office";
+	name = "NT Official's Office";
 	id_tag = "nct";
 	dir = 4
 	},
@@ -50509,7 +50509,7 @@
 "jFG" = (
 /obj/structure/closet/secure_closet/blueshield,
 /obj/machinery/camera{
-	c_tag = "Trainer's Office";
+	c_tag = "NT Official's Office";
 	dir = 4
 	},
 /obj/machinery/light,

@@ -127,11 +127,11 @@
 	icon_state = "iaa_formal_goodman_skirt"
 
 /obj/item/clothing/under/rank/procedure/nct
-	name = "\improper NT Career Trainer's uniform"
+	name = "\improper NT Official's uniform"
 	desc = "A neatly pressed olive green shirt paired with black jeans, worn by those dedicated to shaping the future of the workforce."
 	icon_state = "trainer"
 
 /obj/item/clothing/under/rank/procedure/nct/skirt
-	name = "\improper NT Career Trainer's skirt"
+	name = "\improper NT Official's skirt"
 	desc = "A neatly pressed olive green shirt paired with a sleek black skirt, worn by those committed to mentoring the next generation."
 	icon_state = "trainer_skirt"

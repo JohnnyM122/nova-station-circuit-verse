@@ -3195,7 +3195,7 @@
 "aDv" = (
 /obj/machinery/disposal,
 /obj/machinery/camera{
-	c_tag = "Career Trainer's Office"
+	c_tag = "NT Official's Office"
 	},
 /obj/structure/disposalpipe/trunk{
 	dir = 8
@@ -20401,7 +20401,7 @@
 /area/station/medical/chemistry)
 "cpX" = (
 /obj/machinery/door/airlock/command/glass{
-	name = "Trainer's Office";
+	name = "NT Official's Office";
 	id_tag = "nct"
 	},
 /obj/effect/mapping_helpers/airlock/access/all/procedure/trainer,
@@ -50128,7 +50128,7 @@
 /area/station/medical/coldroom)
 "kmC" = (
 /obj/machinery/door/airlock/command/glass{
-	name = "Trainer's Office";
+	name = "NT Official's Office";
 	id_tag = "nct";
 	dir = 4
 	},

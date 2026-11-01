@@ -14,16 +14,16 @@
 		to_chat(src, SPAN_DANGER("The wiki URL is not set in the server configuration."))
 	return
 
-/client/verb/forum()
-	set name = "forum"
-	set desc = "Visit the forum."
+/client/verb/website()
+	set name = "website"
+	set desc = "Open the Nova Station website."
 	set hidden = 1
 	if(GLOB.configuration.url.forum_url)
-		if(tgui_alert(src, "Open the forum in your browser?", "Forum", list("Yes", "No")) != "Yes")
+		if(tgui_alert(src, "Open the website in your browser?", "Website", list("Yes", "No")) != "Yes")
 			return
 		src << link(GLOB.configuration.url.forum_url)
 	else
-		to_chat(src, SPAN_DANGER("The forum URL is not set in the server configuration."))
+		to_chat(src, SPAN_DANGER("The website link is not configured yet."))
 
 /client/verb/rules()
 	set name = "Rules"

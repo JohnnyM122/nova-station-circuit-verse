@@ -111,6 +111,7 @@ dmdoc/
 *.fullfit-*
 *.sharp-*
 /sound/music/bensound-scifi.ogg
+/sound/music/carlvanred-end-stretch.mp3
 
 # Publish Nova Station's non-secret MOTD and lobby artwork
 !/config/motd.txt

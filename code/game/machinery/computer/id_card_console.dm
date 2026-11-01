@@ -50,8 +50,7 @@ GLOBAL_VAR_INIT(time_last_changed_position, 0)
 		/datum/job/nanotrasenrep,
 		/datum/job/chaplain,
 		/datum/job/officer,
-		/datum/job/qm,
-		/datum/job/nanotrasentrainer
+		/datum/job/qm
 )
 
 	//The scaling factor of max total positions in relation to the total amount of people on board the station in %

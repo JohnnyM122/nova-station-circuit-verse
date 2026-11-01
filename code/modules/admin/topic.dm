@@ -1,3 +1,55 @@
+/datum/admins/proc/apply_player_job_unlocks(target_ckey, is_head_whitelisted, has_playtime_override, pp_mob_uid = null, refresh_player_panel = FALSE)
+	if(!check_rights(R_ADMIN))
+		return
+	target_ckey = ckey(target_ckey)
+	if(!length(target_ckey))
+		return
+	is_head_whitelisted = is_head_whitelisted ? TRUE : FALSE
+	has_playtime_override = has_playtime_override ? TRUE : FALSE
+
+	if(is_head_whitelisted)
+		GLOB.head_job_whitelist_ckeys |= target_ckey
+	else
+		GLOB.head_job_whitelist_ckeys -= target_ckey
+
+	if(has_playtime_override)
+		GLOB.job_playtime_override_ckeys |= target_ckey
+	else
+		GLOB.job_playtime_override_ckeys -= target_ckey
+
+	if(SSdbcore.IsConnected())
+		var/datum/db_query/access_update = SSdbcore.NewQuery({"
+			INSERT INTO player_access_flags (ckey, head_job_whitelist, job_playtime_override, updated_by, updated_at)
+			VALUES (:ckey, :head_whitelist, :playtime_override, :updated_by, NOW())
+			ON DUPLICATE KEY UPDATE head_job_whitelist=:head_whitelist, job_playtime_override=:playtime_override, updated_by=:updated_by, updated_at=NOW()
+		"}, list(
+			"ckey" = target_ckey,
+			"head_whitelist" = is_head_whitelisted,
+			"playtime_override" = has_playtime_override,
+			"updated_by" = usr?.client?.ckey || "admin"
+		))
+		if(!access_update.warn_execute())
+			to_chat(usr, SPAN_WARNING("Database update failed; applied player job unlocks in memory for this session."))
+		qdel(access_update)
+		SSdbcore.LoadPlayerAccessFlags()
+
+	log_admin("[key_name_admin(usr)] updated player job access for [target_ckey]: head whitelist [is_head_whitelisted], playtime override [has_playtime_override].")
+	message_admins("[key_name_admin(usr)] updated player job access for [target_ckey] (Head Whitelist: [is_head_whitelisted ? "ENABLED" : "DISABLED"], Playtime Override: [has_playtime_override ? "ENABLED" : "DISABLED"]).")
+
+	for(var/client/C in GLOB.clients)
+		if(C.ckey == target_ckey)
+			to_chat(C, SPAN_NOTICE("An administrator has updated your job & head-of-staff unlock status (Head Whitelist: [is_head_whitelisted ? "ENABLED" : "DISABLED"], Playtime Override: [has_playtime_override ? "ENABLED" : "DISABLED"])."))
+			if(isnewplayer(C.mob) && C.prefs?.active_character)
+				C.prefs.ShowChoices(C.mob)
+			break
+
+	if(pp_mob_uid)
+		var/mob/M = locateUID(pp_mob_uid)
+		if(ismob(M))
+			SSuser_verbs.invoke_verb(usr, /datum/user_verb/show_player_panel, M)
+	else if(refresh_player_panel)
+		player_panel_new()
+
 /datum/admins/Topic(href, href_list)
 	..()
 
@@ -6,6 +58,25 @@
 		message_admins("[key_name_admin(usr)] has attempted to override the admin panel!")
 		return
 
+	if(href_list["unlock_all_jobs"] || href_list["toggle_head_job_whitelist"] || href_list["toggle_job_playtime_override"])
+		if(!check_rights(R_ADMIN))
+			return
+		var/raw_ckey = href_list["unlock_all_jobs"] || href_list["toggle_head_job_whitelist"] || href_list["toggle_job_playtime_override"]
+		var/target_ckey = ckey(raw_ckey)
+		if(!length(target_ckey))
+			return
+		var/is_head_whitelisted = (target_ckey in GLOB.head_job_whitelist_ckeys)
+		var/has_playtime_override = (target_ckey in GLOB.job_playtime_override_ckeys)
+		if(href_list["unlock_all_jobs"])
+			var/unlock_val = (text2num(href_list["unlock_val"]) != 0)
+			is_head_whitelisted = unlock_val
+			has_playtime_override = unlock_val
+		else if(href_list["toggle_head_job_whitelist"])
+			is_head_whitelisted = !is_head_whitelisted
+		else
+			has_playtime_override = !has_playtime_override
+		apply_player_job_unlocks(target_ckey, is_head_whitelisted, has_playtime_override, href_list["pp_mob"], isnull(href_list["pp_mob"]))
+		return
 	if(SSticker.mode && SSticker.mode.check_antagonists_topic(href, href_list))
 		check_antagonists()
 		return

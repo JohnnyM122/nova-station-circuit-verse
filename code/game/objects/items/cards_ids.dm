@@ -703,11 +703,13 @@
 				ACCESS_HOP, ACCESS_RC_ANNOUNCE, ACCESS_KEYCARD_AUTH, ACCESS_EXPEDITION, ACCESS_WEAPONS, ACCESS_NTREP)
 
 /obj/item/card/id/nct
-	name = "\improper Nanotrasen Career Trainer ID"
-	registered_name = "Nanotrasen Career Trainer"
+	name = "\improper NanoTrasen Official ID"
+	registered_name = "NanoTrasen Official"
 	icon_state = "nctrainer"
-	access = list(ACCESS_ALL_PERSONAL_LOCKERS, ACCESS_CARGO, ACCESS_ENGINEERING_GENERAL, ACCESS_COURT, ACCESS_EVA, ACCESS_TRAINER, ACCESS_MAINT_TUNNELS,
-				ACCESS_MEDICAL, ACCESS_RESEARCH, ACCESS_SEC_DOORS, ACCESS_THEATRE, ACCESS_INTERNAL_AFFAIRS)
+
+/obj/item/card/id/nct/Initialize(mapload)
+	. = ..()
+	access = get_all_accesses() + get_all_centcom_access()
 
 /obj/item/card/id/blueshield
 	name = "Blueshield ID"
@@ -861,10 +863,10 @@
 	icon_state = "data"
 
 /obj/item/card/id/nct_data_chip
-	name = "\improper NCT Trainee Access Chip"
-	desc = "A small electronic access token that allows its user to copy the access of their Trainee. Only accessible by NT Career Trainers!"
+	name = "\improper NT Official Access Chip"
+	desc = "A small electronic access token that allows its user to copy the access of their Trainee. Only accessible by NanoTrasen Officials!"
 	icon_state = "nct_chip"
-	assignment = "Nanotrasen Career Trainer"
+	assignment = "NanoTrasen Official"
 	var/registered_user = null
 	var/trainee = null
 
@@ -893,7 +895,7 @@
 		return
 
 	if(user.mind.current != registered_user)
-		to_chat(user, SPAN_NOTICE("You do not have access to use this NCT Trainee Access Chip!"))
+		to_chat(user, SPAN_NOTICE("You do not have access to use this NT Official Access Chip!"))
 		return
 
 	if(istype(target, /obj/item/card/id/ert))
@@ -1010,8 +1012,8 @@
 			return "Security Officer"
 		if("internalaffairsagent")
 			return "Internal Affairs Agent"
-		if("nct")
-			return "Nanotrasen Career Trainer"
+		if("nct", "nctrainer")
+			return "NanoTrasen Official"
 		if("atmostech")
 			return "Life Support Specialist"
 		if("HoP")

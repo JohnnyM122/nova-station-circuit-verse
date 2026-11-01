@@ -199,7 +199,7 @@
 	uniform = /obj/item/clothing/under/plasmaman/assistant
 
 /datum/outfit/plasmaman/trainer
-	name = "Plasmaman Career Trainer"
+	name = "Plasmaman NanoTrasen Official"
 
 	head = /obj/item/clothing/head/helmet/space/plasmaman/trainer
 	uniform = /obj/item/clothing/under/plasmaman/trainer

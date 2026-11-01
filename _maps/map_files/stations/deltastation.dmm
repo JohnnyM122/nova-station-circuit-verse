@@ -32394,7 +32394,7 @@
 /area/station/supply/expedition)
 "cyy" = (
 /obj/machinery/camera{
-	c_tag = "Career Trainer's Office";
+	c_tag = "NT Official's Office";
 	dir = 8
 	},
 /obj/structure/cable{
@@ -80763,7 +80763,7 @@
 /area/station/engineering/gravitygenerator)
 "qUj" = (
 /obj/machinery/door/airlock/command/glass{
-	name = "Trainer's Office";
+	name = "NT Official's Office";
 	id_tag = "nct";
 	dir = 4
 	},

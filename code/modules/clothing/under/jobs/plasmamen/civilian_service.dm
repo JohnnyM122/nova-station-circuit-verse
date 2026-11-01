@@ -116,6 +116,6 @@
 	has_sensor = FALSE
 
 /obj/item/clothing/under/plasmaman/trainer
-	name = "\improper NT career trainer's envirosuit"
-	desc = "An envirosuit designed for plasmamen employed as the nanotrasen career trainer."
+	name = "\improper NT Official's envirosuit"
+	desc = "An envirosuit designed for plasmamen employed as a NanoTrasen Official."
 	icon_state = "trainer_envirosuit"

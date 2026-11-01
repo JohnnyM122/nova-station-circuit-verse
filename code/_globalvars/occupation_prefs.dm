@@ -33,7 +33,7 @@ GLOBAL_LIST_INIT(occupation_pref_job_order, list(
 	"Blueshield",
 	"Magistrate",
 	"Internal Affairs Agent",
-	"Nanotrasen Career Trainer",
+	"NanoTrasen Official",
 
 	"Quartermaster",
 	"Cargo Technician",

@@ -38,6 +38,8 @@ GLOBAL_LIST_INIT(special_role_times, list(
 		return 0
 	if(!role)
 		return 0
+	if(C.ckey in GLOB.job_playtime_override_ckeys)
+		return 0
 	if(!GLOB.configuration.gamemode.antag_account_age_restriction)
 		return 0
 	if(!isnum(C.player_age))
@@ -695,6 +697,11 @@ GLOBAL_LIST_INIT(special_role_times, list(
 		ShowChoices(user)
 		return
 
+	if(job.get_exp_restrictions(user.client))
+		to_chat(user, SPAN_WARNING("You are not currently eligible for [job.title]."))
+		active_character.SetChoices(user)
+		return
+
 	if(role == "Assistant")
 		if(active_character.job_support_low & job.flag)
 			active_character.job_support_low &= ~job.flag
@@ -714,6 +721,11 @@ GLOBAL_LIST_INIT(special_role_times, list(
 	if(!job)
 		user << browse(null, "window=mob_occupation")
 		ShowChoices(user)
+		return
+
+	if(job.get_exp_restrictions(user.client))
+		to_chat(user, SPAN_WARNING("You are not currently eligible for [job.title]."))
+		active_character.SetChoices(user)
 		return
 
 	if(role == "Assistant")

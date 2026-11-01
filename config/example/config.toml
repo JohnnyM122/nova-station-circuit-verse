@@ -41,7 +41,7 @@
 
 # Set this to true if you are using database-based admins, or false if you want to define them in this file
 # If the database fails, this file will be used as fallback
-use_database_admins = false
+use_database_admins = true
 # Auto authenticate localhost users as admin? Useful for test servers, disable in production
 enable_localhost_autoadmin = true
 # List of admin rank assignments and their permissions
@@ -176,9 +176,9 @@ fluff_undershirts = [
 # If you are running in production, you will want to be using a database
 
 # Enable/disable the database on a whole
-sql_enabled = false
+sql_enabled = true
 # SQL version. If this is a mismatch, round start will be delayed
-sql_version = 73
+sql_version = 74
 # SQL server address. Can be an IP or DNS name
 sql_address = "127.0.0.1"
 # SQL server port
@@ -186,9 +186,9 @@ sql_port = 3306
 # SQL server database name
 sql_database = "paradise_gamedb"
 # SQL server username
-sql_username = "root"
+sql_username = "nova_station_app"
 # SQL server password
-sql_password = "please use something secure in a production environment"
+sql_password = "SET_A_LOCAL_DATABASE_PASSWORD"
 # Time in seconds for async queries to time out
 async_query_timeout = 10
 # How many threads is the async SQL engine allowed to open. 50 is normal. Trust me.
@@ -847,17 +847,17 @@ toast_on_init_complete = true
 # Server location for world reboot. Don't include the byond://, just give the address and port.
 #reboot_url = "byond.paradisestation.org:6666"
 # Forum address
-forum_url = "https://www.paradisestation.org/forum/"
+forum_url = ""
 # Wiki address
 wiki_url = "https://www.paradisestation.org/wiki"
 # Rules address
 rules_url = "https://www.paradisestation.org/rules"
 # Github address
-github_url = "https://github.com/ParadiseSS13/Paradise"
+github_url = "https://github.com/JohnnyM122/nova-station-circuit-verse"
 # Exploit address
 exploit_url = "https://www.paradisestation.org/forum/179-exploit-reports/"
 # Discord address
-#discord_url = "http://example.org"
+discord_url = "https://discord.gg/KmZgUPET9C"
 # Donations address
 donations_url = "https://www.patreon.com/ParadiseStation"
 # Ban appeals URL - usually for a forum or wherever people should go to contact your admins

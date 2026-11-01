@@ -324,7 +324,7 @@ to destroy them and players will be able to make replacements.
 		"HydroDrobe" =							/obj/machinery/economy/vending/hydrodrobe,
 		"JaniDrobe" =							/obj/machinery/economy/vending/janidrobe,
 		"LawDrobe" =							/obj/machinery/economy/vending/lawdrobe,
-		"TrainDrobe" =							/obj/machinery/economy/vending/traindrobe,
+		"NT Drobe" =							/obj/machinery/economy/vending/traindrobe,
 		"Castivend" =							/obj/machinery/economy/vending/smith,
 		"ChapDrobe" =							/obj/machinery/economy/vending/chapdrobe,
 		"CrewVend 3000" =						/obj/machinery/economy/vending/custom)

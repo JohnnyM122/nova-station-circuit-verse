@@ -44,7 +44,7 @@
 	dufflebag = /obj/item/storage/backpack/duffel/blueshield
 
 /datum/outfit/job/nct
-	name = "Nanotrasen Career Trainer"
+	name = "NanoTrasen Official"
 	jobtype = /datum/job/nanotrasentrainer
 	uniform = /obj/item/clothing/under/rank/procedure/nct
 	suit = /obj/item/clothing/suit/storage/nct
@@ -76,7 +76,7 @@
 	var/obj/item/card/id/nct_data_chip/I = H.l_store
 	I.registered_user = H.mind.current
 	I.registered_name = H.real_name
-	var/icon/newphoto = get_id_photo(H, "Nanotrasen Career Trainer")
+	var/icon/newphoto = get_id_photo(H, "NanoTrasen Official")
 	I.photo = newphoto
 
 /datum/outfit/job/nct/on_mind_initialize(mob/living/carbon/human/H)

@@ -65,7 +65,7 @@
 
 				}
 
-				function expand(id,job,name,real_name,image,key,ip,antagonists,mobUID,client_ckey,eyeUID){
+				function expand(id,job,name,real_name,image,key,ip,antagonists,mobUID,client_ckey,eyeUID,head_whitelisted,playtime_override){
 
 					clearAll();
 
@@ -91,6 +91,14 @@
 					if(eyeUID)
 						body += "|<a href='byond://?src=[UID()];adminplayerobservefollow="+eyeUID+"'>EYE</a>"
 					body += "<br>"
+					if(client_ckey){
+						var is_head = (head_whitelisted == 1 || head_whitelisted == "1");
+						var is_playtime = (playtime_override == 1 || playtime_override == "1");
+						var both_enabled = (is_head && is_playtime);
+						body += "<b>Job Unlocks:</b> <a href='byond://?src=[UID()];unlock_all_jobs="+client_ckey+";unlock_val="+(both_enabled ? "0" : "1")+"'><b>"+(both_enabled ? "Revoke All Unlocks" : "Unlock All Jobs & Time Locks")+"</b></a><br>";
+						body += "Head-job whitelist: <b>"+(is_head ? "enabled" : "disabled")+"</b> - <a href='byond://?src=[UID()];toggle_head_job_whitelist="+client_ckey+"'>"+(is_head ? "Revoke" : "Grant")+"</a><br>";
+						body += "Job playtime override: <b>"+(is_playtime ? "enabled" : "disabled")+"</b> - <a href='byond://?src=[UID()];toggle_job_playtime_override="+client_ckey+"'>"+(is_playtime ? "Revoke" : "Grant")+"</a><br>";
+					}
 					if(antagonists)
 						body += "<font size='2'><a href='byond://?src=[UID()];check_antagonist=1'><font color='red'><b>"+antagonists+"</b></font></a></font>";
 
@@ -310,7 +318,7 @@
 					<td align='center' bgcolor='[color]'>
 						<span id='notice_span[i]'></span>
 						<a id='link[i]'
-						onmouseover='expand("item[i]","[M_job]","[M_name]","[M_rname]","--unused--","[M_key]","[M.lastKnownIP]","[antagonist_string]","[M.UID()]","[client_ckey]","[M_eyeUID]")'
+						onmouseover='expand("item[i]","[M_job]","[M_name]","[M_rname]","--unused--","[M_key]","[M.lastKnownIP]","[antagonist_string]","[M.UID()]","[client_ckey]","[M_eyeUID]","[client_ckey in GLOB.head_job_whitelist_ckeys]","[client_ckey in GLOB.job_playtime_override_ckeys]")'
 						>
 						<b id='search[i]'>[M_name] - [M_rname] - [M_key] ([M_job])</b>
 						</a>

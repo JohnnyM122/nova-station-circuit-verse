@@ -20380,7 +20380,7 @@
 	id = "NCT"
 	},
 /obj/machinery/door/airlock/command/glass{
-	name = "Trainer's Office";
+	name = "NT Official's Office";
 	id_tag = "nct";
 	dir = 4
 	},
@@ -22654,7 +22654,7 @@
 "gac" = (
 /obj/item/kirbyplants/large,
 /obj/machinery/camera{
-	c_tag = "Trainer's Office";
+	c_tag = "NT Official's Office";
 	dir = 8
 	},
 /turf/simulated/floor/carpet,
