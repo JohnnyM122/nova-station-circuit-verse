@@ -45,10 +45,11 @@
 
 	// Add more info if we are authed
 	if(key_valid)
+		if(SSticker)
+			status_info["ticker_state"] = SSticker.current_state
 		if(SSticker.mode)
 			status_info["real_mode"] = SSticker.mode.name
 			status_info["security_level"] = SSsecurity_level.get_current_level_as_text()
-			status_info["ticker_state"] = SSticker.current_state
 
 		if(SSshuttle.emergency)
 			// Shuttle status, see /__DEFINES/stat.dm

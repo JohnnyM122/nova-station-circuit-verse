@@ -35,6 +35,8 @@
 						<A href='byond://?src=[UID()];secretsfun=power'>Make all areas powered</A>&nbsp;&nbsp;
 						<A href='byond://?src=[UID()];secretsfun=unpower'>Make all areas unpowered</A>&nbsp;&nbsp;
 						<A href='byond://?src=[UID()];secretsfun=quickpower'>Power all SMES</A><BR>
+						<B>Station Repair</b><br>
+						[check_rights(R_ADMIN | R_BUILDMODE, 0, all = TRUE) ? "<A href='byond://?src=[UID()];secretsadmin=repair_station_all'><font color='green'><b>Fix / Reset Station (Breaches & Equipment)</b></font></A><BR>" : ""]
 						</center>
 					"}
 

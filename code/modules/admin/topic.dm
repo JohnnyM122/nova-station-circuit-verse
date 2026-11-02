@@ -3565,6 +3565,9 @@
 						SSnightshift.can_fire = FALSE
 						SSnightshift.update_nightshift(FALSE, FALSE)
 						to_chat(usr, SPAN_NOTICE("Night shift forced off."))
+			if("repair_station_all")
+				if(check_rights(R_ADMIN | R_BUILDMODE, show_msg = TRUE, all = TRUE))
+					fix_station_breaches_and_equipment(usr ? usr.client : null)
 		if(usr)
 			log_admin("[key_name(usr)] used secret [href_list["secretsadmin"]]")
 			if(ok)

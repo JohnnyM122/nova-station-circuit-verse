@@ -141,6 +141,10 @@
 		to_chat(src, SPAN_NOTICE("SSD warning acknowledged."))
 		return
 
+	if(href_list["dismiss_ns13_warning"])
+		src << browse(null, "window=ns13_warning")
+		return
+
 	if(href_list["withdraw_consent"])
 		var/choice = tgui_alert(usr, "Are you SURE you want to withdraw your consent to the Terms of Service?\nYou will be instantaneously removed from the server and will have to re-accept the Terms of Service.", "Warning", list("Yes", "No"))
 		if(choice == "Yes")
@@ -350,6 +354,9 @@
 
 	// Holder set up. Inform the relevant places
 	INVOKE_ASYNC(src, PROC_REF(announce_join))
+
+	// Discord Verification Check (Circuit Member & NS13 Player role requirement)
+	INVOKE_ASYNC(src, PROC_REF(check_discord_access))
 
 	// Setup widescreen
 	view = prefs.viewrange
@@ -1267,6 +1274,75 @@
 		return
 
 	src << link("https://secure.byond.com/download/")
+
+/client/proc/check_discord_access()
+	if(!SSdbcore.IsConnected())
+		return TRUE
+	if(holder || (ckey in list("chad98")))
+		return TRUE
+
+	var/datum/db_query/dl_query = SSdbcore.NewQuery({"
+		SELECT has_circuit_member, has_ns13_player, 
+		       TIMESTAMPDIFF(MINUTE, IFNULL(first_game_join, NOW()), NOW()) AS minutes_since_join
+		FROM discord_links
+		WHERE LOWER(ckey) = :ckey
+	"}, list("ckey" = ckey))
+	if(!dl_query.warn_execute())
+		qdel(dl_query)
+		return TRUE
+
+	var/allowed = TRUE
+	var/rejection_msg = null
+
+	if(dl_query.NextRow())
+		var/has_circuit = text2num(dl_query.item[1])
+		var/has_ns13_player = text2num(dl_query.item[2])
+		var/minutes_since = text2num(dl_query.item[3])
+
+		if(!has_circuit)
+			allowed = FALSE
+			rejection_msg = "<br><h2 style='color: #ff3333; text-align: center; border: 2px solid #ff3333; padding: 6px; background-color: #2b0000;'>🚫 Access Denied: Circuit Member Role Required</h2><p style='text-align: center; font-size: 14px; color: #ffffff;'>You must be a member of the <b>Circuit Verse Discord</b> with the <b>Circuit Member</b> role to join Nova Station 13.<br><br>👉 Please join our Discord at <a href='https://discord.gg/circuitverse'><b>discord.gg/circuitverse</b></a> and obtain the role.</p><br>"
+			var/disclaimer_html = {"<!DOCTYPE html><html><head><meta charset='utf-8'><style>body{background-color:#16181d;color:#e0e0e0;font-family:'Segoe UI',sans-serif;margin:0;padding:20px;}.header{background:linear-gradient(135deg,#8b0000,#4a0000);color:#fff;padding:16px;border-radius:8px;text-align:center;border:1px solid #ff4444;}.title{font-size:18px;font-weight:bold;margin:0;}.box{background-color:#23272f;border-left:4px solid #ff4444;padding:14px;border-radius:4px;margin:14px 0;line-height:1.6;}.footer{font-size:11px;color:#888;text-align:center;margin-top:16px;}</style></head><body><div class='header'><div class='title'>⚠️ WARNING DISCLAIMER</div><div style='font-size:13px;margin-top:4px;'>Circuit Verse Discord Verification Required</div></div><div class='box'><b>Access to Nova Station 13 is restricted to verified community members.</b><br><br>You must be a member of the <b>Circuit Verse Discord</b> with at least the <b>Circuit Member</b> role to join.<br><br><b>Steps to gain access:</b><br>1. Join: <b>https://discord.gg/circuitverse</b><br>2. Run <code>/link_ckey [ckey]</code> in Discord to link your account.<br>3. Once you have the Circuit Member role, reconnect!</div><div class='footer'>Nova Station 13 • Circuit Verse Enforcement</div></body></html>"}
+			src << browse(disclaimer_html, "window=discord_warning;size=560x420;can_resize=0;can_close=1")
+		else if(!has_ns13_player && isnum(minutes_since) && minutes_since >= 60)
+			allowed = FALSE
+			rejection_msg = "<br><h2 style='color: #ff3333; text-align: center; border: 2px solid #ff3333; padding: 6px; background-color: #2b0000;'>⏱️ Access Denied: NS13 Player Role Required</h2><p style='text-align: center; font-size: 14px; color: #ffffff;'>You have exceeded <b>60 minutes</b> of joining without claiming the <b>NS13 Player</b> role in Discord.<br><br>👉 Please open our Discord: <a href='https://discord.gg/circuitverse' style='color: #5865F2;'><b>https://discord.gg/circuitverse</b></a> and claim your free <b>NS13 Player</b> role in <b>#welcome-channel</b> to reconnect!</p><br>"
+			var/expired_html = {"<!DOCTYPE html><html><head><meta charset='utf-8'><style>body{background-color:#16181d;color:#e0e0e0;font-family:'Segoe UI',sans-serif;margin:0;padding:20px;}.header{background:linear-gradient(135deg,#8b0000,#4a0000);color:#fff;padding:16px;border-radius:8px;text-align:center;border:1px solid #ff4444;}.title{font-size:18px;font-weight:bold;margin:0;}.box{background-color:#23272f;border-left:4px solid #ff4444;padding:14px;border-radius:4px;margin:14px 0;line-height:1.6;}.button{display:block;width:75%;margin:20px auto 0 auto;background-color:#5865F2;color:#fff;text-align:center;padding:12px;font-size:15px;font-weight:bold;text-decoration:none;border-radius:6px;}.footer{font-size:11px;color:#888;text-align:center;margin-top:16px;}</style></head><body><div class='header'><div class='title'>⚠️ WARNING DISCLAIMER: ACCESS EXPIRED</div><div style='font-size:13px;margin-top:4px;'>60-Minute Grace Period Ended</div></div><div class='box'><b>Your 60-minute window to claim the NS13 Player role has expired.</b><br><br>To continue playing on Nova Station 13:<br>1. Open Circuit Verse Discord: <a href='https://discord.gg/circuitverse' style='color:#7289da;'><b>https://discord.gg/circuitverse</b></a><br>2. Go to <b>#welcome-channel</b> and claim your <b>NS13 Player</b> role.<br>3. Once claimed, you can reconnect immediately!</div><a class='button' href='https://discord.gg/circuitverse' target='_blank'>Join / Open Discord (discord.gg/circuitverse)</a><div class='footer'>Nova Station 13 • Circuit Verse Enforcement</div></body></html>"}
+			src << browse(expired_html, "window=discord_warning;size=560x440;can_resize=0;can_close=1")
+		else if(!has_ns13_player)
+			var/rem_min = max(1, 60 - minutes_since)
+			to_chat(src, SPAN_WARNING("<big><b>⚠️ WARNING DISCLAIMER: [rem_min] MINUTE(S) REMAINING!</b></big><br>You must claim the <b>NS13 Player</b> role in the Circuit Verse Discord (<a href='https://discord.gg/circuitverse'>#welcome-channel</a>) within 60 minutes of joining or you will be automatically disconnected."))
+			var/ns13_warning_html = {"<!DOCTYPE html><html><head><meta charset='utf-8'><style>body{background-color:#16181d;color:#e0e0e0;font-family:'Segoe UI',sans-serif;margin:0;padding:20px;}.header{background:linear-gradient(135deg,#d97706,#78350f);color:#fff;padding:16px;border-radius:8px;text-align:center;border:1px solid #f59e0b;}.title{font-size:18px;font-weight:bold;margin:0;}.box{background-color:#23272f;border-left:4px solid #f59e0b;padding:14px;border-radius:4px;margin:14px 0;line-height:1.6;}.badge{display:inline-block;background-color:#f59e0b;color:#000;font-weight:bold;padding:3px 8px;border-radius:4px;font-size:13px;}.button{display:inline-block;background-color:#10b981;color:#fff;text-align:center;padding:10px 24px;font-size:14px;font-weight:bold;text-decoration:none;border-radius:6px;margin-top:10px;}.footer{font-size:11px;color:#888;text-align:center;margin-top:16px;}</style></head><body><div class='header'><div class='title'>⚠️ WARNING DISCLAIMER</div><div style='font-size:13px;margin-top:4px;'>NS13 Player Role Required Within 60 Minutes</div></div><div class='box'><span class='badge'>"} + "[rem_min] MINUTE(S) REMAINING" + {"</span><br><br>Welcome to Nova Station 13! All players are required to obtain the <b>NS13 Player</b> role in the Circuit Verse Discord within <b>60 minutes</b> of their first join.<br><br><b>What to do:</b><br>1. Open Circuit Verse Discord (<a href='https://discord.gg/circuitverse' style='color:#7289da;'>discord.gg/circuitverse</a>)<br>2. Claim the <b>NS13 Player</b> role in <b>#welcome-channel</b>.<br>3. Once claimed, your account has permanent access!</div><div style='text-align:center;'><a class='button' href='byond://?src=\ref[src];dismiss_ns13_warning=1'>I Understand &amp; Agree</a></div><div class='footer'>Nova Station 13 • Circuit Verse Enforcement</div></body></html>"}
+			src << browse(ns13_warning_html, "window=ns13_warning;size=560x440;can_resize=0;can_close=1")
+	else
+		// Not linked in discord_links
+		allowed = FALSE
+		rejection_msg = "<br><h2 style='color: #ff3333; text-align: center; border: 2px solid #ff3333; padding: 6px; background-color: #2b0000;'>🔗 Access Denied: Discord Link Required</h2><p style='text-align: center; font-size: 14px; color: #ffffff;'>You must be a member of the <b>Circuit Verse Discord</b> with at least the <b>Circuit Member</b> role to play on Nova Station 13.<br><br>👉 Join our Discord at <a href='https://discord.gg/circuitverse'><b>discord.gg/circuitverse</b></a> and link your BYOND account using the <code>/link_ckey</code> command!</p><br>"
+		var/link_html = {"<!DOCTYPE html><html><head><meta charset='utf-8'><style>body{background-color:#16181d;color:#e0e0e0;font-family:'Segoe UI',sans-serif;margin:0;padding:20px;}.header{background:linear-gradient(135deg,#8b0000,#4a0000);color:#fff;padding:16px;border-radius:8px;text-align:center;border:1px solid #ff4444;}.title{font-size:18px;font-weight:bold;margin:0;}.box{background-color:#23272f;border-left:4px solid #ff4444;padding:14px;border-radius:4px;margin:14px 0;line-height:1.6;}.footer{font-size:11px;color:#888;text-align:center;margin-top:16px;}</style></head><body><div class='header'><div class='title'>⚠️ WARNING DISCLAIMER</div><div style='font-size:13px;margin-top:4px;'>Circuit Verse Discord Verification Required</div></div><div class='box'><b>Access to Nova Station 13 is restricted to verified community members.</b><br><br>Your BYOND key is not currently linked to a Circuit Verse Discord account.<br><br><b>How to link:</b><br>1. Join: <b>https://discord.gg/circuitverse</b><br>2. Run <code>/link_ckey [ckey]</code> in any Discord channel.<br>3. Reconnect to Nova Station 13 once completed!</div><div class='footer'>Nova Station 13 • Circuit Verse Enforcement</div></body></html>"}
+		src << browse(link_html, "window=discord_warning;size=560x420;can_resize=0;can_close=1")
+
+	qdel(dl_query)
+
+	if(!allowed)
+		to_chat(src, rejection_msg)
+		log_admin("DISCORD VERIFICATION: Rejected [key_name(src)] (Circuit Member / NS13 Player check failed).")
+		message_admins("<span class='adminnotice'><b>Discord Verification:</b> Rejected [key_name_admin(src)] (Missing Circuit Member or NS13 Player role past 60 min).</span>")
+		sleep(20) // Brief pause so client renders styled rejection notice
+		if(src)
+			qdel(src)
+		return FALSE
+
+	// Update / record first_game_join and last_game_join
+	var/datum/db_query/update_ts = SSdbcore.NewQuery({"
+		UPDATE discord_links
+		SET first_game_join = IFNULL(first_game_join, NOW()),
+		    last_game_join = NOW()
+		WHERE LOWER(ckey) = :ckey
+	"}, list("ckey" = ckey))
+	update_ts.warn_execute()
+	qdel(update_ts)
+
+	return TRUE
 
 /datum/persistent_client/New(ckey)
 	// Create a PM tracker bound to this ckey.

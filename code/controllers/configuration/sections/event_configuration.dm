@@ -1,7 +1,7 @@
 /// Config holder for all stuff relating to ingame random events
 /datum/configuration_section/event_configuration
 	/// Do we want to enable random events at all
-	var/enable_random_events = TRUE
+	var/enable_random_events = FALSE
 	/// Assoc list of when the first event in a group can run. key: severity | value: assoc list with upper and low bounds (key: "upper"/"lower" | value: time in deciseconds)
 	var/list/first_run_times = alist(
 		EVENT_LEVEL_MUNDANE = null,
