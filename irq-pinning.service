@@ -1,0 +1,11 @@
+[Unit]
+Description=Pin network IRQs to CPU 0
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'for f in /proc/irq/*/smp_affinity_list; do echo 0 > "$f" 2>/dev/null || true; done'
+RemainAfterExit=true
+
+[Install]
+WantedBy=multi-user.target

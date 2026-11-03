@@ -1,0 +1,24 @@
+[Unit]
+Description=Nova Station 13 BYOND Server
+After=network-online.target mariadb.service
+Wants=network-online.target mariadb.service
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/NovaStation
+Environment=LD_LIBRARY_PATH=/home/ubuntu/BYOND/byond/bin:/home/ubuntu/NovaStation
+Environment=MALLOC_ARENA_MAX=2
+ExecStartPre=/bin/sh -c "find /home/ubuntu/NovaStation/_maps /home/ubuntu/NovaStation/config -type f -exec cat {} + > /dev/null 2>&1; cat /home/ubuntu/NovaStation/paradise.dmb /home/ubuntu/NovaStation/paradise.rsc > /dev/null 2>&1 || true"
+ExecStart=/home/ubuntu/BYOND/byond/bin/DreamDaemon /home/ubuntu/NovaStation/paradise.dmb 7777 -trusted -invisible -log nova-startup.log
+Restart=always
+RestartSec=5
+CPUAffinity=1
+LimitNOFILE=65536
+LimitMEMLOCK=infinity
+Nice=-20
+IOSchedulingClass=best-effort
+IOSchedulingPriority=0
+
+[Install]
+WantedBy=multi-user.target

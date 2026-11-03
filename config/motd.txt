@@ -9,7 +9,7 @@
 <p>We're pleased to announce that <b>Nova Station now has an official server rule set!</b></p>
 <p>Our official rules are finally available for all players to review.</p>
 <p>&#128214; <b>Read the Official Server Rules:</b><br>
-[INSERT RULES LINK HERE]</p>
+<a href="http://87.99.133.221/rules">http://87.99.133.221/rules</a></p>
 <p>You can also access the complete rulebook at any time by clicking the <b>Rules</b> button located in the top-right corner of your screen.</p>
 <p>All players are expected to familiarize themselves with the official rules and follow the standards established for our community.</p>
 <hr>
@@ -42,7 +42,7 @@
 <p>Want to stay connected with Nova Station outside of the game?</p>
 <p>Our Discord is the central hub for community announcements, development updates, discussions, player support, and staff applications.</p>
 <p>&#128172; <b>Join the Nova Station Discord:</b><br>
-[INSERT DISCORD INVITE HERE]</p>
+<a href="https://discord.com/invite/KmZgUPET9C">https://discord.com/invite/KmZgUPET9C</a></p>
 <p>We encourage every player to join so they don't miss important announcements, updates, or community events.</p>
 <hr>
 
@@ -64,7 +64,7 @@
 <li>Future events and activities.</li>
 </ul>
 <p><b>Official Discord:</b><br>
-[INSERT DISCORD INVITE HERE]</p>
+<a href="https://discord.com/invite/KmZgUPET9C">https://discord.com/invite/KmZgUPET9C</a></p>
 <p>Thank you for being part of Nova Station and supporting Circuit Verse Community!</p>
 <hr>
 

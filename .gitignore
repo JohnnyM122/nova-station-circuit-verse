@@ -111,7 +111,6 @@ dmdoc/
 *.fullfit-*
 *.sharp-*
 /sound/music/bensound-scifi.ogg
-/sound/music/carlvanred-end-stretch.mp3
 
 # Publish Nova Station's non-secret MOTD and lobby artwork
 !/config/motd.txt
@@ -120,3 +119,16 @@ dmdoc/
 !/config/title_screens/images/NovaStation.png
 /config/title_screens/NovaStation.preopaque-*.png
 !/config/donators.txt
+!/config/rules.html
+
+# Bot Secrets and Local Configs
+bot/config.json
+config_vps.json
+!bot/config.example.json
+
+# One-off diagnostic scripts
+check_*.py
+inspect_*.py
+update_*.py
+post_complete_rules.py
+list_commands.py

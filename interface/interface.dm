@@ -29,11 +29,12 @@
 	set name = "Rules"
 	set desc = "View the server rules."
 	set hidden = 1
+	if(fexists("config/rules.html"))
+		src << browse(file("config/rules.html"), "window=server_rules;size=960x720;can_resize=1")
 	if(GLOB.configuration.url.rules_url)
-		if(tgui_alert(src, "This will open the rules in your browser. Are you sure?", "Rules", list("Yes", "No")) != "Yes")
-			return
-		src << link(GLOB.configuration.url.rules_url)
-	else
+		if(tgui_alert(src, "Would you also like to open the rules in your web browser?", "Server Rules", list("Yes", "No")) == "Yes")
+			src << link(GLOB.configuration.url.rules_url)
+	else if(!fexists("config/rules.html"))
 		to_chat(src, SPAN_DANGER("The rules URL is not set in the server configuration."))
 
 /client/verb/github()
