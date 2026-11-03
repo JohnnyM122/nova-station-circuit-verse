@@ -253,7 +253,7 @@ class HelpdeskCog(commands.Cog):
         Handles strike tracking, warning embeds, and automated 60-minute timeout on 3rd violation.
         """
         strike_count, timeout_triggered = self.record_strike(member.id)
-        guild = member.guild
+        guild = member.guild if member else None
 
         if timeout_triggered:
             # 3rd Violation: Apply 60-minute timeout
@@ -261,7 +261,7 @@ class HelpdeskCog(commands.Cog):
             timeout_ok = False
             timeout_err = ""
             try:
-                await member.timeout(timeout_duration, reason="Automated timeout: 3 inappropriate question violations in helpdesk/AI")
+                await member.timeout(timeout_duration, reason="Automated timeout: 3 Not Safe For Work (SFW) question warnings")
                 timeout_ok = True
             except discord.Forbidden:
                 timeout_err = "Bot lacks permission to timeout this member (member may be an Administrator or have a higher role)."
@@ -269,13 +269,13 @@ class HelpdeskCog(commands.Cog):
                 timeout_err = str(e)
 
             user_embed = discord.Embed(
-                title="⛔ Member Timed Out [3/3 Strikes]",
+                title="⛔ Member Timed Out for 60 Minutes [3/3 Warnings]",
                 description=(
-                    f"{member.mention} has accumulated **3 strikes** for submitting inappropriate or prohibited questions "
+                    f"{member.mention} has received **3 warnings** for submitting questions that violate our Safe For Work (SFW) policy "
                     f"and has been placed in **timeout for 60 minutes**.\n\n"
                     f"**Violation**: {reason}\n"
-                    f"**Duration**: 60 Minutes\n"
-                    f"**Next Steps**: Please review server rules before asking further questions."
+                    f"**Duration**: 60 Minutes\n\n"
+                    f"Please review server rules before asking further questions once your timeout expires."
                 ),
                 color=discord.Color.red()
             )
@@ -283,7 +283,7 @@ class HelpdeskCog(commands.Cog):
             # Admin log
             log_embed = discord.Embed(
                 title="🚨 Automated 60-Minute Timeout Applied",
-                description=f"Member reached 3 strikes for inappropriate question violations.",
+                description=f"Member reached 3 warnings for inappropriate/NSFW question violations.",
                 color=discord.Color.dark_red(),
                 timestamp=datetime.datetime.now(datetime.timezone.utc)
             )
@@ -293,44 +293,105 @@ class HelpdeskCog(commands.Cog):
             log_embed.add_field(name="Offending Query", value=f"```{raw_question[:500]}```", inline=False)
             log_embed.add_field(name="Reason", value=reason, inline=True)
             log_embed.add_field(name="Timeout Status", value="✅ Applied" if timeout_ok else f"⚠️ Failed ({timeout_err})", inline=True)
-            await self.log_admin_violation(guild, log_embed)
+            if guild:
+                await self.log_admin_violation(guild, log_embed)
             return user_embed
 
         else:
             # 1st or 2nd Violation: Warning embed
+            warn_title = f"⚠️ Warning [{strike_count}/3] — Not Safe For Work"
+            if strike_count == 2:
+                warning_note = "🚨 **FINAL WARNING**: Submitting another inappropriate query will immediately **time you out for 60 minutes**."
+            else:
+                warning_note = "*(Note: Submitting 3 inappropriate queries within 24 hours results in an automatic **60-minute timeout**)*"
+
             user_embed = discord.Embed(
-                title=f"⚠️ Inappropriate Question Blocked [Strike {strike_count}/3]",
+                title=warn_title,
                 description=(
-                    f"Your question was blocked because it violates server content rules regarding inappropriate, NSFW, or prohibited content.\n\n"
+                    f"Your question was blocked because it violates our Safe For Work (SFW) content policy.\n\n"
                     f"**Reason**: {reason}\n\n"
-                    f"**Warning**: Continued attempts to submit inappropriate queries will result in an automatic **60-minute timeout** on your 3rd strike.\n"
-                    f"**Current Strikes**: **{strike_count} / 3** *(Strikes expire after 24 hours)*"
+                    f"{warning_note}\n\n"
+                    f"**Current Warnings**: **{strike_count} / 3** *(Warnings expire after 24 hours)*"
                 ),
-                color=discord.Color.orange()
+                color=discord.Color.orange() if strike_count == 1 else discord.Color.dark_orange()
             )
 
             # Admin log
             log_embed = discord.Embed(
-                title=f"⚠️ Inappropriate Question Warning [Strike {strike_count}/3]",
+                title=f"⚠️ Inappropriate Question Warning [{strike_count}/3]",
                 color=discord.Color.orange(),
                 timestamp=datetime.datetime.now(datetime.timezone.utc)
             )
             log_embed.add_field(name="User", value=f"{member.mention} (`{member.id}`)", inline=True)
             log_embed.add_field(name="Channel", value=channel.mention if channel else "Unknown", inline=True)
-            log_embed.add_field(name="Strike Count", value=f"{strike_count} / 3", inline=True)
+            log_embed.add_field(name="Warning Count", value=f"{strike_count} / 3", inline=True)
             log_embed.add_field(name="Question", value=f"```{raw_question[:500]}```", inline=False)
             log_embed.add_field(name="Reason", value=reason, inline=False)
-            await self.log_admin_violation(guild, log_embed)
+            if guild:
+                await self.log_admin_violation(guild, log_embed)
             return user_embed
 
     # -------------------------------------------------------------
-    # Internet Search Engine (Paradise Station 13 Wiki & Web)
+    # Search & Knowledge Extraction Engines
     # -------------------------------------------------------------
+
+    async def search_duckduckgo_instant(self, query: str) -> dict | None:
+        """Queries DuckDuckGo Instant Answer API for factual definitions and instant summaries."""
+        url = f"https://api.duckduckgo.com/?q={urllib.parse.quote(query)}&format=json&no_html=1&skip_disambig=1"
+        headers = {"User-Agent": "NovaStation13Bot/1.0 (Discord; Linux)"}
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=4)) as resp:
+                    if resp.status == 200:
+                        data = await resp.json(content_type=None)
+                        abstract = data.get("AbstractText") or data.get("Answer")
+                        if abstract:
+                            return {
+                                "source": f"DuckDuckGo / {data.get('Heading', 'Overview')}",
+                                "snippet": abstract,
+                                "url": data.get("AbstractURL") or "https://duckduckgo.com"
+                            }
+        except Exception as e:
+            logger.debug(f"DuckDuckGo Instant Answer error: {e}")
+        return None
+
+    async def search_wikipedia(self, query: str) -> dict | None:
+        """Queries Wikipedia REST API for authoritative summaries on general knowledge topics."""
+        headers = {"User-Agent": "NovaStation13Bot/1.0 (Discord; Linux)"}
+        try:
+            async with aiohttp.ClientSession() as session:
+                # 1. Search Wikipedia for most relevant page title
+                search_url = f"https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch={urllib.parse.quote(query)}&format=json&utf8=1"
+                async with session.get(search_url, headers=headers, timeout=aiohttp.ClientTimeout(total=4)) as resp:
+                    if resp.status != 200:
+                        return None
+                    sdata = await resp.json()
+                    search_results = sdata.get("query", {}).get("search", [])
+                    if not search_results:
+                        return None
+                    top_title = search_results[0]["title"]
+
+                # 2. Fetch page summary for the top article
+                summary_url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{urllib.parse.quote(top_title)}"
+                async with session.get(summary_url, headers=headers, timeout=aiohttp.ClientTimeout(total=4)) as resp:
+                    if resp.status == 200:
+                        pdata = await resp.json()
+                        extract = pdata.get("extract")
+                        if extract:
+                            url = pdata.get("content_urls", {}).get("desktop", {}).get("page", f"https://en.wikipedia.org/wiki/{urllib.parse.quote(top_title)}")
+                            return {
+                                "source": f"Wikipedia: {top_title}",
+                                "snippet": extract,
+                                "url": url
+                            }
+        except Exception as e:
+            logger.debug(f"Wikipedia API error: {e}")
+        return None
 
     async def search_internet(self, query: str) -> list[dict]:
         """
         Searches the internet with primary focus on Paradise Station 13 Wiki.
-        Falls back to DuckDuckGo / Wikipedia for general knowledge.
+        Falls back to general web search.
         Returns a list of dicts: [{'source': ..., 'title': ..., 'snippet': ..., 'url': ...}].
         """
         headers = {
@@ -348,7 +409,6 @@ class HelpdeskCog(commands.Cog):
                         raw_snippets = re.findall(r'<a class="result__snippet[^>]*>(.*?)</a>', html_text, re.DOTALL)
                         raw_urls = re.findall(r'<a class="result__url[^>]*href="([^"]+)"[^>]*>(.*?)</a>', html_text, re.DOTALL)
 
-                        # Filter for relevance to query words
                         query_words = set(re.findall(r'\b[a-zA-Z]{3,}\b', query.lower()))
                         for i, snip in enumerate(raw_snippets[:3]):
                             clean_snip = unescape(re.sub(r'<[^>]+>', '', snip)).strip()
@@ -358,7 +418,6 @@ class HelpdeskCog(commands.Cog):
                                 if m:
                                     url = urllib.parse.unquote(m.group(1))
 
-                            # Verify snippet has some relation to query
                             snip_lower = clean_snip.lower()
                             if any(w in snip_lower for w in query_words) or len(results) == 0:
                                 results.append({
@@ -369,7 +428,7 @@ class HelpdeskCog(commands.Cog):
             except Exception as e:
                 logger.debug(f"Paradise Station DDG search error: {e}")
 
-            # 2. General Web Fallback if Paradise Station yielded nothing relevant or query is general
+            # 2. General Web Fallback if needed
             if not results:
                 gen_ddg_url = f"https://html.duckduckgo.com/html/?q={urllib.parse.quote(query)}"
                 try:
@@ -386,7 +445,7 @@ class HelpdeskCog(commands.Cog):
                                     if m:
                                         url = urllib.parse.unquote(m.group(1))
                                 results.append({
-                                    "source": "Internet Knowledge Base",
+                                    "source": "Web Knowledge Base",
                                     "snippet": clean_snip,
                                     "url": url
                                 })
@@ -401,24 +460,22 @@ class HelpdeskCog(commands.Cog):
 
     async def query_google_ai(self, question: str, web_context: list[dict]) -> str | None:
         """
-        Queries Google Gemini AI with web search context.
-        Maintains persona of CV-Nova-Helper without revealing AI origin.
-        Primary domain: Paradise Station 13 mechanics.
+        Queries Google Gemini AI with search context.
+        Answers any Safe For Work question (SS13 mechanics, rules, or general topics).
+        Maintains persona of CV-Nova-Helper without revealing AI origins.
         """
         api_key = self.config.get("gemini_api_key") or os.environ.get("GEMINI_API_KEY")
         if not api_key:
             return None
 
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
-
         system_instruction = (
-            "You are CV-Nova-Helper, the dedicated automated station assistant of Nova Station 13, an SS13 server based on Paradise Station. "
-            "You answer player questions accurately and authoritatively. Your PRIMARY focus is anything related to Space Station 13 and Paradise Station "
-            "mechanics, roles, departments (Command, Security, Engineering, Medical, Science, Cargo, Service), survival, atmosphere/internals, "
-            "controls, chemistry recipes, supermatter setup, robotics, and server rules. If the user asks a non-SS13 question, answer helpfully and clearly. "
-            "Keep answers concise, clear, and nicely formatted with Discord markdown (bullet points, bold text). "
-            "CRITICAL DIRECTIVE: NEVER state or imply that you are an AI, a language model, an LLM, or created with AI. "
-            "You are CV-Nova-Helper, the station's official automated assistant."
+            "You are CV-Nova-Helper, the dedicated automated station and community assistant of Nova Station 13. "
+            "You answer questions accurately, politely, and authoritatively. "
+            "You can answer questions about Space Station 13 (Paradise Station codebase, roles, departments, mechanics, guides, and server rules) "
+            "as well as any general knowledge, science, programming, history, or real-world questions, provided they are Safe For Work (SFW). "
+            "Keep answers concise, clear, and formatted with Discord markdown (bullet points, bold text). "
+            "CRITICAL DIRECTIVE: NEVER state or imply that you are an AI, a language model, an LLM, or created by OpenAI/Google. "
+            "You are CV-Nova-Helper, the official automated assistant of Nova Station 13."
         )
 
         context_blocks = []
@@ -428,8 +485,8 @@ class HelpdeskCog(commands.Cog):
 
         user_content = (
             f"System Directive: {system_instruction}\n\n"
-            f"Retrieved Internet & Wiki Reference Context:\n{context_str}\n\n"
-            f"Player Question: {question}"
+            f"Retrieved Context / Sources:\n{context_str}\n\n"
+            f"User Question: {question}"
         )
 
         payload = {
@@ -445,27 +502,20 @@ class HelpdeskCog(commands.Cog):
             }
         }
 
+        # Try gemini-2.0-flash first, then gemini-1.5-flash
+        models = ["gemini-2.0-flash", "gemini-1.5-flash"]
         try:
             async with aiohttp.ClientSession() as session:
-                async with session.post(url, json=payload, timeout=aiohttp.ClientTimeout(total=10)) as resp:
-                    if resp.status == 200:
-                        data = await resp.json()
-                        candidates = data.get("candidates", [])
-                        if candidates:
-                            parts = candidates[0].get("content", {}).get("parts", [])
-                            if parts:
-                                return parts[0].get("text", "").strip()
-                    else:
-                        # Fallback to gemini-1.5-flash
-                        fallback_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
-                        async with session.post(fallback_url, json=payload, timeout=aiohttp.ClientTimeout(total=10)) as fb_resp:
-                            if fb_resp.status == 200:
-                                fb_data = await fb_resp.json()
-                                fb_cands = fb_data.get("candidates", [])
-                                if fb_cands:
-                                    fb_parts = fb_cands[0].get("content", {}).get("parts", [])
-                                    if fb_parts:
-                                        return fb_parts[0].get("text", "").strip()
+                for model in models:
+                    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+                    async with session.post(url, json=payload, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+                        if resp.status == 200:
+                            data = await resp.json()
+                            candidates = data.get("candidates", [])
+                            if candidates:
+                                parts = candidates[0].get("content", {}).get("parts", [])
+                                if parts:
+                                    return parts[0].get("text", "").strip()
         except Exception as e:
             logger.error(f"Error querying Google AI: {e}")
         return None
@@ -489,24 +539,37 @@ class HelpdeskCog(commands.Cog):
 
     async def get_smart_answer(self, question: str) -> tuple[str, list[dict]]:
         """
-        Coordinates internet search, Paradise Station 13 Wiki extraction, and AI/local synthesis.
+        Coordinates AI generation, Wikipedia, DuckDuckGo, Paradise Station Wiki, and local knowledge base.
+        Answers any Safe For Work question.
         Returns (answer_text, list_of_sources).
         """
-        # 1. Fetch live internet / Paradise Station 13 Wiki context
+        # 1. Fetch web & wiki context
         web_results = await self.search_internet(question)
 
-        # 2. Try Google Gemini AI with web context
+        # 2. Try Google Gemini AI with gathered context
         ai_ans = await self.query_google_ai(question, web_results)
         if ai_ans:
             return ai_ans, web_results
 
-        # 3. Check local high-speed knowledge base
+        # 3. Check SS13 local knowledge base for instant authoritative game mechanics
         local_ans = self.find_local_best_answer(question)
         if local_ans:
             text = f"**{local_ans['title']}**\n\n{local_ans['description']}"
             return text, web_results
 
-        # 4. Synthesize internet / Paradise Station Wiki search snippets
+        # 4. Check DuckDuckGo Instant Answer (fast definitions, factual lookups)
+        ddg_ans = await self.search_duckduckgo_instant(question)
+        if ddg_ans:
+            text = f"**{ddg_ans['source']}**\n\n{ddg_ans['snippet']}"
+            return text, [ddg_ans] + web_results
+
+        # 5. Check Wikipedia REST API (encyclopedic summaries)
+        wiki_ans = await self.search_wikipedia(question)
+        if wiki_ans:
+            text = f"**{wiki_ans['source']}**\n\n{wiki_ans['snippet']}"
+            return text, [wiki_ans] + web_results
+
+        # 6. Synthesize search snippets
         if web_results:
             lines = [f"Here is what I found regarding **\"{question}\"**:\n"]
             for r in web_results[:2]:
@@ -516,40 +579,68 @@ class HelpdeskCog(commands.Cog):
                 lines.append(f"\n📖 **Full Reference**: [Open Guide]({web_results[0]['url']})")
             return "\n".join(lines), web_results
 
-        # 5. Default fallback
+        # 7. Default fallback
         fallback = (
-            f"I searched station archives and the internet for **\"{question}\"**, but couldn't locate an exact match.\n\n"
+            f"I searched station archives and knowledge bases for **\"{question}\"**, but couldn't locate a verified answer.\n\n"
             "• Use `/guide` to view complete station manuals (Supermatter, Medical, Chemistry, Security, Jobs, Controls)\n"
             "• In-game, press **`F1`** to ask active staff via **Mentorhelp** (`mhelp`)\n"
-            "• Visit the official [Paradise Station 13 Wiki](https://www.paradisestation.org/wiki) for in-depth articles."
+            "• Ask any safe-for-work question using `!cvh <question>` or `/cvh`."
         )
         return fallback, []
 
     # -------------------------------------------------------------
-    # Slash Commands
+    # Question & Helpdesk Commands (!cvh / /cvh / /ask)
     # -------------------------------------------------------------
 
-    @app_commands.command(name="ask", description="Ask a question about the server, gameplay, roles, mechanics, or general topics")
-    @app_commands.describe(question="Your question (primary focus: Paradise Station 13 / SS13)")
-    async def cmd_ask(self, interaction: discord.Interaction, question: str):
+    @commands.hybrid_command(
+        name="cvh",
+        aliases=["ask", "question", "helpdesk"],
+        description="Ask CV-Nova-Helper AI any safe-for-work question"
+    )
+    @app_commands.describe(question="Your question (gameplay, lore, mechanics, or any safe-for-work general topic)")
+    async def cmd_cvh(self, ctx: commands.Context, *, question: str = None):
+        """Ask CV-Nova-Helper AI any safe-for-work question. Works with `!cvh <question>` or `/cvh`."""
+        if not question or not question.strip():
+            embed = discord.Embed(
+                title="🤖 CV-Nova-Helper AI Assistant",
+                description=(
+                    "You can ask me any question as long as it is **Safe For Work (SFW)**!\n\n"
+                    "**How to Use:**\n"
+                    "• In chat: `!cvh <your question>` (or `!ask <your question>`)\n"
+                    "• Slash command: `/cvh` or `/ask`\n\n"
+                    "**Examples:**\n"
+                    "• `!cvh How do I set up the Supermatter engine?`\n"
+                    "• `!cvh What is the recipe for Dylovene?`\n"
+                    "• `!cvh What is quantum computing?`\n"
+                    "• `!cvh How do I treat brute damage as a medical doctor?`\n\n"
+                    "⚠️ *Note: All questions must be Safe For Work. Submitting inappropriate content issues warnings; 3 warnings result in an automatic 60-minute timeout.*"
+                ),
+                color=discord.Color.blue()
+            )
+            await ctx.send(embed=embed)
+            return
+
         # 1. Safety & Inappropriate Content Moderation Check
         is_bad, reason = self.check_inappropriate(question)
         if is_bad:
-            member = interaction.user if isinstance(interaction.user, discord.Member) else interaction.guild.get_member(interaction.user.id)
-            warn_embed = await self.handle_inappropriate_violation(member, interaction.channel, question, reason)
-            await interaction.response.send_message(embed=warn_embed)
+            member = ctx.author if isinstance(ctx.author, discord.Member) else (ctx.guild.get_member(ctx.author.id) if ctx.guild else None)
+            if member:
+                warn_embed = await self.handle_inappropriate_violation(member, ctx.channel, question, reason)
+                await ctx.send(embed=warn_embed)
+            else:
+                await ctx.send(f"⚠️ **Question Blocked**: {reason} All questions must be Safe For Work.")
             return
 
-        await interaction.response.defer()
+        await ctx.defer()
 
-        # 2. Retrieve Smart Answer using Internet Search & Paradise Station Wiki
+        # 2. Retrieve Smart Answer using AI & Knowledge Bases
         answer_text, sources = await self.get_smart_answer(question)
 
         if len(answer_text) > 4000:
             answer_text = answer_text[:3990] + "..."
 
         embed = discord.Embed(
-            title="💡 Nova Station 13 Knowledge Base",
+            title="💡 Nova Station 13 Knowledge Base & AI",
             description=answer_text,
             color=discord.Color.blue()
         )
@@ -562,37 +653,52 @@ class HelpdeskCog(commands.Cog):
                 inline=False
             )
 
-        embed.set_footer(text=f"Question: \"{question}\" • Paradise Station 13 Focus • CV-Nova-Helper")
-        await interaction.followup.send(embed=embed)
+        embed.set_footer(text=f"Question: \"{question[:100]}\" • CV-Nova-Helper AI")
+        await ctx.send(embed=embed)
 
-    @app_commands.command(name="ask_strikes", description="Check current inappropriate question strikes for a member")
-    @app_commands.describe(member="The member whose strike count to check")
-    async def cmd_ask_strikes(self, interaction: discord.Interaction, member: discord.Member = None):
-        target = member or interaction.user
+    @app_commands.command(name="ask", description="Ask CV-Nova-Helper AI any safe-for-work question")
+    @app_commands.describe(question="Your question (gameplay, lore, mechanics, or any safe-for-work general topic)")
+    async def slash_ask(self, interaction: discord.Interaction, question: str):
+        """Companion slash command so /ask continues to appear in Discord slash autocomplete."""
+        ctx = await self.bot.get_context(interaction)
+        await self.cmd_cvh(ctx, question=question)
+
+    @commands.hybrid_command(
+        name="ask_strikes",
+        aliases=["strikes", "warnings"],
+        description="Check current inappropriate question warnings for a member"
+    )
+    @app_commands.describe(member="The member whose warning count to check")
+    async def cmd_ask_strikes(self, ctx: commands.Context, member: discord.Member = None):
+        target = member or ctx.author
         now = datetime.datetime.now(datetime.timezone.utc)
         cutoff = now - datetime.timedelta(hours=24)
         active = [t for t in self.inappropriate_strikes[target.id] if t > cutoff]
         self.inappropriate_strikes[target.id] = active
 
         embed = discord.Embed(
-            title=f"📋 Inappropriate Query Strikes: {target.display_name}",
-            description=f"Current Active Strikes: **{len(active)} / 3**\n\n*(Strikes expire after 24 hours. Reaching 3 strikes results in a 60-minute timeout)*",
+            title=f"📋 Question Warnings: {target.display_name}",
+            description=f"Current Active Warnings: **{len(active)} / 3**\n\n*(Warnings expire after 24 hours. Reaching 3 warnings results in an automatic 60-minute timeout)*",
             color=discord.Color.gold() if len(active) > 0 else discord.Color.green()
         )
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await ctx.send(embed=embed)
 
-    @app_commands.command(name="clear_strikes", description="Staff command: Reset a member's inappropriate question strikes")
-    @app_commands.describe(member="The member whose strikes to clear")
-    async def cmd_clear_strikes(self, interaction: discord.Interaction, member: discord.Member):
+    @commands.hybrid_command(
+        name="clear_strikes",
+        aliases=["reset_warnings"],
+        description="Staff command: Reset a member's inappropriate question warnings"
+    )
+    @app_commands.describe(member="The member whose warnings to clear")
+    async def cmd_clear_strikes(self, ctx: commands.Context, member: discord.Member):
         staff_cog = self.bot.get_cog("StaffManagementCog")
         if staff_cog:
-            allowed, reason = staff_cog.check_command_access(interaction.user, "timeout")
+            allowed, reason = staff_cog.check_command_access(ctx.author, "timeout")
             if not allowed:
-                await interaction.response.send_message(f"🚫 **Access Denied**: {reason}", ephemeral=True)
+                await ctx.send(f"🚫 **Access Denied**: {reason}")
                 return
 
         self.inappropriate_strikes.pop(member.id, None)
-        await interaction.response.send_message(f"✅ Cleared all inappropriate query strikes for {member.mention}.", ephemeral=True)
+        await ctx.send(f"✅ Cleared all inappropriate question warnings for {member.mention}.")
 
     @app_commands.command(name="set_gemini_key", description="Configure Google AI API key for smart question answering")
     @app_commands.describe(api_key="Your Google Gemini API Key from Google AI Studio")
