@@ -35,7 +35,7 @@ jobs:
           fi
 
       - name: 'Update Branch'
-        uses: actions/checkout@v7.0.0
+        uses: actions/checkout@v7.0.1
         with:
           token: ${{ steps.create_token.outputs.token || secrets.GITHUB_TOKEN }}
           ref: main
