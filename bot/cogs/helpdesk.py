@@ -335,6 +335,51 @@ class HelpdeskCog(commands.Cog):
     # Search & Knowledge Extraction Engines
     # -------------------------------------------------------------
 
+    def is_ss13_related(self, text: str) -> bool:
+        """Determines if a query is specifically about Space Station 13."""
+        lower = text.lower()
+        ss13_keywords = [
+            "ss13", "space station", "paradise", "byond", "supermatter", "singularity",
+            "internals", "atmos", "eva", "centcom", "nanotrasen", "syndicate", "traitor",
+            "changeling", "wizard", "clown", "mime", "cargo tech", "head of security",
+            "captain", "hos", "hop", "rd", "cmo", "quartermaster", "mmi", "posibrain",
+            "cyborg", "ripley", "disabler", "space law", "mhelp", "ahelp", "adminhelp",
+            "mentorhelp", "cryoxadone", "bicaridine", "kelotane", "inaprovaline", "dylovene",
+            "defib", "brute damage", "burn damage", "toxin damage", "suffocation"
+        ]
+        return any(kw in lower for kw in ss13_keywords)
+
+    async def query_free_ai(self, question: str, extra_context: str = "") -> str | None:
+        """
+        Queries Cloudflare Workers AI (Llama 3.2 3B Instruct).
+        Answers any Safe For Work question (general knowledge, coding, science, philosophy, SS13, etc.).
+        """
+        url = "https://devtoolbox-api.devtoolbox-api.workers.dev/ai/generate"
+        prompt = (
+            "Please answer the user's question clearly, concisely, and helpfully using Discord markdown formatting (bullet points, bold text).\n\n"
+        )
+        if extra_context:
+            prompt += f"Reference Context:\n{extra_context}\n\n"
+        prompt += f"Question: {question}"
+
+        payload = {"prompt": prompt}
+        headers = {
+            "Content-Type": "application/json",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) NovaStation13Bot/1.0"
+        }
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(url, json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=12)) as resp:
+                    if resp.status == 200:
+                        data = await resp.json(content_type=None)
+                        if isinstance(data, dict) and data.get("response"):
+                            res = data["response"].strip()
+                            if len(res) > 10:
+                                return res
+        except Exception as e:
+            logger.debug(f"Cloudflare Workers AI query error: {e}")
+        return None
+
     async def search_duckduckgo_instant(self, query: str) -> dict | None:
         """Queries DuckDuckGo Instant Answer API for factual definitions and instant summaries."""
         url = f"https://api.duckduckgo.com/?q={urllib.parse.quote(query)}&format=json&no_html=1&skip_disambig=1"
@@ -390,8 +435,8 @@ class HelpdeskCog(commands.Cog):
 
     async def search_internet(self, query: str) -> list[dict]:
         """
-        Searches the internet with primary focus on Paradise Station 13 Wiki.
-        Falls back to general web search.
+        Searches web / wiki for grounding context.
+        If SS13-related, targets Paradise Station Wiki; otherwise searches the general web.
         Returns a list of dicts: [{'source': ..., 'title': ..., 'snippet': ..., 'url': ...}].
         """
         headers = {
@@ -399,58 +444,38 @@ class HelpdeskCog(commands.Cog):
         }
         results = []
 
-        # 1. Primary Attempt: Paradise Station 13 Wiki Search
-        paradise_ddg_url = f"https://html.duckduckgo.com/html/?q={urllib.parse.quote('site:paradisestation.org/wiki ' + query)}"
+        # Target Paradise Station Wiki if SS13 query; otherwise search general web
+        if self.is_ss13_related(query):
+            search_query = f"site:paradisestation.org/wiki {query}"
+            default_source = "Paradise Station 13 Wiki"
+        else:
+            search_query = query
+            default_source = "Web Knowledge Base"
+
+        gen_ddg_url = f"https://html.duckduckgo.com/html/?q={urllib.parse.quote(search_query)}"
         async with aiohttp.ClientSession() as session:
             try:
-                async with session.get(paradise_ddg_url, headers=headers, timeout=aiohttp.ClientTimeout(total=5)) as resp:
+                async with session.get(gen_ddg_url, headers=headers, timeout=aiohttp.ClientTimeout(total=5)) as resp:
                     if resp.status == 200:
                         html_text = await resp.text()
                         raw_snippets = re.findall(r'<a class="result__snippet[^>]*>(.*?)</a>', html_text, re.DOTALL)
                         raw_urls = re.findall(r'<a class="result__url[^>]*href="([^"]+)"[^>]*>(.*?)</a>', html_text, re.DOTALL)
 
-                        query_words = set(re.findall(r'\b[a-zA-Z]{3,}\b', query.lower()))
                         for i, snip in enumerate(raw_snippets[:3]):
                             clean_snip = unescape(re.sub(r'<[^>]+>', '', snip)).strip()
-                            url = raw_urls[i][0] if i < len(raw_urls) else "https://www.paradisestation.org/wiki"
+                            url = raw_urls[i][0] if i < len(raw_urls) else ""
                             if "uddg=" in url:
                                 m = re.search(r'uddg=([^&]+)', url)
                                 if m:
                                     url = urllib.parse.unquote(m.group(1))
-
-                            snip_lower = clean_snip.lower()
-                            if any(w in snip_lower for w in query_words) or len(results) == 0:
+                            if clean_snip:
                                 results.append({
-                                    "source": "Paradise Station 13 Wiki",
+                                    "source": default_source,
                                     "snippet": clean_snip,
                                     "url": url
                                 })
             except Exception as e:
-                logger.debug(f"Paradise Station DDG search error: {e}")
-
-            # 2. General Web Fallback if needed
-            if not results:
-                gen_ddg_url = f"https://html.duckduckgo.com/html/?q={urllib.parse.quote(query)}"
-                try:
-                    async with session.get(gen_ddg_url, headers=headers, timeout=aiohttp.ClientTimeout(total=5)) as resp:
-                        if resp.status == 200:
-                            html_text = await resp.text()
-                            raw_snippets = re.findall(r'<a class="result__snippet[^>]*>(.*?)</a>', html_text, re.DOTALL)
-                            raw_urls = re.findall(r'<a class="result__url[^>]*href="([^"]+)"[^>]*>(.*?)</a>', html_text, re.DOTALL)
-                            for i, snip in enumerate(raw_snippets[:3]):
-                                clean_snip = unescape(re.sub(r'<[^>]+>', '', snip)).strip()
-                                url = raw_urls[i][0] if i < len(raw_urls) else ""
-                                if "uddg=" in url:
-                                    m = re.search(r'uddg=([^&]+)', url)
-                                    if m:
-                                        url = urllib.parse.unquote(m.group(1))
-                                results.append({
-                                    "source": "Web Knowledge Base",
-                                    "snippet": clean_snip,
-                                    "url": url
-                                })
-                except Exception as e:
-                    logger.debug(f"General web search error: {e}")
+                logger.debug(f"Web search error: {e}")
 
         return results
 
@@ -469,9 +494,9 @@ class HelpdeskCog(commands.Cog):
             return None
 
         system_instruction = (
-            "You are CV-Nova-Helper, the dedicated automated station and community assistant of Nova Station 13. "
+            "You are CV-Nova-Helper, the dedicated automated assistant of Nova Station 13. "
             "You answer questions accurately, politely, and authoritatively. "
-            "You can answer questions about Space Station 13 (Paradise Station codebase, roles, departments, mechanics, guides, and server rules) "
+            "You can answer questions about Space Station 13 (Paradise Station codebase, roles, mechanics, rules) "
             "as well as any general knowledge, science, programming, history, or real-world questions, provided they are Safe For Work (SFW). "
             "Keep answers concise, clear, and formatted with Discord markdown (bullet points, bold text). "
             "CRITICAL DIRECTIVE: NEVER state or imply that you are an AI, a language model, an LLM, or created by OpenAI/Google. "
@@ -521,7 +546,10 @@ class HelpdeskCog(commands.Cog):
         return None
 
     def find_local_best_answer(self, query: str):
-        """Keyword matching across the comprehensive local knowledge base."""
+        """Keyword matching across the comprehensive local knowledge base (strictly for SS13 queries)."""
+        if not self.is_ss13_related(query):
+            return None
+
         q = query.lower()
         best_match = None
         highest_score = 0
@@ -539,23 +567,23 @@ class HelpdeskCog(commands.Cog):
 
     async def get_smart_answer(self, question: str) -> tuple[str, list[dict]]:
         """
-        Coordinates AI generation, Wikipedia, DuckDuckGo, Paradise Station Wiki, and local knowledge base.
-        Answers any Safe For Work question.
+        Coordinates AI generation, Wikipedia, DuckDuckGo, and Paradise Station Wiki.
+        Answers any Safe For Work question (general or SS13).
         Returns (answer_text, list_of_sources).
         """
         # 1. Fetch web & wiki context
         web_results = await self.search_internet(question)
+        extra_ctx = "\n".join([f"- {r.get('snippet')}" for r in web_results[:2]]) if web_results else ""
 
-        # 2. Try Google Gemini AI with gathered context
-        ai_ans = await self.query_google_ai(question, web_results)
+        # 2. Try Free Cloudflare Workers AI (Llama 3.2 3B) - handles ANY question
+        ai_ans = await self.query_free_ai(question, extra_ctx)
         if ai_ans:
             return ai_ans, web_results
 
-        # 3. Check SS13 local knowledge base for instant authoritative game mechanics
-        local_ans = self.find_local_best_answer(question)
-        if local_ans:
-            text = f"**{local_ans['title']}**\n\n{local_ans['description']}"
-            return text, web_results
+        # 3. Try Google Gemini AI if configured
+        gemini_ans = await self.query_google_ai(question, web_results)
+        if gemini_ans:
+            return gemini_ans, web_results
 
         # 4. Check DuckDuckGo Instant Answer (fast definitions, factual lookups)
         ddg_ans = await self.search_duckduckgo_instant(question)
@@ -569,7 +597,13 @@ class HelpdeskCog(commands.Cog):
             text = f"**{wiki_ans['source']}**\n\n{wiki_ans['snippet']}"
             return text, [wiki_ans] + web_results
 
-        # 6. Synthesize search snippets
+        # 6. Check SS13 local knowledge base only if question is SS13-related
+        local_ans = self.find_local_best_answer(question)
+        if local_ans:
+            text = f"**{local_ans['title']}**\n\n{local_ans['description']}"
+            return text, web_results
+
+        # 7. Synthesize search snippets
         if web_results:
             lines = [f"Here is what I found regarding **\"{question}\"**:\n"]
             for r in web_results[:2]:
@@ -579,12 +613,10 @@ class HelpdeskCog(commands.Cog):
                 lines.append(f"\n📖 **Full Reference**: [Open Guide]({web_results[0]['url']})")
             return "\n".join(lines), web_results
 
-        # 7. Default fallback
+        # 8. Clean, universal fallback
         fallback = (
-            f"I searched station archives and knowledge bases for **\"{question}\"**, but couldn't locate a verified answer.\n\n"
-            "• Use `/guide` to view complete station manuals (Supermatter, Medical, Chemistry, Security, Jobs, Controls)\n"
-            "• In-game, press **`F1`** to ask active staff via **Mentorhelp** (`mhelp`)\n"
-            "• Ask any safe-for-work question using `!cvh <question>` or `/cvh`."
+            f"I searched my knowledge base for **\"{question}\"**, but couldn't locate a verified answer.\n\n"
+            "Please try rephrasing your question or provide more details!"
         )
         return fallback, []
 
@@ -640,7 +672,7 @@ class HelpdeskCog(commands.Cog):
             answer_text = answer_text[:3990] + "..."
 
         embed = discord.Embed(
-            title="💡 Nova Station 13 Knowledge Base & AI",
+            title="🤖 CV-Nova-Helper AI",
             description=answer_text,
             color=discord.Color.blue()
         )
