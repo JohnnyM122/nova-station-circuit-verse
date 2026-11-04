@@ -16,12 +16,12 @@ def clean_song_title(text: str) -> str:
     if not text:
         return ""
     # Strip bracketed / parenthesized video tags
-    tag_pattern = r"(?i)\s*[\(\[](?:official\s*(?:4k|hd|music|lyric|audio)?\s*video|original\s*video.*?|video\s*with\s*subtitles|official\s*(?:audio|music\s*video|video)|lyric\s*video|lyrics|4k\s*video|hd\s*video|audio|music\s*video|4k|hd)[\)\]]"
+    tag_pattern = r"(?i)\s*[\(\[](?:official\s*(?:4k|hd|music|lyric|audio)?\s*video|original\s*video.*?|video\s*with\s*subtitles|official\s*(?:audio|music\s*video|video)|lyric\s*video|lyrics|4k\s*video|hd\s*video|audio|music\s*video|4k|hd|ncs\s*release|ncs\s*official|free\s*download)[\)\]]"
     text = re.sub(tag_pattern, "", text)
-    # Strip trailing delimiters like " | Official Video" or " - Official 4K Video" or " | Eurodance Classic"
-    text = re.sub(r"(?i)\s*[\|\-–—]\s*(?:official\s*(?:video|audio|music\s*video)|eurodance\s*classic|4k\s*video|hd\s*video|4k|hd).*$", "", text)
+    # Strip trailing delimiters like " | Official Video" or " - Official 4K Video" or " | Eurodance Classic" or " | NCS Release"
+    text = re.sub(r"(?i)\s*[\|\-–—]\s*(?:official\s*(?:video|audio|music\s*video)|eurodance\s*classic|4k\s*video|hd\s*video|4k|hd|ncs\s*release).*$", "", text)
     # Strip standalone phrases
-    text = re.sub(r"(?i)\b(?:official\s*4k\s*video|official\s*video|official\s*audio|official\s*music\s*video)\b", "", text)
+    text = re.sub(r"(?i)\b(?:official\s*4k\s*video|official\s*video|official\s*audio|official\s*music\s*video|ncs\s*release)\b", "", text)
     # Collapse multiple whitespaces
     text = re.sub(r"\s+", " ", text)
     return text.strip()
@@ -233,7 +233,7 @@ class RadioCog(commands.Cog, name="Radio"):
                 guild.default_role: discord.PermissionOverwrite(read_messages=True, send_messages=False),
                 guild.me: discord.PermissionOverwrite(read_messages=True, send_messages=True, embed_links=True)
             }
-            ch = await guild.create_text_channel(name=channel_name, overwrites=overwrites, topic="📻 Circuit Verse 24/7 Internet Radio — 90s, 00s & Dubstep!")
+            ch = await guild.create_text_channel(name=channel_name, overwrites=overwrites, topic="📻 Circuit Verse 24/7 Internet Radio — Stream-Safe Beats powered by Pretzel Rocks!")
             self.radio_cfg["channel_id"] = ch.id
             logger.info(f"Created dedicated radio channel: #{ch.name} ({ch.id})")
             return ch
@@ -248,13 +248,18 @@ class RadioCog(commands.Cog, name="Radio"):
 
         embed = discord.Embed(
             title="📻 Circuit Verse Radio — 24/7 Live Stream",
-            description="Broadcasting the greatest **90s & 2000s Dance, Pop, Club Classics, Remixes, and Dubstep VIPs** straight from our Hetzner server!",
+            description="Broadcasting 24/7 stream-safe EDM, Synthwave, Lofi, and Electronic Beats for the Circuit Verse community.",
             color=discord.Color.from_rgb(0, 168, 255)
         )
         embed.add_field(name="🎶 Now Playing", value=f"**{self.now_playing_data['title']}**\n*{self.now_playing_data['artist']}*", inline=False)
         embed.add_field(name="⏭️ Up Next", value=self.now_playing_data.get("next_song", "AutoDJ Shuffle"), inline=True)
         embed.add_field(name="🎧 Listeners", value=str(self.now_playing_data.get("listeners", 0)), inline=True)
         embed.add_field(name="🌐 Stream URL", value=f"[Click to Listen in Browser]({stream_url})", inline=False)
+        embed.add_field(
+            name="🛡️ Music Provider & Licensing",
+            value="Music provided by **[Pretzel Rocks](https://www.pretzel.rocks)**\n*100% Cleared for live streams & Discord voice broadcasts.*",
+            inline=False
+        )
         
         art = self.now_playing_data.get("art")
         if art and "generic_song" not in art:
@@ -264,7 +269,7 @@ class RadioCog(commands.Cog, name="Radio"):
         else:
             embed.set_thumbnail(url=logo_url)
 
-        embed.set_footer(text="Click 'Join My VC' to stream in voice, or 'Request Song' to queue a track!")
+        embed.set_footer(text="Music courtesy of Pretzel Rocks • Click 'Join My VC' to stream in voice, or 'Request Song'!")
         return embed
 
     async def connect_to_voice(self, guild: discord.Guild, channel: discord.VoiceChannel):
@@ -471,9 +476,18 @@ class RadioCog(commands.Cog, name="Radio"):
                                 listeners = data[0].get("listeners", {}).get("total", 0)
                                 raw_next = data[0].get("playing_next", {}).get("song", {}).get("text", "AutoDJ Shuffle")
                                 
+                                raw_title = clean_song_title(song.get("title") or song.get("text") or "Live Stream")
+                                raw_artist = clean_song_title(song.get("artist") or "")
+                                if " - " in raw_title and (not raw_artist or raw_artist.lower() in ("ncs", "stream-safe", "pretzel rocks", "nocopyrightsounds")):
+                                    parts = raw_title.split(" - ", 1)
+                                    raw_artist = parts[0].strip()
+                                    raw_title = parts[1].strip()
+                                elif not raw_artist:
+                                    raw_artist = "Circuit Verse Stream-Safe"
+
                                 self.now_playing_data = {
-                                    "title": clean_song_title(song.get("title") or song.get("text") or "Live Stream"),
-                                    "artist": clean_song_title(song.get("artist") or "90s, 00s & Dubstep"),
+                                    "title": raw_title,
+                                    "artist": raw_artist,
                                     "art": song.get("art"),
                                     "listeners": listeners,
                                     "next_song": clean_song_title(raw_next)
