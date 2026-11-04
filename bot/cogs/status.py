@@ -201,9 +201,8 @@ class StatusCog(commands.Cog):
             embed.add_field(
                 name="🌐 Domain & Connectivity",
                 value="✨ **Now Hosted on Private Domain! [CircuitVerse.Online](https://circuitverse.online)**\n"
-                      "🔗 **SS13 Server Connect:** **[Click to Join (BYOND)](byond://game.circuitverse.online:7777)** (`game.circuitverse.online:7777`)\n"
-                      "📻 **CV-Radio Subdomain:** **[radio.circuitverse.online](https://radio.circuitverse.online)**\n"
-                      "⛏️ **Minecraft Server:** `play.circuitverse.online` *(Proximity Voice Chat + Bedrock Crossplay)*",
+                      "🔗 **Server Connect Address:** **[Click to Join (BYOND)](byond://game.circuitverse.online:7777)** (`game.circuitverse.online:7777`)\n"
+                      "📻 **CV-Radio Subdomain:** **[radio.circuitverse.online](https://radio.circuitverse.online)**",
                 inline=False
             )
             embed.add_field(name="🖥️ Infrastructure & Hosting", value="Hosted on **[Hetzner Cloud](https://www.hetzner.com/cloud)** (Dedicated Server)", inline=False)
@@ -214,9 +213,8 @@ class StatusCog(commands.Cog):
             embed.add_field(
                 name="🌐 Domain & Connectivity",
                 value="✨ **Now Hosted on Private Domain! [CircuitVerse.Online](https://circuitverse.online)**\n"
-                      "🔗 **SS13 Server Connect:** **[Click to Join (BYOND)](byond://game.circuitverse.online:7777)** (`game.circuitverse.online:7777`)\n"
-                      "📻 **CV-Radio Subdomain:** **[radio.circuitverse.online](https://radio.circuitverse.online)**\n"
-                      "⛏️ **Minecraft Server:** `play.circuitverse.online` *(Proximity Voice Chat + Bedrock Crossplay)*",
+                      "🔗 **Server Connect Address:** **[Click to Join (BYOND)](byond://game.circuitverse.online:7777)** (`game.circuitverse.online:7777`)\n"
+                      "📻 **CV-Radio Subdomain:** **[radio.circuitverse.online](https://radio.circuitverse.online)**",
                 inline=False
             )
             embed.add_field(name="🖥️ Infrastructure & Hosting", value="Hosted on **[Hetzner Cloud](https://www.hetzner.com/cloud)** (Dedicated Server)", inline=False)
@@ -227,9 +225,8 @@ class StatusCog(commands.Cog):
             embed.add_field(
                 name="🌐 Domain & Connectivity",
                 value="✨ **Now Hosted on Private Domain! [CircuitVerse.Online](https://circuitverse.online)**\n"
-                      "🔗 **SS13 Server Connect:** `game.circuitverse.online:7777`\n"
-                      "📻 **CV-Radio Subdomain:** **[radio.circuitverse.online](https://radio.circuitverse.online)**\n"
-                      "⛏️ **Minecraft Server:** `play.circuitverse.online` *(Proximity Voice Chat + Bedrock Crossplay)*",
+                      "🔗 **Server Connect Address:** `game.circuitverse.online:7777`\n"
+                      "📻 **CV-Radio Subdomain:** **[radio.circuitverse.online](https://radio.circuitverse.online)**",
                 inline=False
             )
             embed.add_field(name="🖥️ Infrastructure & Hosting", value="Hosted on **[Hetzner Cloud](https://www.hetzner.com/cloud)** (Dedicated Server)", inline=False)

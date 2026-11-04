@@ -347,8 +347,7 @@ class RadioCog(commands.Cog, name="Radio"):
             value="✨ **Now Hosted on Subdomain! [radio.circuitverse.online](https://radio.circuitverse.online)**\n"
                   f"🔗 **Web Player:** **[Open Web Player]({base_url}/public/circuit_verse_radio)**\n"
                   f"📻 **Direct Stream:** **[Listen to Stream]({stream_url})**\n"
-                  "🌐 **Main Domain:** **[CircuitVerse.Online](https://circuitverse.online)**\n"
-                  "⛏️ **Official Minecraft Server:** `play.circuitverse.online`",
+                  "🌐 **Main Domain:** **[CircuitVerse.Online](https://circuitverse.online)**",
             inline=False
         )
         embed.add_field(name="🎶 Now Playing", value=f"**{self.now_playing_data['title']}**\n*{self.now_playing_data['artist']}*", inline=False)
