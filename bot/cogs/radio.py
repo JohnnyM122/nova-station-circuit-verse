@@ -81,10 +81,61 @@ async def _patched_execute_transition(self, transition_id: int) -> None:
 VoiceConnectionState._execute_transition = _patched_execute_transition
 # --- End of DAVE compatibility layer ---
 
-class SongRequestModal(discord.ui.Modal, title="Request a Song"):
+class SongSelectMenu(discord.ui.Select):
+    def __init__(self, cog, songs: list, user: discord.Member, note: str = ""):
+        options = []
+        for s in songs[:25]:
+            display_title = s["title"][:95]
+            display_artist = s["artist"][:95] if s.get("artist") else "Stream-Safe EDM"
+            options.append(
+                discord.SelectOption(
+                    label=display_title,
+                    description=display_artist,
+                    value=s["request_id"],
+                    emoji="🎵"
+                )
+            )
+        super().__init__(
+            placeholder="Click here to choose a song to play...",
+            min_values=1,
+            max_values=1,
+            options=options
+        )
+        self.cog = cog
+        self.user = user
+        self.note = note
+
+    async def callback(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+        req_id = self.values[0]
+        res = await self.cog.submit_request_by_id(self.user, req_id, self.note)
+        if res.get("success"):
+            embed = discord.Embed(
+                title="🎵 Song Request Queued!",
+                description=f"**Track:** {res.get('title')}\n**Artist:** {res.get('artist')}",
+                color=discord.Color.green()
+            )
+            if self.note:
+                embed.add_field(name="Dedication", value=self.note, inline=False)
+            embed.set_footer(text=f"Requested by {self.user.display_name}")
+            
+            if interaction.channel:
+                await interaction.channel.send(embed=embed)
+            await interaction.followup.send(f"✅ Queued **{res.get('title')}**!", ephemeral=True)
+        else:
+            await interaction.followup.send(f"❌ Could not queue song: {res.get('error')}", ephemeral=True)
+
+
+class SongDropdownView(discord.ui.View):
+    def __init__(self, cog, songs: list, user: discord.Member, note: str = ""):
+        super().__init__(timeout=120)
+        self.add_item(SongSelectMenu(cog, songs, user, note))
+
+
+class SongRequestModal(discord.ui.Modal, title="Search & Request a Song"):
     song_input = discord.ui.TextInput(
-        label="Song Title, Artist, or YouTube URL",
-        placeholder="e.g. Alice Deejay - Better Off Alone, Cascada, or https://...",
+        label="Song Title, Artist, or Keyword",
+        placeholder="e.g. Funeral, Home, Alan, Witch, House, Synthwave...",
         required=True,
         min_length=2,
         max_length=200
@@ -105,23 +156,47 @@ class SongRequestModal(discord.ui.Modal, title="Request a Song"):
         query = self.song_input.value.strip()
         note = self.dedication.value.strip()
 
-        result = await self.cog.handle_song_request(interaction.user, query, note)
-        if result.get("success"):
-            embed = discord.Embed(
-                title="🎵 Song Request Queued!",
-                description=f"**Track:** {result.get('title', query)}\n**Artist:** {result.get('artist', 'Circuit Verse Radio')}",
-                color=discord.Color.green()
+        matches = await self.cog.search_library(query)
+        if matches:
+            if len(matches) == 1:
+                res = await self.cog.submit_request_by_id(interaction.user, matches[0]["request_id"], note)
+                if res.get("success"):
+                    embed = discord.Embed(
+                        title="🎵 Song Request Queued!",
+                        description=f"**Track:** {res.get('title')}\n**Artist:** {res.get('artist')}",
+                        color=discord.Color.green()
+                    )
+                    if note:
+                        embed.add_field(name="Dedication", value=note, inline=False)
+                    embed.set_footer(text=f"Requested by {interaction.user.display_name}")
+                    if interaction.channel:
+                        await interaction.channel.send(embed=embed)
+                    await interaction.followup.send(f"✅ Queued **{res.get('title')}**!", ephemeral=True)
+                    return
+                else:
+                    await interaction.followup.send(f"❌ Could not queue track: {res.get('error')}", ephemeral=True)
+                    return
+            else:
+                view = SongDropdownView(self.cog, matches[:25], interaction.user, note)
+                await interaction.followup.send(
+                    f"🔍 Found **{len(matches)}** matching songs for **\"{query}\"**!\n**Choose your track from the dropdown below:**",
+                    view=view,
+                    ephemeral=True
+                )
+                return
+
+        all_songs = await self.cog.get_requestable_songs()
+        if all_songs:
+            import random
+            sample = random.sample(all_songs, min(25, len(all_songs)))
+            view = SongDropdownView(self.cog, sample, interaction.user, note)
+            await interaction.followup.send(
+                f"🔍 No exact match found for **\"{query}\"** in our {len(all_songs)}-song library.\n**Pick a track from the library below:**",
+                view=view,
+                ephemeral=True
             )
-            if note:
-                embed.add_field(name="Dedication", value=note, inline=False)
-            embed.set_footer(text=f"Requested by {interaction.user.display_name}")
-            
-            if interaction.channel:
-                await interaction.channel.send(embed=embed)
-            await interaction.followup.send("✅ Your song request has been queued!", ephemeral=True)
         else:
-            err = result.get("error", "Unable to queue song.")
-            await interaction.followup.send(f"❌ Failed to request song: {err}", ephemeral=True)
+            await interaction.followup.send(f"❌ No matching tracks found for \"{query}\".", ephemeral=True)
 
 
 def get_station_base_url():
@@ -149,11 +224,27 @@ class RadioPlayerView(discord.ui.View):
             url=f"{base_url}/public/circuit_verse_radio"
         ))
 
-    @discord.ui.button(label="Request Song", style=discord.ButtonStyle.primary, emoji="🎵", custom_id="cv_radio_request_btn")
+    @discord.ui.button(label="Search & Request", style=discord.ButtonStyle.primary, emoji="🔍", custom_id="cv_radio_request_btn")
     async def request_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_modal(SongRequestModal(self.cog))
 
-    @discord.ui.button(label="Join My VC", style=discord.ButtonStyle.success, emoji="🔊", custom_id="cv_radio_join_btn")
+    @discord.ui.button(label="Browse Songs", style=discord.ButtonStyle.success, emoji="📋", custom_id="cv_radio_browse_btn")
+    async def browse_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer(ephemeral=True)
+        all_songs = await self.cog.get_requestable_songs()
+        if not all_songs:
+            await interaction.followup.send("❌ Library is currently updating, please try again in a few seconds.", ephemeral=True)
+            return
+        import random
+        sample = random.sample(all_songs, min(25, len(all_songs)))
+        view = SongDropdownView(self.cog, sample, interaction.user)
+        await interaction.followup.send(
+            f"📻 **Circuit Verse Library ({len(all_songs)} songs available)**\nSelect a track from the dropdown menu to queue it:",
+            view=view,
+            ephemeral=True
+        )
+
+    @discord.ui.button(label="Join My VC", style=discord.ButtonStyle.secondary, emoji="🔊", custom_id="cv_radio_join_btn")
     async def join_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         if not interaction.user.voice or not interaction.user.voice.channel:
             await interaction.response.send_message("❌ You must be in a voice channel first!", ephemeral=True)
@@ -167,7 +258,7 @@ class RadioPlayerView(discord.ui.View):
         else:
             await interaction.followup.send(f"❌ Could not connect: {res.get('error')}", ephemeral=True)
 
-    @discord.ui.button(label="Leave VC", style=discord.ButtonStyle.secondary, emoji="⏹️", custom_id="cv_radio_leave_btn")
+    @discord.ui.button(label="Leave VC", style=discord.ButtonStyle.danger, emoji="⏹️", custom_id="cv_radio_leave_btn")
     async def leave_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
         res = await self.cog.disconnect_from_voice(interaction.guild)
@@ -429,43 +520,84 @@ class RadioCog(commands.Cog, name="Radio"):
             logger.error(f"Error downloading YouTube request: {e}")
             return {"success": False, "error": str(e)}
 
-    async def handle_song_request(self, user: discord.Member, query: str, note: str = ""):
-        logger.info(f"User {user} requested: {query}")
+    async def get_requestable_songs(self, force=False) -> list:
+        now = time.time()
+        if not force and hasattr(self, "_cached_songs") and (now - getattr(self, "_last_songs_fetch", 0) < 120):
+            return self._cached_songs
+
         azura_url = self.radio_cfg.get("azuracast_url", "http://127.0.0.1")
-        
-        # 1. Search AzuraCast station library for matching request
         try:
             async with aiohttp.ClientSession() as session:
-                async with session.get(f"{azura_url}/api/nowplaying") as resp:
+                async with session.get(f"{azura_url}/api/station/1/requests", timeout=5) as resp:
                     if resp.status == 200:
-                        stations = await resp.json()
-                        if stations and len(stations) > 0:
-                            station_id = stations[0].get("station", {}).get("id")
-                            if station_id:
-                                async with session.get(f"{azura_url}/api/station/{station_id}/requests") as req_resp:
-                                    if req_resp.status == 200:
-                                        req_list = await req_resp.json()
-                                        for item in req_list:
-                                            song = item.get("song", {})
-                                            title = song.get("title", "").lower()
-                                            artist = song.get("artist", "").lower()
-                                            text = song.get("text", "").lower()
-                                            q = query.lower()
-                                            if q in title or q in artist or q in text:
-                                                req_url = item.get("request_url", "")
-                                                if req_url.startswith("/"):
-                                                    req_url = f"{azura_url}{req_url}"
-                                                async with session.post(req_url) as submit_resp:
-                                                    if submit_resp.status == 200:
-                                                        return {
-                                                            "success": True,
-                                                            "title": clean_song_title(song.get("title") or song.get("text")),
-                                                            "artist": clean_song_title(song.get("artist") or "Circuit Verse Radio")
-                                                        }
+                        raw = await resp.json()
+                        songs = []
+                        for item in raw:
+                            s = item.get("song", {})
+                            t = clean_song_title(s.get("title") or s.get("text") or "")
+                            a = clean_song_title(s.get("artist") or "")
+                            if " - " in t and (not a or a.lower() in ("ncs", "stream-safe", "pretzel rocks", "nocopyrightsounds")):
+                                parts = t.split(" - ", 1)
+                                a = parts[0].strip()
+                                t = parts[1].strip()
+                            elif not a:
+                                a = "Stream-Safe EDM"
+                            songs.append({
+                                "request_id": item.get("request_id"),
+                                "request_url": item.get("request_url"),
+                                "title": t,
+                                "artist": a,
+                                "search_text": f"{t} {a}".lower()
+                            })
+                        self._cached_songs = songs
+                        self._last_songs_fetch = now
+                        return songs
         except Exception as e:
-            logger.warning(f"AzuraCast request search error: {e}")
+            logger.warning(f"Error fetching requestable songs: {e}")
+        return getattr(self, "_cached_songs", [])
 
-        # 2. If not found in library, attempt download via yt-dlp
+    async def search_library(self, query: str) -> list:
+        if not query:
+            return []
+        songs = await self.get_requestable_songs()
+        q = query.lower().strip()
+        for s in songs:
+            if s["request_id"] == q:
+                return [s]
+
+        matches = [s for s in songs if q in s["search_text"]]
+        return matches
+
+    async def submit_request_by_id(self, user: discord.Member, request_id: str, note: str = "") -> dict:
+        azura_url = self.radio_cfg.get("azuracast_url", "http://127.0.0.1")
+        songs = await self.get_requestable_songs()
+        matched = next((s for s in songs if s["request_id"] == request_id), None)
+        title = matched["title"] if matched else "Requested Track"
+        artist = matched["artist"] if matched else "Circuit Verse Radio"
+
+        try:
+            async with aiohttp.ClientSession() as session:
+                url = f"{azura_url}/api/station/1/request/{request_id}"
+                async with session.post(url, timeout=5) as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                        if data.get("success"):
+                            logger.info(f"User {user} successfully queued {title} ({request_id})")
+                            return {"success": True, "title": title, "artist": artist}
+                        else:
+                            return {"success": False, "error": data.get("message", "Request was rejected by station.")}
+                    else:
+                        return {"success": False, "error": f"Station returned HTTP {resp.status}"}
+        except Exception as e:
+            logger.error(f"Error submitting request {request_id}: {e}")
+            return {"success": False, "error": str(e)}
+
+    async def handle_song_request(self, user: discord.Member, query: str, note: str = ""):
+        logger.info(f"User {user} requested: {query}")
+        matches = await self.search_library(query)
+        if matches:
+            return await self.submit_request_by_id(user, matches[0]["request_id"], note)
+
         return await self.download_and_queue_youtube(query)
 
     @tasks.loop(seconds=25)
@@ -570,8 +702,8 @@ class RadioCog(commands.Cog, name="Radio"):
         else:
             await interaction.response.send_message("❌ The bot is not connected to any voice channel.", ephemeral=True)
 
-    @radio_group.command(name="request", description="Request a song or YouTube URL to play on the radio")
-    @app_commands.describe(query="Song title, artist, or YouTube link")
+    @radio_group.command(name="request", description="Request a song from our 600-track library or a YouTube link")
+    @app_commands.describe(query="Type to search song title or artist")
     async def radio_request(self, interaction: discord.Interaction, query: str, note: str = ""):
         await interaction.response.defer(ephemeral=False)
         result = await self.handle_song_request(interaction.user, query, note)
@@ -587,6 +719,17 @@ class RadioCog(commands.Cog, name="Radio"):
             await interaction.followup.send(embed=embed)
         else:
             await interaction.followup.send(f"❌ Could not request song: {result.get('error')}", ephemeral=True)
+
+    @radio_request.autocomplete("query")
+    async def song_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
+        matches = await self.search_library(current) if current else (await self.get_requestable_songs())[:25]
+        choices = []
+        for m in matches[:25]:
+            display = f"{m['title']} - {m['artist']}" if m.get("artist") and m["artist"] != "Stream-Safe EDM" else m["title"]
+            if len(display) > 100:
+                display = display[:97] + "..."
+            choices.append(app_commands.Choice(name=display, value=m["request_id"]))
+        return choices
 
     @radio_group.command(name="nowplaying", description="Show the currently playing track and station info")
     async def radio_nowplaying(self, interaction: discord.Interaction):
