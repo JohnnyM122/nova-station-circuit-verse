@@ -53,20 +53,29 @@ class SongRequestModal(discord.ui.Modal, title="Request a Song"):
             await interaction.followup.send(f"❌ Failed to request song: {err}", ephemeral=True)
 
 
-DEFAULT_RADIO_LOGO = "http://87.99.133.221/static/img/circuit_verse_radio.jpg"
-STATION_WEB_PLAYER_URL = "http://87.99.133.221/public/circuit_verse_radio"
-STATION_STREAM_URL = "http://87.99.133.221/listen/circuit_verse_radio/radio.mp3"
+def get_station_base_url():
+    tunnel_file = "/tmp/radio_tunnel_url.txt"
+    if os.path.exists(tunnel_file):
+        try:
+            with open(tunnel_file, "r") as f:
+                url = f.read().strip()
+                if url.startswith("https://") or url.startswith("http://"):
+                    return url
+        except Exception:
+            pass
+    return "http://87.99.133.221"
 
 
 class RadioPlayerView(discord.ui.View):
     def __init__(self, cog):
         super().__init__(timeout=None)
         self.cog = cog
+        base_url = get_station_base_url()
         self.add_item(discord.ui.Button(
             label="Web Player",
             style=discord.ButtonStyle.link,
             emoji="🌐",
-            url=STATION_WEB_PLAYER_URL
+            url=f"{base_url}/public/circuit_verse_radio"
         ))
 
     @discord.ui.button(label="Request Song", style=discord.ButtonStyle.primary, emoji="🎵", custom_id="cv_radio_request_btn")
@@ -117,6 +126,15 @@ class RadioCog(commands.Cog, name="Radio"):
             "listeners": 0,
             "next_song": "AutoDJ Rotation"
         }
+
+        # Ensure Opus is loaded for high-performance audio encoding
+        if not discord.opus.is_loaded():
+            try:
+                discord.opus._load_default()
+                logger.info("Loaded discord Opus library successfully.")
+            except Exception as e:
+                logger.warning(f"Could not load discord Opus: {e}")
+
         self.radio_updater_task.start()
 
     def cog_unload(self):
@@ -153,6 +171,10 @@ class RadioCog(commands.Cog, name="Radio"):
             return None
 
     def build_player_embed(self):
+        base_url = get_station_base_url()
+        stream_url = f"{base_url}/listen/circuit_verse_radio/radio.mp3"
+        logo_url = f"{base_url}/static/img/circuit_verse_radio.jpg"
+
         embed = discord.Embed(
             title="📻 Circuit Verse Radio — 24/7 Live Stream",
             description="Broadcasting the greatest **90s & 2000s Dance, Pop, Club Classics, Remixes, and Dubstep VIPs** straight from our Hetzner server!",
@@ -161,36 +183,43 @@ class RadioCog(commands.Cog, name="Radio"):
         embed.add_field(name="🎶 Now Playing", value=f"**{self.now_playing_data['title']}**\n*{self.now_playing_data['artist']}*", inline=False)
         embed.add_field(name="⏭️ Up Next", value=self.now_playing_data.get("next_song", "AutoDJ Shuffle"), inline=True)
         embed.add_field(name="🎧 Listeners", value=str(self.now_playing_data.get("listeners", 0)), inline=True)
-        embed.add_field(name="🌐 Stream URL", value=f"[Click to Listen in Browser]({STATION_STREAM_URL})", inline=False)
+        embed.add_field(name="🌐 Stream URL", value=f"[Click to Listen in Browser]({stream_url})", inline=False)
         
         art = self.now_playing_data.get("art")
         if art and "generic_song" not in art:
+            if art.startswith("http://87.99.133.221"):
+                art = art.replace("http://87.99.133.221", base_url)
             embed.set_thumbnail(url=art)
         else:
-            embed.set_thumbnail(url=DEFAULT_RADIO_LOGO)
+            embed.set_thumbnail(url=logo_url)
 
         embed.set_footer(text="Click 'Join My VC' to stream in voice, or 'Request Song' to queue a track!")
         return embed
 
     async def connect_to_voice(self, guild: discord.Guild, channel: discord.VoiceChannel):
         try:
+            if not discord.opus.is_loaded():
+                try:
+                    discord.opus._load_default()
+                except Exception:
+                    pass
+
             vc = guild.voice_client or self.active_voice_clients.get(guild.id)
             if vc and vc.is_connected():
                 if vc.channel.id != channel.id:
                     await vc.move_to(channel)
             else:
-                vc = await channel.connect(timeout=10.0, reconnect=True)
+                vc = await channel.connect(timeout=15.0, reconnect=True, self_deaf=False, self_mute=False)
 
             self.active_voice_clients[guild.id] = vc
 
             stream_url = self.radio_cfg.get("stream_url", "http://127.0.0.1/listen/circuit_verse_radio/radio.mp3")
-            ffmpeg_opts = {
-                'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
-                'options': '-vn'
-            }
 
             if not vc.is_playing():
-                source = discord.FFmpegPCMAudio(stream_url, **ffmpeg_opts)
+                source = discord.FFmpegOpusAudio(
+                    stream_url,
+                    before_options='-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5'
+                )
                 vc.play(source, after=lambda e: logger.error(f"VC playback error: {e}") if e else None)
 
             return {"success": True}
