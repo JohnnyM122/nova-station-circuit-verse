@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Circuit Verse — Maintenance Mode & Coming Soon</title>
+  <meta name="description" content="Circuit Verse Portal is currently undergoing upgrades. Join our game servers and community while we prepare the full site!">
+  <link rel="icon" type="image/png" href="assets/favicon.png">
+  <link rel="shortcut icon" href="favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0a0d14;
+      --bg-card: rgba(18, 24, 38, 0.75);
+      --border-card: rgba(0, 240, 255, 0.2);
+      --accent-cyan: #00f0ff;
+      --accent-purple: #9d4edd;
+      --accent-pink: #ff007f;
+      --accent-green: #00f59b;
+      --text-primary: #f0f4f8;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --glow-cyan: 0 0 25px rgba(0, 240, 255, 0.35);
+      --font-main: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: var(--font-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow-x: hidden;
+      background-image: 
+        radial-gradient(circle at 15% 20%, rgba(0, 240, 255, 0.1) 0%, transparent 45%),
+        radial-gradient(circle at 85% 60%, rgba(157, 78, 221, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 50% 90%, rgba(255, 0, 127, 0.08) 0%, transparent 45%);
+      background-attachment: fixed;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 24px;
+      text-align: center;
+      width: 100%;
+    }
+
+    header {
+      padding-top: 20px;
+      margin-bottom: 30px;
+    }
+
+    .logo-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: #fff;
+      text-decoration: none;
+    }
+
+    .logo-badge img {
+      width: 44px;
+      height: 44px;
+      filter: drop-shadow(0 0 10px rgba(0, 240, 255, 0.6));
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      color: #f87171;
+      padding: 6px 18px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      margin-bottom: 24px;
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ef4444;
+      box-shadow: 0 0 10px #ef4444;
+      animation: pulse 1.8s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(0.9); opacity: 0.7; }
+      50% { transform: scale(1.3); opacity: 1; }
+      100% { transform: scale(0.9); opacity: 0.7; }
+    }
+
+    h1 {
+      font-size: clamp(2.2rem, 5vw, 3.6rem);
+      font-weight: 900;
+      line-height: 1.15;
+      margin-bottom: 16px;
+      letter-spacing: -1px;
+    }
+
+    .gradient-text {
+      background: linear-gradient(135deg, #ffffff 10%, var(--accent-cyan) 60%, var(--accent-purple) 95%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    p.subtitle {
+      max-width: 620px;
+      margin: 0 auto 40px;
+      color: var(--text-secondary);
+      font-size: 1.15rem;
+    }
+
+    /* Live Services Grid */
+    .services-title {
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      color: var(--accent-cyan);
+      margin-bottom: 20px;
+    }
+
+    .services-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 18px;
+      margin-bottom: 40px;
+      text-align: left;
+    }
+
+    .service-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-md);
+      padding: 22px;
+      backdrop-filter: blur(12px);
+      transition: all 0.25s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .service-card:hover {
+      border-color: rgba(0, 240, 255, 0.45);
+      transform: translateY(-3px);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+    }
+
+    .card-top {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .card-top .icon {
+      font-size: 1.7rem;
+    }
+
+    .card-top h3 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .service-desc {
+      font-size: 0.88rem;
+      color: var(--text-secondary);
+      margin-bottom: 18px;
+      line-height: 1.45;
+    }
+
+    .connect-row {
+      background: rgba(10, 13, 20, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-sm);
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .connect-ip {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      color: var(--accent-cyan);
+      user-select: all;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .copy-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #fff;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+
+    .copy-btn:hover {
+      background: var(--accent-cyan);
+      color: #0b0e14;
+      border-color: var(--accent-cyan);
+    }
+
+    .btn-action {
+      display: block;
+      width: 100%;
+      text-align: center;
+      padding: 9px;
+      border-radius: var(--radius-sm);
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .btn-byond {
+      background: linear-gradient(135deg, var(--accent-cyan), #0099ff);
+      color: #0b0e14;
+    }
+
+    .btn-byond:hover {
+      box-shadow: var(--glow-cyan);
+      transform: translateY(-1px);
+    }
+
+    .btn-mc {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #fff;
+    }
+
+    .btn-mc:hover {
+      box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+      transform: translateY(-1px);
+    }
+
+    .btn-radio {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+    }
+
+    .btn-radio:hover {
+      background: rgba(255, 255, 255, 0.15);
+      transform: translateY(-1px);
+    }
+
+    /* Discord CTA */
+    .discord-box {
+      background: linear-gradient(135deg, rgba(88, 101, 242, 0.15), rgba(157, 78, 221, 0.15));
+      border: 1px solid rgba(88, 101, 242, 0.3);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .discord-text {
+      text-align: left;
+    }
+
+    .discord-text h4 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .discord-text p {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      margin-top: 4px;
+    }
+
+    .btn-discord {
+      background: #5865F2;
+      color: #fff;
+      padding: 10px 24px;
+      border-radius: var(--radius-sm);
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 0.95rem;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-discord:hover {
+      background: #4752c4;
+      box-shadow: 0 0 15px rgba(88, 101, 242, 0.5);
+      transform: translateY(-2px);
+    }
+
+    footer {
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 24px 0;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    .preview-pill-link {
+      display: inline-block;
+      margin-top: 10px;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.75rem;
+      opacity: 0.6;
+      transition: opacity 0.2s, color 0.2s;
+    }
+
+    .preview-pill-link:hover {
+      opacity: 1;
+      color: var(--accent-cyan);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <a href="#" class="logo-badge">
+        <img src="assets/circuit_verse_logo.png" alt="Circuit Verse" style="border-radius: 8px;">
+        <span>Circuit Verse</span>
+      </a>
+    </header>
+
+    <main>
+      <div class="status-pill">
+        <span class="pulse-dot"></span>
+        <span>MAINTENANCE MODE • UPGRADE IN PROGRESS</span>
+      </div>
+
+      <h1>Something Exciting is <br><span class="gradient-text">Coming Soon</span></h1>
+      <p class="subtitle">
+        The official <strong>Circuit Verse</strong> web portal is undergoing scheduled infrastructure upgrades.
+        All servers and live broadcasts remain fully operational — connect directly below!
+      </p>
+
+      <div class="services-title">Live Connected Services</div>
+
+      <div class="services-grid">
+        <!-- Nova Station 13 -->
+        <div class="service-card">
+          <div>
+            <div class="card-top">
+              <span class="icon">🚀</span>
+              <div>
+                <h3>Nova Station 13</h3>
+                <div style="font-size:0.75rem; color:#10b981; font-weight:700;">● ONLINE</div>
+              </div>
+            </div>
+            <p class="service-desc">Deep-space Nanotrasen research simulation on BYOND. High-stakes engineering, roleplay, and events.</p>
+            <div class="connect-row">
+              <span class="connect-ip">game.circuitverse.online:7777</span>
+              <button class="copy-btn" data-copy="game.circuitverse.online:7777">Copy</button>
+            </div>
+          </div>
+          <a href="byond://game.circuitverse.online:7777" class="btn-action btn-byond">Launch in BYOND ↗</a>
+        </div>
+
+        <!-- Minecraft Server -->
+        <div class="service-card">
+          <div>
+            <div class="card-top">
+              <span class="icon">⛏️</span>
+              <div>
+                <h3>Minecraft Server</h3>
+                <div style="font-size:0.75rem; color:#10b981; font-weight:700;">● ONLINE</div>
+              </div>
+            </div>
+            <p class="service-desc">Purpur 1.21.x Survival with 3D directional proximity voice chat, cross-play, and community ranks.</p>
+            <div class="connect-row">
+              <span class="connect-ip">play.circuitverse.online</span>
+              <button class="copy-btn" data-copy="play.circuitverse.online">Copy</button>
+            </div>
+          </div>
+          <button class="btn-action btn-mc copy-btn-action" data-copy="play.circuitverse.online" style="border:none; cursor:pointer;">Copy Server IP 📋</button>
+        </div>
+
+        <!-- CV-Radio -->
+        <div class="service-card">
+          <div>
+            <div class="card-top">
+              <span class="icon">📻</span>
+              <div>
+                <h3>CV-Radio 24/7</h3>
+                <div style="font-size:0.75rem; color:#10b981; font-weight:700;">● STREAMING LIVE</div>
+              </div>
+            </div>
+            <p class="service-desc">24/7 stream-safe EDM, Synthwave, Lofi & Electronic Beats powered by AzuraCast & Pretzel Rocks.</p>
+            <div class="connect-row">
+              <span class="connect-ip">radio.circuitverse.online</span>
+              <button class="copy-btn" data-copy="https://radio.circuitverse.online/public/circuit_verse_radio">Copy</button>
+            </div>
+          </div>
+          <a href="https://radio.circuitverse.online/public/circuit_verse_radio" target="_blank" rel="noopener" class="btn-action btn-radio">Open Web Player ↗</a>
+        </div>
+      </div>
+
+      <!-- Discord Box -->
+      <div class="discord-box">
+        <div class="discord-text">
+          <h4>Join the Discord for Live Updates</h4>
+          <p>Get real-time announcements, server round notifications, and development news.</p>
+        </div>
+        <a href="https://discord.gg/circuitverse" target="_blank" rel="noopener" class="btn-discord">
+          Join Community Discord
+        </a>
+      </div>
+    </main>
+
+    <footer>
+      <div>&copy; 2026 Circuit Verse. All Rights Reserved.</div>
+      <a href="/preview/" class="preview-pill-link">Staff Live Preview 🔒</a>
+    </footer>
+  </div>
+
+  <script>
+    document.querySelectorAll('.copy-btn, .copy-btn-action').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const text = btn.getAttribute('data-copy');
+        if (text) {
+          navigator.clipboard.writeText(text).then(() => {
+            const old = btn.textContent;
+            btn.textContent = 'Copied!';
+            setTimeout(() => { btn.textContent = old; }, 2000);
+          });
+        }
+      });
+    });
+  </script>
+</body>
+</html>
