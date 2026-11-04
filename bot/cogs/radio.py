@@ -217,26 +217,35 @@ class RadioCog(commands.Cog, name="Radio"):
             if not discord.opus.is_loaded():
                 try:
                     discord.opus._load_default()
-                except Exception:
-                    pass
+                    logger.info("Loaded discord Opus library.")
+                except Exception as e:
+                    logger.warning(f"Could not load discord Opus: {e}")
 
             vc = guild.voice_client or self.active_voice_clients.get(guild.id)
             if vc and vc.is_connected():
                 if vc.channel.id != channel.id:
                     await vc.move_to(channel)
             else:
-                vc = await channel.connect(timeout=15.0, reconnect=True, self_deaf=False, self_mute=False)
+                vc = await channel.connect(timeout=20.0, reconnect=True, self_deaf=True, self_mute=False)
 
             self.active_voice_clients[guild.id] = vc
 
             stream_url = self.radio_cfg.get("stream_url", "http://127.0.0.1/listen/circuit_verse_radio/radio.mp3")
+            logger.info(f"Connecting audio stream to #{channel.name} (Guild: {guild.name}) via {stream_url}")
 
-            if not vc.is_playing():
-                source = discord.FFmpegOpusAudio(
+            if vc.is_playing():
+                vc.stop()
+
+            source = discord.PCMVolumeTransformer(
+                discord.FFmpegPCMAudio(
                     stream_url,
-                    before_options='-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5'
-                )
-                vc.play(source, after=lambda e: logger.error(f"VC playback error: {e}") if e else None)
+                    before_options='-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
+                    options='-vn'
+                ),
+                volume=0.8
+            )
+            vc.play(source, after=lambda e: logger.error(f"VC playback stopped with error: {e}") if e else logger.info("VC playback stopped cleanly."))
+            logger.info("Started streaming radio to voice channel successfully.")
 
             return {"success": True}
         except Exception as e:
