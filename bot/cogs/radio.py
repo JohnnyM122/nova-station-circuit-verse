@@ -191,8 +191,8 @@ class RadioCog(commands.Cog, name="Radio"):
         self.active_voice_clients = {}  # guild_id -> VoiceClient
         self.player_message_id = None
         self.now_playing_data = {
-            "title": "Circuit Verse Radio 24/7",
-            "artist": "90s, 00s & Dubstep",
+            "title": "Stream-Safe 24/7",
+            "artist": "Pretzel Rocks",
             "art": None,
             "listeners": 0,
             "next_song": "AutoDJ Rotation"
@@ -475,17 +475,28 @@ class RadioCog(commands.Cog, name="Radio"):
                         if resp.status == 200:
                             data = await resp.json()
                             if data and len(data) > 0:
-                                np = data[0].get("now_playing", {})
-                                song = np.get("song", {})
-                                listeners = data[0].get("listeners", {}).get("total", 0)
-                                next_obj = data[0].get("playing_next", {}).get("song", {})
-                                raw_next = clean_song_title(next_obj.get("title") or next_obj.get("text") or "AutoDJ Shuffle")
+                                np = data[0].get("now_playing") or {}
+                                song = np.get("song") or {}
+                                listeners = (data[0].get("listeners") or {}).get("total", 0)
+                                
+                                next_wrapper = data[0].get("playing_next") or {}
+                                next_obj = next_wrapper.get("song") or {}
+                                raw_next = clean_song_title(next_obj.get("title") or next_obj.get("text") or "AutoDJ Rotation")
                                 if " - " in raw_next and raw_next.lower().startswith("ncs - "):
                                     parts = [p.strip() for p in raw_next.split(" - ") if p.strip()]
                                     if len(parts) >= 3:
                                         raw_next = f"{parts[-2]} - {parts[-1]}"
                                     elif len(parts) == 2:
                                         raw_next = parts[1]
+
+                                raw_title = clean_song_title(song.get("title") or song.get("text") or "Stream-Safe Beats")
+                                raw_artist = clean_song_title(song.get("artist") or "")
+                                if " - " in raw_title and (not raw_artist or raw_artist.lower() in ("ncs", "stream-safe", "pretzel rocks", "nocopyrightsounds")):
+                                    parts = raw_title.split(" - ", 1)
+                                    raw_artist = parts[0].strip()
+                                    raw_title = parts[1].strip()
+                                elif not raw_artist:
+                                    raw_artist = "Pretzel Rocks"
 
                                 self.now_playing_data = {
                                     "title": raw_title,
@@ -495,7 +506,7 @@ class RadioCog(commands.Cog, name="Radio"):
                                     "next_song": raw_next
                                 }
             except Exception as e:
-                logger.debug(f"NowPlaying poll error (normal if station not playing yet): {e}")
+                logger.error(f"NowPlaying poll error: {e}", exc_info=True)
 
             # Update message in #cv-radio
             for guild in self.bot.guilds:
