@@ -250,7 +250,8 @@ async def main():
         "cogs.moderation",
         "cogs.voice_channels",
         "cogs.player_stats",
-        "cogs.utilities"
+        "cogs.utilities",
+        "cogs.radio"
     ]
     for ext in extensions:
         try:
