@@ -7,8 +7,24 @@ import os
 import aiohttp
 import subprocess
 import json
+import re
 
 logger = logging.getLogger("CVNovaHelper.radio")
+
+def clean_song_title(text: str) -> str:
+    """Removes common YouTube video clutter like (Official 4K Video), [Lyrics], etc."""
+    if not text:
+        return ""
+    # Strip bracketed / parenthesized video tags
+    tag_pattern = r"(?i)\s*[\(\[](?:official\s*(?:4k|hd|music|lyric|audio)?\s*video|original\s*video.*?|video\s*with\s*subtitles|official\s*(?:audio|music\s*video|video)|lyric\s*video|lyrics|4k\s*video|hd\s*video|audio|music\s*video|4k|hd)[\)\]]"
+    text = re.sub(tag_pattern, "", text)
+    # Strip trailing delimiters like " | Official Video" or " - Official 4K Video" or " | Eurodance Classic"
+    text = re.sub(r"(?i)\s*[\|\-–—]\s*(?:official\s*(?:video|audio|music\s*video)|eurodance\s*classic|4k\s*video|hd\s*video|4k|hd).*$", "", text)
+    # Strip standalone phrases
+    text = re.sub(r"(?i)\b(?:official\s*4k\s*video|official\s*video|official\s*audio|official\s*music\s*video)\b", "", text)
+    # Collapse multiple whitespaces
+    text = re.sub(r"\s+", " ", text)
+    return text.strip()
 
 class SongRequestModal(discord.ui.Modal, title="Request a Song"):
     song_input = discord.ui.TextInput(
@@ -265,10 +281,19 @@ class RadioCog(commands.Cog, name="Radio"):
             stdout, stderr = await proc.communicate()
             if proc.returncode == 0:
                 downloaded_title = stdout.decode("utf-8").strip().splitlines()[0] if stdout else query
+                clean_title = clean_song_title(downloaded_title)
+
                 # Set permissions and sync AzuraCast
                 await asyncio.create_subprocess_exec("docker", "exec", "azuracast", "chown", "-R", "azuracast:azuracast", "/var/azuracast/stations/circuit_verse_radio/media")
                 sync_proc = await asyncio.create_subprocess_exec("docker", "exec", "azuracast", "azuracast_cli", "azuracast:media:sync", "circuit_verse_radio")
                 await sync_proc.communicate()
+
+                # Clean song title in station_media if YouTube title had video tags
+                if clean_title != downloaded_title:
+                    clean_esc = clean_title.replace("'", "''")
+                    down_esc = downloaded_title.replace("'", "''")
+                    clean_sql = f"UPDATE station_media SET title='{clean_esc}', text=CONCAT(COALESCE(artist, ''), ' - ', '{clean_esc}') WHERE title='{down_esc}' OR title LIKE '%{down_esc}%';"
+                    await asyncio.create_subprocess_exec("docker", "exec", "azuracast", "gosu", "azuracast", "php", "/var/azuracast/www/backend/bin/console", "dbal:run-sql", clean_sql)
 
                 # Insert into station playlist
                 sql = "INSERT IGNORE INTO station_playlist_media (playlist_id, media_id, weight, last_played, is_queued) SELECT 1, id, 0, 0, 0 FROM station_media;"
@@ -283,7 +308,7 @@ class RadioCog(commands.Cog, name="Radio"):
                             for item in req_list:
                                 song_title = item.get("song", {}).get("title", "").lower()
                                 song_text = item.get("song", {}).get("text", "").lower()
-                                if downloaded_title.lower() in song_title or downloaded_title.lower() in song_text:
+                                if clean_title.lower() in song_title or clean_title.lower() in song_text or downloaded_title.lower() in song_title or downloaded_title.lower() in song_text:
                                     req_url = item.get("request_url", "")
                                     if req_url.startswith("/"):
                                         req_url = f"{azura_url}{req_url}"
@@ -292,7 +317,7 @@ class RadioCog(commands.Cog, name="Radio"):
                 
                 return {
                     "success": True,
-                    "title": downloaded_title,
+                    "title": clean_title,
                     "artist": "YouTube Request"
                 }
             else:
@@ -336,8 +361,8 @@ class RadioCog(commands.Cog, name="Radio"):
                                                     if submit_resp.status == 200:
                                                         return {
                                                             "success": True,
-                                                            "title": song.get("title") or song.get("text"),
-                                                            "artist": song.get("artist") or "Circuit Verse Radio"
+                                                            "title": clean_song_title(song.get("title") or song.get("text")),
+                                                            "artist": clean_song_title(song.get("artist") or "Circuit Verse Radio")
                                                         }
         except Exception as e:
             logger.warning(f"AzuraCast request search error: {e}")
@@ -360,14 +385,14 @@ class RadioCog(commands.Cog, name="Radio"):
                                 np = data[0].get("now_playing", {})
                                 song = np.get("song", {})
                                 listeners = data[0].get("listeners", {}).get("total", 0)
-                                next_song = data[0].get("playing_next", {}).get("song", {}).get("text", "AutoDJ Shuffle")
+                                raw_next = data[0].get("playing_next", {}).get("song", {}).get("text", "AutoDJ Shuffle")
                                 
                                 self.now_playing_data = {
-                                    "title": song.get("title") or song.get("text") or "Live Stream",
-                                    "artist": song.get("artist") or "90s, 00s & Dubstep",
+                                    "title": clean_song_title(song.get("title") or song.get("text") or "Live Stream"),
+                                    "artist": clean_song_title(song.get("artist") or "90s, 00s & Dubstep"),
                                     "art": song.get("art"),
                                     "listeners": listeners,
-                                    "next_song": next_song
+                                    "next_song": clean_song_title(raw_next)
                                 }
             except Exception as e:
                 logger.debug(f"NowPlaying poll error (normal if station not playing yet): {e}")
