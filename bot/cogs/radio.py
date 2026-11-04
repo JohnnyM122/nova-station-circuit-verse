@@ -265,6 +265,10 @@ class RadioCog(commands.Cog, name="Radio"):
         if art and "generic_song" not in art:
             if art.startswith("http://87.99.133.221"):
                 art = art.replace("http://87.99.133.221", base_url)
+            elif art.startswith("http://127.0.0.1"):
+                art = art.replace("http://127.0.0.1", base_url)
+            elif art.startswith("http://localhost"):
+                art = art.replace("http://localhost", base_url)
             embed.set_thumbnail(url=art)
         else:
             embed.set_thumbnail(url=logo_url)
@@ -474,23 +478,21 @@ class RadioCog(commands.Cog, name="Radio"):
                                 np = data[0].get("now_playing", {})
                                 song = np.get("song", {})
                                 listeners = data[0].get("listeners", {}).get("total", 0)
-                                raw_next = data[0].get("playing_next", {}).get("song", {}).get("text", "AutoDJ Shuffle")
-                                
-                                raw_title = clean_song_title(song.get("title") or song.get("text") or "Live Stream")
-                                raw_artist = clean_song_title(song.get("artist") or "")
-                                if " - " in raw_title and (not raw_artist or raw_artist.lower() in ("ncs", "stream-safe", "pretzel rocks", "nocopyrightsounds")):
-                                    parts = raw_title.split(" - ", 1)
-                                    raw_artist = parts[0].strip()
-                                    raw_title = parts[1].strip()
-                                elif not raw_artist:
-                                    raw_artist = "Circuit Verse Stream-Safe"
+                                next_obj = data[0].get("playing_next", {}).get("song", {})
+                                raw_next = clean_song_title(next_obj.get("title") or next_obj.get("text") or "AutoDJ Shuffle")
+                                if " - " in raw_next and raw_next.lower().startswith("ncs - "):
+                                    parts = [p.strip() for p in raw_next.split(" - ") if p.strip()]
+                                    if len(parts) >= 3:
+                                        raw_next = f"{parts[-2]} - {parts[-1]}"
+                                    elif len(parts) == 2:
+                                        raw_next = parts[1]
 
                                 self.now_playing_data = {
                                     "title": raw_title,
                                     "artist": raw_artist,
                                     "art": song.get("art"),
                                     "listeners": listeners,
-                                    "next_song": clean_song_title(raw_next)
+                                    "next_song": raw_next
                                 }
             except Exception as e:
                 logger.debug(f"NowPlaying poll error (normal if station not playing yet): {e}")
