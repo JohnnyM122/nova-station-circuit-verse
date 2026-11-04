@@ -26,6 +26,61 @@ def clean_song_title(text: str) -> str:
     text = re.sub(r"\s+", " ", text)
     return text.strip()
 
+# --- Discord DAVE E2EE protocol compatibility layer ---
+from discord.voice_state import VoiceConnectionState
+from discord.gateway import DiscordVoiceWebSocket
+import struct
+
+# 1. Allow encryption when either can_encrypt or ready is True on dave_session
+def _patched_can_encrypt(self):
+    if not getattr(self, "dave_session", None):
+        return False
+    return (
+        getattr(self, "dave_protocol_version", 0) != 0
+        and (getattr(self.dave_session, "can_encrypt", False) or getattr(self.dave_session, "ready", False))
+    )
+
+VoiceConnectionState.can_encrypt = property(_patched_can_encrypt)
+
+# 2. Patch received_binary_message to handle transition_id == 0 properly
+orig_received_binary_message = DiscordVoiceWebSocket.received_binary_message
+
+async def _patched_received_binary_message(self, msg: bytes) -> None:
+    op = msg[2]
+    await orig_received_binary_message(self, msg)
+    if op in (DiscordVoiceWebSocket.MLS_ANNOUNCE_COMMIT_TRANSITION, DiscordVoiceWebSocket.MLS_WELCOME):
+        transition_id = struct.unpack_from('>H', msg, 3)[0]
+        if transition_id == 0:
+            state = self._connection
+            if state and getattr(state, "dave_session", None):
+                try:
+                    state.dave_session.execute_transition(0)
+                    logger.info("Executed DAVE transition 0 on dave_session")
+                except Exception as e:
+                    logger.debug(f"execute_transition(0) notice: {e}")
+                try:
+                    await self.send_transition_ready(0)
+                    logger.info("Sent DAVE transition ready for id 0")
+                except Exception as e:
+                    logger.debug(f"send_transition_ready(0) notice: {e}")
+
+DiscordVoiceWebSocket.received_binary_message = _patched_received_binary_message
+
+# 3. Patch _execute_transition so dave_session executes transitions
+orig_execute_transition = VoiceConnectionState._execute_transition
+
+async def _patched_execute_transition(self, transition_id: int) -> None:
+    if getattr(self, "dave_session", None):
+        try:
+            self.dave_session.execute_transition(transition_id)
+            logger.info(f"Executed DAVE transition {transition_id} on dave_session")
+        except Exception as e:
+            logger.debug(f"dave_session.execute_transition({transition_id}) notice: {e}")
+    await orig_execute_transition(self, transition_id)
+
+VoiceConnectionState._execute_transition = _patched_execute_transition
+# --- End of DAVE compatibility layer ---
+
 class SongRequestModal(discord.ui.Modal, title="Request a Song"):
     song_input = discord.ui.TextInput(
         label="Song Title, Artist, or YouTube URL",
@@ -230,6 +285,18 @@ class RadioCog(commands.Cog, name="Radio"):
 
             self.active_voice_clients[guild.id] = vc
 
+            conn = getattr(vc, "_connection", None)
+            dave_ver = getattr(conn, "dave_protocol_version", None) if conn else None
+            can_enc = getattr(conn, "can_encrypt", None) if conn else None
+            logger.info(f"Voice state immediately after connect: is_connected={vc.is_connected()}, dave_version={dave_ver}, can_encrypt={can_enc}")
+
+            if conn and dave_ver and dave_ver > 0:
+                for _ in range(15):
+                    if conn.can_encrypt:
+                        break
+                    await asyncio.sleep(0.1)
+                logger.info(f"Voice state after DAVE wait: can_encrypt={conn.can_encrypt}, session_ready={getattr(conn.dave_session, 'ready', False)}")
+
             stream_url = self.radio_cfg.get("stream_url", "http://127.0.0.1/listen/circuit_verse_radio/radio.mp3")
             logger.info(f"Connecting audio stream to #{channel.name} (Guild: {guild.name}) via {stream_url}")
 
@@ -246,6 +313,14 @@ class RadioCog(commands.Cog, name="Radio"):
             )
             vc.play(source, after=lambda e: logger.error(f"VC playback stopped with error: {e}") if e else logger.info("VC playback stopped cleanly."))
             logger.info("Started streaming radio to voice channel successfully.")
+
+            async def monitor_dave_session():
+                for sec in range(8):
+                    await asyncio.sleep(1)
+                    if conn and getattr(conn, "dave_session", None):
+                        ds = conn.dave_session
+                        logger.info(f"DAVE Stream Check [{sec+1}s]: status={ds.status}, ready={ds.ready}, ds.can_enc={ds.can_encrypt}, conn.can_enc={conn.can_encrypt}, epoch={ds.epoch}, seq={getattr(vc, 'sequence', None)}")
+            asyncio.create_task(monitor_dave_session())
 
             return {"success": True}
         except Exception as e:

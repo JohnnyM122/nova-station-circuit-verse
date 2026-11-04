@@ -14,6 +14,9 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     handlers=[logging.StreamHandler(sys.stdout)]
 )
+logging.getLogger("discord.voice_state").setLevel(logging.DEBUG)
+logging.getLogger("discord.gateway").setLevel(logging.DEBUG)
+logging.getLogger("discord.player").setLevel(logging.DEBUG)
 logger = logging.getLogger("CVNovaHelper")
 
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), "config.json")
