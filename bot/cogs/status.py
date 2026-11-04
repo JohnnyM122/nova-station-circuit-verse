@@ -198,15 +198,18 @@ class StatusCog(commands.Cog):
                     staff_list.append(f"• `{ckey}` ({rank}){afk}")
             staff_val = "\n".join(staff_list) if staff_list else "None online"
             embed.add_field(name="🛡️ Staff Online", value=staff_val, inline=False)
-            embed.set_footer(text="Updated live every 15 seconds • CV-Nova-Helper")
+            embed.add_field(name="🖥️ Infrastructure & Hosting", value="Hosted on **[Hetzner Cloud](https://www.hetzner.com/cloud)** (Dedicated Server)", inline=False)
+            embed.set_footer(text="Updated live every 15 seconds • Hosted on Hetzner Cloud • CV-Nova-Helper")
         elif state == "REBOOTING":
             embed.color = discord.Color.gold()
             embed.description = "🟡 **Server is currently rebooting / initializing...**"
-            embed.set_footer(text="Will refresh automatically when online • CV-Nova-Helper")
+            embed.add_field(name="🖥️ Infrastructure & Hosting", value="Hosted on **[Hetzner Cloud](https://www.hetzner.com/cloud)** (Dedicated Server)", inline=False)
+            embed.set_footer(text="Will refresh automatically when online • Hosted on Hetzner Cloud")
         else:
             embed.color = discord.Color.red()
             embed.description = "🔴 **Server is Offline**"
-            embed.set_footer(text="Waiting for server to start • CV-Nova-Helper")
+            embed.add_field(name="🖥️ Infrastructure & Hosting", value="Hosted on **[Hetzner Cloud](https://www.hetzner.com/cloud)** (Dedicated Server)", inline=False)
+            embed.set_footer(text="Waiting for server to start • Hosted on Hetzner Cloud")
 
         try:
             if self.status_message_id:

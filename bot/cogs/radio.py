@@ -260,6 +260,11 @@ class RadioCog(commands.Cog, name="Radio"):
             value="Music provided by **[Pretzel Rocks](https://www.pretzel.rocks)**\n*100% Cleared for live streams & Discord voice broadcasts.*",
             inline=False
         )
+        embed.add_field(
+            name="⚙️ Station Software & Hosting",
+            value="Powered by **[AzuraCast](https://www.azuracast.com/)** (Icecast & Liquidsoap)\nHosted on **[Hetzner Cloud](https://www.hetzner.com/cloud)**",
+            inline=False
+        )
         
         art = self.now_playing_data.get("art")
         if art and "generic_song" not in art:
@@ -273,7 +278,7 @@ class RadioCog(commands.Cog, name="Radio"):
         else:
             embed.set_thumbnail(url=logo_url)
 
-        embed.set_footer(text="Music courtesy of Pretzel Rocks • Click 'Join My VC' to stream in voice, or 'Request Song'!")
+        embed.set_footer(text="Powered by AzuraCast • Hosted on Hetzner • Music courtesy of Pretzel Rocks")
         return embed
 
     async def connect_to_voice(self, guild: discord.Guild, channel: discord.VoiceChannel):
