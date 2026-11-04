@@ -198,18 +198,42 @@ class StatusCog(commands.Cog):
                     staff_list.append(f"• `{ckey}` ({rank}){afk}")
             staff_val = "\n".join(staff_list) if staff_list else "None online"
             embed.add_field(name="🛡️ Staff Online", value=staff_val, inline=False)
+            embed.add_field(
+                name="🌐 Domain & Connectivity",
+                value="✨ **Now Hosted on Private Domain! [CircuitVerse.Online](https://circuitverse.online)**\n"
+                      "🔗 **SS13 Server Connect:** **[Click to Join (BYOND)](byond://game.circuitverse.online:7777)** (`game.circuitverse.online:7777`)\n"
+                      "📻 **CV-Radio Subdomain:** **[radio.circuitverse.online](https://radio.circuitverse.online)**\n"
+                      "⛏️ **Minecraft Server:** `play.circuitverse.online` *(Proximity Voice Chat + Bedrock Crossplay)*",
+                inline=False
+            )
             embed.add_field(name="🖥️ Infrastructure & Hosting", value="Hosted on **[Hetzner Cloud](https://www.hetzner.com/cloud)** (Dedicated Server)", inline=False)
-            embed.set_footer(text="Updated live every 15 seconds • Hosted on Hetzner Cloud • CV-Nova-Helper")
+            embed.set_footer(text="Updated live every 15 seconds • CircuitVerse.Online • Hosted on Hetzner Cloud • CV-Nova-Helper")
         elif state == "REBOOTING":
             embed.color = discord.Color.gold()
             embed.description = "🟡 **Server is currently rebooting / initializing...**"
+            embed.add_field(
+                name="🌐 Domain & Connectivity",
+                value="✨ **Now Hosted on Private Domain! [CircuitVerse.Online](https://circuitverse.online)**\n"
+                      "🔗 **SS13 Server Connect:** **[Click to Join (BYOND)](byond://game.circuitverse.online:7777)** (`game.circuitverse.online:7777`)\n"
+                      "📻 **CV-Radio Subdomain:** **[radio.circuitverse.online](https://radio.circuitverse.online)**\n"
+                      "⛏️ **Minecraft Server:** `play.circuitverse.online` *(Proximity Voice Chat + Bedrock Crossplay)*",
+                inline=False
+            )
             embed.add_field(name="🖥️ Infrastructure & Hosting", value="Hosted on **[Hetzner Cloud](https://www.hetzner.com/cloud)** (Dedicated Server)", inline=False)
-            embed.set_footer(text="Will refresh automatically when online • Hosted on Hetzner Cloud")
+            embed.set_footer(text="Will refresh automatically when online • CircuitVerse.Online • Hosted on Hetzner Cloud")
         else:
             embed.color = discord.Color.red()
             embed.description = "🔴 **Server is Offline**"
+            embed.add_field(
+                name="🌐 Domain & Connectivity",
+                value="✨ **Now Hosted on Private Domain! [CircuitVerse.Online](https://circuitverse.online)**\n"
+                      "🔗 **SS13 Server Connect:** `game.circuitverse.online:7777`\n"
+                      "📻 **CV-Radio Subdomain:** **[radio.circuitverse.online](https://radio.circuitverse.online)**\n"
+                      "⛏️ **Minecraft Server:** `play.circuitverse.online` *(Proximity Voice Chat + Bedrock Crossplay)*",
+                inline=False
+            )
             embed.add_field(name="🖥️ Infrastructure & Hosting", value="Hosted on **[Hetzner Cloud](https://www.hetzner.com/cloud)** (Dedicated Server)", inline=False)
-            embed.set_footer(text="Waiting for server to start • Hosted on Hetzner Cloud")
+            embed.set_footer(text="Waiting for server to start • CircuitVerse.Online • Hosted on Hetzner Cloud")
 
         try:
             if self.status_message_id:
@@ -220,12 +244,22 @@ class StatusCog(commands.Cog):
                 except discord.NotFound:
                     self.status_message_id = None
 
-            # Look for recent bot dashboard message in channel
-            async for msg in channel.history(limit=10):
+            # Look for recent bot dashboard message in channel and cleanup duplicates
+            old_status_msgs = []
+            async for msg in channel.history(limit=15):
                 if msg.author == self.bot.user and len(msg.embeds) > 0 and "Live Server Status" in (msg.embeds[0].title or ""):
-                    self.status_message_id = msg.id
-                    await msg.edit(embed=embed)
-                    return
+                    old_status_msgs.append(msg)
+
+            if old_status_msgs:
+                primary = old_status_msgs[0]
+                self.status_message_id = primary.id
+                await primary.edit(embed=embed)
+                for dup in old_status_msgs[1:]:
+                    try:
+                        await dup.delete()
+                    except Exception:
+                        pass
+                return
 
             msg = await channel.send(embed=embed)
             self.status_message_id = msg.id

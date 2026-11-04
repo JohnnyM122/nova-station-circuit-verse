@@ -209,7 +209,7 @@ def get_station_base_url():
                     return url
         except Exception:
             pass
-    return "http://87.99.133.221"
+    return "https://radio.circuitverse.online"
 
 
 class RadioPlayerView(discord.ui.View):
@@ -342,10 +342,18 @@ class RadioCog(commands.Cog, name="Radio"):
             description="Broadcasting 24/7 stream-safe EDM, Synthwave, Lofi, and Electronic Beats for the Circuit Verse community.",
             color=discord.Color.from_rgb(0, 168, 255)
         )
+        embed.add_field(
+            name="🌐 Subdomain & Web Player",
+            value="✨ **Now Hosted on Subdomain! [radio.circuitverse.online](https://radio.circuitverse.online)**\n"
+                  f"🔗 **Web Player:** **[Open Web Player]({base_url}/public/circuit_verse_radio)**\n"
+                  f"📻 **Direct Stream:** **[Listen to Stream]({stream_url})**\n"
+                  "🌐 **Main Domain:** **[CircuitVerse.Online](https://circuitverse.online)**\n"
+                  "⛏️ **Official Minecraft Server:** `play.circuitverse.online`",
+            inline=False
+        )
         embed.add_field(name="🎶 Now Playing", value=f"**{self.now_playing_data['title']}**\n*{self.now_playing_data['artist']}*", inline=False)
         embed.add_field(name="⏭️ Up Next", value=self.now_playing_data.get("next_song", "AutoDJ Shuffle"), inline=True)
         embed.add_field(name="🎧 Listeners", value=str(self.now_playing_data.get("listeners", 0)), inline=True)
-        embed.add_field(name="🌐 Stream URL", value=f"[Click to Listen in Browser]({stream_url})", inline=False)
         embed.add_field(
             name="🛡️ Music Provider & Licensing",
             value="Music provided by **[Pretzel Rocks](https://www.pretzel.rocks)**\n*100% Cleared for live streams & Discord voice broadcasts.*",
@@ -353,18 +361,14 @@ class RadioCog(commands.Cog, name="Radio"):
         )
         embed.add_field(
             name="⚙️ Station Software & Hosting",
-            value="Powered by **[AzuraCast](https://www.azuracast.com/)** (Icecast & Liquidsoap)\nHosted on **[Hetzner Cloud](https://www.hetzner.com/cloud)**",
+            value="Powered by **[AzuraCast](https://www.azuracast.com/)** (Icecast & Liquidsoap)\nHosted on **[Hetzner Cloud](https://www.hetzner.com/cloud)** • Secured by **[Cloudflare](https://www.cloudflare.com/)**",
             inline=False
         )
         
         art = self.now_playing_data.get("art")
         if art and "generic_song" not in art:
-            if art.startswith("http://87.99.133.221"):
-                art = art.replace("http://87.99.133.221", base_url)
-            elif art.startswith("http://127.0.0.1"):
-                art = art.replace("http://127.0.0.1", base_url)
-            elif art.startswith("http://localhost"):
-                art = art.replace("http://localhost", base_url)
+            for host in ["87.99.133.221", "127.0.0.1", "localhost", "circuitverse.online"]:
+                art = art.replace(f"https://{host}", base_url).replace(f"http://{host}", base_url)
             embed.set_thumbnail(url=art)
         else:
             embed.set_thumbnail(url=logo_url)
@@ -490,7 +494,7 @@ class RadioCog(commands.Cog, name="Radio"):
 
                 # Submit request to play next
                 azura_url = self.radio_cfg.get("azuracast_url", "http://127.0.0.1")
-                async with aiohttp.ClientSession() as session:
+                async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False)) as session:
                     async with session.get(f"{azura_url}/api/station/1/requests") as req_resp:
                         if req_resp.status == 200:
                             req_list = await req_resp.json()
@@ -527,7 +531,7 @@ class RadioCog(commands.Cog, name="Radio"):
 
         azura_url = self.radio_cfg.get("azuracast_url", "http://127.0.0.1")
         try:
-            async with aiohttp.ClientSession() as session:
+            async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False)) as session:
                 async with session.get(f"{azura_url}/api/station/1/requests", timeout=5) as resp:
                     if resp.status == 200:
                         raw = await resp.json()
@@ -576,7 +580,7 @@ class RadioCog(commands.Cog, name="Radio"):
         artist = matched["artist"] if matched else "Circuit Verse Radio"
 
         try:
-            async with aiohttp.ClientSession() as session:
+            async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False)) as session:
                 url = f"{azura_url}/api/station/1/request/{request_id}"
                 async with session.post(url, timeout=5) as resp:
                     if resp.status == 200:
@@ -607,7 +611,7 @@ class RadioCog(commands.Cog, name="Radio"):
             azura_url = self.radio_cfg.get("azuracast_url", "http://127.0.0.1")
 
             try:
-                async with aiohttp.ClientSession() as session:
+                async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False)) as session:
                     async with session.get(f"{azura_url}/api/nowplaying", timeout=5) as resp:
                         if resp.status == 200:
                             data = await resp.json()
@@ -654,25 +658,23 @@ class RadioCog(commands.Cog, name="Radio"):
                 embed = self.build_player_embed()
                 view = RadioPlayerView(self)
 
-                if self.player_message_id:
-                    try:
-                        msg = await channel.fetch_message(self.player_message_id)
-                        await msg.edit(embed=embed, view=view)
-                        continue
-                    except Exception:
-                        self.player_message_id = None
-
-                # Look for existing bot message
-                found = False
-                async for old_msg in channel.history(limit=10):
+                # Purge any old/stale messages from the bot in #cv-radio to prevent duplicate/broken buttons
+                old_messages = []
+                async for old_msg in channel.history(limit=25):
                     if old_msg.author == self.bot.user and len(old_msg.embeds) > 0:
                         if "Circuit Verse Radio" in (old_msg.embeds[0].title or ""):
-                            self.player_message_id = old_msg.id
-                            await old_msg.edit(embed=embed, view=view)
-                            found = True
-                            break
+                            old_messages.append(old_msg)
 
-                if not found:
+                if old_messages:
+                    primary_msg = old_messages[0]
+                    self.player_message_id = primary_msg.id
+                    await primary_msg.edit(embed=embed, view=view)
+                    for extra_msg in old_messages[1:]:
+                        try:
+                            await extra_msg.delete()
+                        except Exception:
+                            pass
+                else:
                     new_msg = await channel.send(embed=embed, view=view)
                     self.player_message_id = new_msg.id
         except Exception as e:
