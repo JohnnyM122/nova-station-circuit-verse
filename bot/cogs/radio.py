@@ -38,13 +38,16 @@ class SongRequestModal(discord.ui.Modal, title="Request a Song"):
         if result.get("success"):
             embed = discord.Embed(
                 title="🎵 Song Request Queued!",
-                description=f"**Track:** {result.get('title', query)}\n**Artist:** {result.get('artist', 'Unknown')}",
+                description=f"**Track:** {result.get('title', query)}\n**Artist:** {result.get('artist', 'Circuit Verse Radio')}",
                 color=discord.Color.green()
             )
             if note:
                 embed.add_field(name="Dedication", value=note, inline=False)
             embed.set_footer(text=f"Requested by {interaction.user.display_name}")
-            await interaction.followup.send(embed=embed, ephemeral=False)
+            
+            if interaction.channel:
+                await interaction.channel.send(embed=embed)
+            await interaction.followup.send("✅ Your song request has been queued!", ephemeral=True)
         else:
             err = result.get("error", "Unable to queue song.")
             await interaction.followup.send(f"❌ Failed to request song: {err}", ephemeral=True)
@@ -76,20 +79,22 @@ class RadioPlayerView(discord.ui.View):
             await interaction.response.send_message("❌ You must be in a voice channel first!", ephemeral=True)
             return
 
+        await interaction.response.defer(ephemeral=True)
         vc_channel = interaction.user.voice.channel
         res = await self.cog.connect_to_voice(interaction.guild, vc_channel)
         if res.get("success"):
-            await interaction.response.send_message(f"🎶 Connected to **{vc_channel.name}** and streaming **Circuit Verse Radio**!", ephemeral=True)
+            await interaction.followup.send(f"🎶 Connected to **{vc_channel.name}** and streaming **Circuit Verse Radio**!", ephemeral=True)
         else:
-            await interaction.response.send_message(f"❌ Could not connect: {res.get('error')}", ephemeral=True)
+            await interaction.followup.send(f"❌ Could not connect: {res.get('error')}", ephemeral=True)
 
     @discord.ui.button(label="Leave VC", style=discord.ButtonStyle.secondary, emoji="⏹️", custom_id="cv_radio_leave_btn")
     async def leave_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer(ephemeral=True)
         res = await self.cog.disconnect_from_voice(interaction.guild)
         if res.get("success"):
-            await interaction.response.send_message("⏹️ Disconnected from voice channel.", ephemeral=True)
+            await interaction.followup.send("⏹️ Disconnected from voice channel.", ephemeral=True)
         else:
-            await interaction.response.send_message("❌ Bot is not currently in any voice channel.", ephemeral=True)
+            await interaction.followup.send("❌ Bot is not currently in any voice channel.", ephemeral=True)
 
 
 class RadioCog(commands.Cog, name="Radio"):
@@ -169,7 +174,7 @@ class RadioCog(commands.Cog, name="Radio"):
 
     async def connect_to_voice(self, guild: discord.Guild, channel: discord.VoiceChannel):
         try:
-            vc = guild.voice_client
+            vc = guild.voice_client or self.active_voice_clients.get(guild.id)
             if vc and vc.is_connected():
                 if vc.channel.id != channel.id:
                     await vc.move_to(channel)
@@ -178,7 +183,7 @@ class RadioCog(commands.Cog, name="Radio"):
 
             self.active_voice_clients[guild.id] = vc
 
-            stream_url = self.radio_cfg.get("stream_url", "http://127.0.0.1:8000/radio.mp3")
+            stream_url = self.radio_cfg.get("stream_url", "http://127.0.0.1/listen/circuit_verse_radio/radio.mp3")
             ffmpeg_opts = {
                 'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
                 'options': '-vn'
@@ -190,22 +195,93 @@ class RadioCog(commands.Cog, name="Radio"):
 
             return {"success": True}
         except Exception as e:
-            logger.error(f"Error connecting to VC: {e}")
+            logger.error(f"Error connecting to VC: {e}", exc_info=True)
             return {"success": False, "error": str(e)}
 
     async def disconnect_from_voice(self, guild: discord.Guild):
-        vc = guild.voice_client
+        vc = guild.voice_client or self.active_voice_clients.get(guild.id)
         if vc and vc.is_connected():
-            await vc.disconnect(force=True)
+            try:
+                if vc.is_playing():
+                    vc.stop()
+                await vc.disconnect(force=True)
+            except Exception as e:
+                logger.warning(f"Error while disconnecting: {e}")
             self.active_voice_clients.pop(guild.id, None)
             return {"success": True}
         return {"success": False}
 
+    async def download_and_queue_youtube(self, query: str):
+        target = query if (query.startswith("http://") or query.startswith("https://")) else f"ytsearch1:{query}"
+        media_dir = "/var/lib/docker/volumes/azuracast_station_data/_data/circuit_verse_radio/media"
+        
+        try:
+            cmd = [
+                "yt-dlp",
+                "--extractor-args", "youtube:player_client=android",
+                "-x",
+                "--audio-format", "mp3",
+                "--audio-quality", "0",
+                "--max-filesize", "50M",
+                "--no-playlist",
+                "-o", f"{media_dir}/%(title)s.%(ext)s",
+                "--print", "title",
+                target
+            ]
+            proc = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            stdout, stderr = await proc.communicate()
+            if proc.returncode == 0:
+                downloaded_title = stdout.decode("utf-8").strip().splitlines()[0] if stdout else query
+                # Set permissions and sync AzuraCast
+                await asyncio.create_subprocess_exec("docker", "exec", "azuracast", "chown", "-R", "azuracast:azuracast", "/var/azuracast/stations/circuit_verse_radio/media")
+                sync_proc = await asyncio.create_subprocess_exec("docker", "exec", "azuracast", "azuracast_cli", "azuracast:media:sync", "circuit_verse_radio")
+                await sync_proc.communicate()
+
+                # Insert into station playlist
+                sql = "INSERT IGNORE INTO station_playlist_media (playlist_id, media_id, weight, last_played, is_queued) SELECT 1, id, 0, 0, 0 FROM station_media;"
+                await asyncio.create_subprocess_exec("docker", "exec", "azuracast", "gosu", "azuracast", "php", "/var/azuracast/www/backend/bin/console", "dbal:run-sql", sql)
+
+                # Submit request to play next
+                azura_url = self.radio_cfg.get("azuracast_url", "http://127.0.0.1")
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(f"{azura_url}/api/station/1/requests") as req_resp:
+                        if req_resp.status == 200:
+                            req_list = await req_resp.json()
+                            for item in req_list:
+                                song_title = item.get("song", {}).get("title", "").lower()
+                                song_text = item.get("song", {}).get("text", "").lower()
+                                if downloaded_title.lower() in song_title or downloaded_title.lower() in song_text:
+                                    req_url = item.get("request_url", "")
+                                    if req_url.startswith("/"):
+                                        req_url = f"{azura_url}{req_url}"
+                                    await session.post(req_url)
+                                    break
+                
+                return {
+                    "success": True,
+                    "title": downloaded_title,
+                    "artist": "YouTube Request"
+                }
+            else:
+                err_str = stderr.decode("utf-8", errors="ignore")
+                logger.warning(f"yt-dlp error: {err_str}")
+                return {
+                    "success": False,
+                    "error": "Track not found in station library. (For YouTube links, try an alternate upload or remix, or select an iconic 90s/00s hit!)."
+                }
+        except Exception as e:
+            logger.error(f"Error downloading YouTube request: {e}")
+            return {"success": False, "error": str(e)}
+
     async def handle_song_request(self, user: discord.Member, query: str, note: str = ""):
         logger.info(f"User {user} requested: {query}")
-        
-        # Check AzuraCast API for requests if station exists
         azura_url = self.radio_cfg.get("azuracast_url", "http://127.0.0.1")
+        
+        # 1. Search AzuraCast station library for matching request
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(f"{azura_url}/api/nowplaying") as resp:
@@ -214,7 +290,6 @@ class RadioCog(commands.Cog, name="Radio"):
                         if stations and len(stations) > 0:
                             station_id = stations[0].get("station", {}).get("id")
                             if station_id:
-                                # Search station requestable tracks
                                 async with session.get(f"{azura_url}/api/station/{station_id}/requests") as req_resp:
                                     if req_resp.status == 200:
                                         req_list = await req_resp.json()
@@ -222,25 +297,24 @@ class RadioCog(commands.Cog, name="Radio"):
                                             song = item.get("song", {})
                                             title = song.get("title", "").lower()
                                             artist = song.get("artist", "").lower()
-                                            if query.lower() in title or query.lower() in artist:
-                                                req_url = item.get("request_url")
-                                                if req_url:
-                                                    async with session.post(req_url) as submit_resp:
-                                                        if submit_resp.status == 200:
-                                                            return {
-                                                                "success": True,
-                                                                "title": song.get("title"),
-                                                                "artist": song.get("artist")
-                                                            }
+                                            text = song.get("text", "").lower()
+                                            q = query.lower()
+                                            if q in title or q in artist or q in text:
+                                                req_url = item.get("request_url", "")
+                                                if req_url.startswith("/"):
+                                                    req_url = f"{azura_url}{req_url}"
+                                                async with session.post(req_url) as submit_resp:
+                                                    if submit_resp.status == 200:
+                                                        return {
+                                                            "success": True,
+                                                            "title": song.get("title") or song.get("text"),
+                                                            "artist": song.get("artist") or "Circuit Verse Radio"
+                                                        }
         except Exception as e:
-            logger.warning(f"AzuraCast request search check failed: {e}")
+            logger.warning(f"AzuraCast request search error: {e}")
 
-        # Fallback to local music library / request queue
-        return {
-            "success": True,
-            "title": query,
-            "artist": "Requested Track"
-        }
+        # 2. If not found in library, attempt download via yt-dlp
+        return await self.download_and_queue_youtube(query)
 
     @tasks.loop(seconds=25)
     async def radio_updater_task(self):
