@@ -203,17 +203,51 @@
 	addtimer(CALLBACK(src, PROC_REF(make_rock), passed_radius), 5 SECONDS)
 
 /obj/effect/spawner/oasisrock/proc/make_rock(radius)
-	var/our_turf = get_turf(src)
-	for(var/turf/oasis in circlerangeturfs(our_turf, radius))
+	var/turf/our_turf = get_turf(src)
+	if(!our_turf)
+		qdel(src)
+		return
+	var/list/rock_turfs = circlerangeturfs(our_turf, radius)
+	for(var/turf/oasis in rock_turfs)
 		if(istype(oasis.loc, /area/ruin))
 			continue
 		oasis.ChangeTurf(/turf/simulated/mineral/random/high_chance/volcanic, ignore_air = TRUE)
-	var/list/valid_turfs = circlerangeturfs(our_turf, radius + 1)
-	valid_turfs -= circlerangeturfs(our_turf, radius)
+	var/list/candidate_turfs = circlerangeturfs(our_turf, radius + 1) - rock_turfs
+	var/list/valid_turfs = list()
+	for(var/turf/T in candidate_turfs)
+		if(!T.density && !istype(T, /turf/simulated/mineral))
+			valid_turfs += T
+
+	// If no open floor turfs immediately adjacent, expand search slightly
+	if(!length(valid_turfs))
+		var/search_r = radius + 2
+		while(!length(valid_turfs) && search_r <= radius + 4)
+			for(var/turf/T in (circlerangeturfs(our_turf, search_r) - rock_turfs))
+				if(!T.density && !istype(T, /turf/simulated/mineral))
+					valid_turfs += T
+			search_r++
+
+	if(!length(valid_turfs))
+		valid_turfs = candidate_turfs
+
+	var/list/available_turfs = valid_turfs.Copy()
 	for(var/mob/M in circlerange(src, radius)) //We don't want mobs inside the ore rock
-		M.forceMove(pick_n_take(valid_turfs))
+		var/turf/dest
+		if(length(available_turfs))
+			dest = pick_n_take(available_turfs)
+		else if(length(valid_turfs))
+			dest = pick(valid_turfs)
+		if(dest)
+			M.forceMove(dest)
+
 	for(var/obj/structure/spawner/lavaland/O in circlerange(src, radius)) //We don't want tendrils in there either
-		O.forceMove(pick_n_take(valid_turfs))
+		var/turf/dest
+		if(length(available_turfs))
+			dest = pick_n_take(available_turfs)
+		else if(length(valid_turfs))
+			dest = pick(valid_turfs)
+		if(dest)
+			O.forceMove(dest)
 	qdel(src)
 
 /turf/simulated/floor/plating/asteroid/snow

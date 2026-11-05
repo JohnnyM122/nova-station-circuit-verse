@@ -128,8 +128,15 @@ GLOBAL_LIST_INIT(caves_default_flora_spawns, list(
 				oasis_turfs -= oasis
 
 		// Move tendrils out of the oasis
+		var/list/available_oasis = oasis_turfs.Copy()
 		for(var/obj/effect/spawner/random/pool/tendril_spawner/O in circlerange(T, tempradius))
-			O.forceMove(pick_n_take(oasis_turfs))
+			var/turf/dest
+			if(length(available_oasis))
+				dest = pick_n_take(available_oasis)
+			else if(length(oasis_turfs))
+				dest = pick(oasis_turfs)
+			if(dest)
+				O.forceMove(dest)
 
 	return T
 
