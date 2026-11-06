@@ -230,6 +230,7 @@
 	if(!length(valid_turfs))
 		valid_turfs = candidate_turfs
 
+	valid_turfs -= null
 	var/list/available_turfs = valid_turfs.Copy()
 	for(var/mob/M in circlerange(src, radius)) //We don't want mobs inside the ore rock
 		var/turf/dest
@@ -237,7 +238,7 @@
 			dest = pick_n_take(available_turfs)
 		else if(length(valid_turfs))
 			dest = pick(valid_turfs)
-		if(dest)
+		if(istype(dest, /turf))
 			M.forceMove(dest)
 
 	for(var/obj/structure/spawner/lavaland/O in circlerange(src, radius)) //We don't want tendrils in there either
@@ -246,7 +247,7 @@
 			dest = pick_n_take(available_turfs)
 		else if(length(valid_turfs))
 			dest = pick(valid_turfs)
-		if(dest)
+		if(istype(dest, /turf))
 			O.forceMove(dest)
 	qdel(src)
 

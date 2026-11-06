@@ -128,7 +128,8 @@
 	. = ..()
 	//Do this *after* the turf has changed as qdel in spacevines will call changeturf again if it hasn't
 	for(var/obj/structure/spacevine/SV in src)
-		SV.wither()
+		if(!QDELING(SV))
+			SV.wither()
 
 /datum/spacevine_mutation/space_covering
 	name = "space protective"
@@ -432,6 +433,8 @@
 	. += text
 
 /obj/structure/spacevine/proc/wither()
+	if(QDELING(src))
+		return
 	for(var/SM_type in mutations)
 		var/datum/spacevine_mutation/SM = mutations[SM_type]
 		SM.on_death(src)

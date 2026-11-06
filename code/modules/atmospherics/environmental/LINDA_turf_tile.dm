@@ -96,12 +96,16 @@
 	return null
 
 /turf/proc/high_pressure_movements(flow_x, flow_y)
+	if(flow_x != flow_x || flow_y != flow_y)
+		return
 	for(var/atom/movable/M in src)
 		if(QDELETED(M))
 			continue
 		if(M.anchored)
 			continue
 		if(M.pulledby)
+			continue
+		if(M.loc != src)
 			continue
 		M.experience_pressure_difference(flow_x, flow_y)
 
@@ -149,6 +153,8 @@
 	air_push(direction, (force - force_needed) / force_needed)
 
 /atom/movable/proc/air_push(direction, strength)
+	if(!direction || !isturf(loc))
+		return
 	step(src, direction)
 
 /mob/living/air_push(direction, strength)

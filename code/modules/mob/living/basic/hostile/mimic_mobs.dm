@@ -129,10 +129,13 @@ GLOBAL_LIST_INIT(protected_objects, list(/obj/structure/table, /obj/structure/ca
 
 /mob/living/basic/mimic/copy/Life()
 	..()
-	var/atom/target = ai_controller.blackboard[BB_BASIC_MOB_CURRENT_TARGET]
+	if(QDELETED(src) || stat == DEAD)
+		return
+	var/atom/target = ai_controller?.blackboard?[BB_BASIC_MOB_CURRENT_TARGET]
 	if(!target && !ckey) // Objects eventually revert to normal if no one is around to terrorize
 		adjustBruteLoss(1)
-	googly_eyes.dir = get_dir(src, target)
+	if(googly_eyes && target)
+		googly_eyes.dir = get_dir(src, target)
 	for(var/mob/living/M in contents) // A fix for animated statues from the flesh to stone spell
 		death()
 

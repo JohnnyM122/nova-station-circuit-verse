@@ -1598,11 +1598,10 @@
 //When the disposalsoutlet is forcefully moved. Due to meteorshot or the recall item spell for instance
 /obj/structure/disposaloutlet/Moved(atom/OldLoc, Dir)
 	. = ..()
-	var/turf/T = OldLoc
-	if(T.intact)
-		var/turf/simulated/floor/F = T
+	var/turf/simulated/floor/F = OldLoc
+	if(istype(F) && F.intact)
 		F.remove_tile(null,TRUE,TRUE)
-		T.visible_message(
+		F.visible_message(
 			SPAN_WARNING("The floortile is ripped from the floor!"),
 			SPAN_WARNING("You hear a loud bang!")
 		)

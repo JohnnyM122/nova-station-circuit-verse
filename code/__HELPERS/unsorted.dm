@@ -1301,6 +1301,11 @@ GLOBAL_DATUM_INIT(dview_mob, /mob/dview, new)
 	simulated = 0
 	see_in_dark = 1e6
 
+/mob/dview/Initialize(mapload)
+	. = ..()
+	GLOB.mob_list -= src
+	GLOB.alive_mob_list -= src
+
 /mob/dview/Destroy()
 	SHOULD_CALL_PARENT(FALSE)
 	// should never be deleted

@@ -479,17 +479,18 @@ SUBSYSTEM_DEF(air)
 			var/x_flow = currentrun[offset + MILLA_INDEX_AIRFLOW_X]
 			var/y_flow = currentrun[offset + MILLA_INDEX_AIRFLOW_Y]
 
-			var/turf/simulated/S = T
-			if(istype(S))
-				if(isnull(S.wind_tick))
-					// Didn't have wind before, add it.
-					windy_tiles += S
-				S.wind_tick = milla_tick
-				S.wind_x = x_flow
-				S.wind_y = y_flow
-				// Same order as total_moles(), so update_wind() gets the number it would from reading the tile.
-				S.wind_moles = currentrun[offset + MILLA_INDEX_OXYGEN] + currentrun[offset + MILLA_INDEX_CARBON_DIOXIDE] + currentrun[offset + MILLA_INDEX_NITROGEN] + currentrun[offset + MILLA_INDEX_TOXINS] + currentrun[offset + MILLA_INDEX_SLEEPING_AGENT] + currentrun[offset + MILLA_INDEX_AGENT_B] + currentrun[offset + MILLA_INDEX_HYDROGEN] + currentrun[offset + MILLA_INDEX_WATER_VAPOR]
-			T.high_pressure_movements(x_flow, y_flow)
+			if(x_flow == x_flow && y_flow == y_flow) // NaN check
+				var/turf/simulated/S = T
+				if(istype(S))
+					if(isnull(S.wind_tick))
+						// Didn't have wind before, add it.
+						windy_tiles += S
+					S.wind_tick = milla_tick
+					S.wind_x = x_flow
+					S.wind_y = y_flow
+					// Same order as total_moles(), so update_wind() gets the number it would from reading the tile.
+					S.wind_moles = currentrun[offset + MILLA_INDEX_OXYGEN] + currentrun[offset + MILLA_INDEX_CARBON_DIOXIDE] + currentrun[offset + MILLA_INDEX_NITROGEN] + currentrun[offset + MILLA_INDEX_TOXINS] + currentrun[offset + MILLA_INDEX_SLEEPING_AGENT] + currentrun[offset + MILLA_INDEX_AGENT_B] + currentrun[offset + MILLA_INDEX_HYDROGEN] + currentrun[offset + MILLA_INDEX_WATER_VAPOR]
+				T.high_pressure_movements(x_flow, y_flow)
 
 		currentrun.len -= MILLA_INTERESTING_TILE_SIZE
 		if(MC_TICK_CHECK)

@@ -84,11 +84,17 @@ GLOBAL_LIST_INIT(turf_rad_item_cache, list("[ALPHA_RAD]" = list(), "[BETA_RAD]" 
 
 /// Calls rad act on each relevant atom in the turf and returns the resulting weight for that tile after reduction by insulation
 /datum/radiation_wave/proc/radiate(atom/source, turf/current_turf, weight, emission_type)
-	// populate cache if needed
-	if(!GLOB.turf_rad_item_cache["[emission_type]"][current_turf])
-		GLOB.turf_rad_item_cache["[emission_type]"][current_turf] = get_rad_contents(current_turf, emission_type)
+	if(!current_turf)
+		return 0
+	var/type_key = "[emission_type]"
+	var/list/type_cache = GLOB.turf_rad_item_cache?[type_key]
+	if(!type_cache)
+		type_cache = list()
+		GLOB.turf_rad_item_cache[type_key] = type_cache
+	if(!type_cache[current_turf])
+		type_cache[current_turf] = get_rad_contents(current_turf, emission_type)
 
-	var/list/turf_atoms = GLOB.turf_rad_item_cache["[emission_type]"][current_turf]
+	var/list/turf_atoms = type_cache[current_turf]
 	for(var/k in turf_atoms)
 		var/atom/thing = k
 		if(QDELETED(thing))
