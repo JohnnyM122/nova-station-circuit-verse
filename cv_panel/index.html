@@ -601,7 +601,8 @@
               <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;">
                 <button class="btn" onclick="mcBedrockAction('version')">🔍 Version & Protocol Info</button>
                 <button class="btn" onclick="mcBedrockAction('connections')">👥 Connected Bedrock Players</button>
-                <button class="btn" onclick="mcBedrockAction('firewall')">🛡️ Floodgate Firewall Test</button>
+                <button class="btn" onclick="mcBedrockAction('connectiontest')">🌐 Connection Reachability Test</button>
+                <button class="btn" onclick="mcBedrockAction('nethernet')">📶 NetherNet Diagnostics</button>
                 <button class="btn" onclick="mcBedrockAction('dump')">📊 Generate Diagnostic Dump</button>
                 <button class="btn" onclick="loadMcBedrockLogs()">📜 View Bedrock Live Logs</button>
               </div>
@@ -2207,9 +2208,15 @@
         document.getElementById('mc-st-state').innerHTML = st.running ? '<span style="color:var(--green);">● ONLINE</span>' : '<span style="color:var(--red);">● OFFLINE</span>';
         const bedrockEl = document.getElementById('mc-st-bedrock');
         if (bedrockEl) {
-          bedrockEl.innerHTML = st.bedrock_online 
-            ? '<span style="color:var(--green); font-weight:700;">● ONLINE (UDP 19132)</span>' 
-            : '<span style="color:var(--red); font-weight:700;">● OFFLINE</span>';
+          if (st.bedrock_state === 'bedrock_online' || st.bedrock_online) {
+            bedrockEl.innerHTML = '<span style="color:var(--green); font-weight:700;">● ONLINE (UDP 19132)</span>';
+          } else if (st.bedrock_state === 'bedrock_paused') {
+            bedrockEl.innerHTML = '<span style="color:#f59e0b; font-weight:700;">⏸ PAUSED (Firewall Blocked)</span>';
+          } else if (st.bedrock_state === 'bedrock_stopped') {
+            bedrockEl.innerHTML = '<span style="color:var(--red); font-weight:700;">⏹ STOPPED / DISABLED</span>';
+          } else {
+            bedrockEl.innerHTML = '<span style="color:var(--red); font-weight:700;">● OFFLINE</span>';
+          }
         }
         document.getElementById('mc-st-players').textContent = st.players_raw || '0 online';
         document.getElementById('mc-st-tps').textContent = `${(st.tps_raw || '').replace(/§[0-9a-fk-or]/gi, '')} | RAM: ${st.mem} MB`;
@@ -2224,9 +2231,27 @@
         const data = await api('/api/mc/bedrock/status');
         const badgeEl = document.getElementById('mc-bedrock-hub-badge');
         if (badgeEl) {
-          badgeEl.textContent = data.online ? 'ONLINE (UDP 19132)' : 'OFFLINE / STOPPED';
-          badgeEl.style.background = data.online ? 'rgba(46,204,113,0.2)' : 'rgba(231,76,60,0.2)';
-          badgeEl.style.color = data.online ? '#2ecc71' : '#e74c3c';
+          if (data.state === 'online' || data.online) {
+            badgeEl.innerHTML = '● ONLINE (UDP 19132)';
+            badgeEl.style.background = 'rgba(46,204,113,0.2)';
+            badgeEl.style.color = '#2ecc71';
+            badgeEl.style.border = '1px solid #2ecc71';
+          } else if (data.state === 'paused') {
+            badgeEl.innerHTML = '⏸ PAUSED (Firewall Blocked)';
+            badgeEl.style.background = 'rgba(245,158,11,0.2)';
+            badgeEl.style.color = '#fbbf24';
+            badgeEl.style.border = '1px solid #f59e0b';
+          } else if (data.state === 'stopped') {
+            badgeEl.innerHTML = '⏹ STOPPED / DISABLED';
+            badgeEl.style.background = 'rgba(231,76,60,0.2)';
+            badgeEl.style.color = '#e74c3c';
+            badgeEl.style.border = '1px solid #e74c3c';
+          } else {
+            badgeEl.innerHTML = '● OFFLINE';
+            badgeEl.style.background = 'rgba(231,76,60,0.2)';
+            badgeEl.style.color = '#e74c3c';
+            badgeEl.style.border = '1px solid #e74c3c';
+          }
         }
         const consoleEl = document.getElementById('mc-bedrock-console-out');
         if (consoleEl && data.version_raw) {
@@ -2240,19 +2265,31 @@
     async function mcBedrockAction(action) {
       if (!action) return;
       const consoleEl = document.getElementById('mc-bedrock-console-out');
-      if (consoleEl) consoleEl.textContent = `Executing Bedrock action [${action}]...`;
+      if (consoleEl) {
+        consoleEl.textContent = `⏳ Executing Bedrock action [${action}]...`;
+      }
+      toast(`Bedrock: Executing ${action}...`);
       try {
         const res = await api('/api/mc/bedrock/action?action=' + encodeURIComponent(action), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'X-Action': action },
           body: JSON.stringify({ action: action })
         });
-        if (consoleEl) consoleEl.textContent = res.output || 'Action completed successfully.';
-        toast(`Bedrock ${action}: ${res.output ? res.output.slice(0, 60) : 'Success'}`);
+        const out = res.output || 'Action completed successfully.';
+        if (consoleEl) {
+          consoleEl.textContent = `[${action.toUpperCase()}] ${out}`;
+        }
+        toast(`Bedrock ${action}: ${out.slice(0, 70)}`);
         await loadMcBedrock();
         await loadMc();
+        setTimeout(async () => {
+          await loadMcBedrock();
+          await loadMc();
+        }, 1200);
       } catch (e) {
-        if (consoleEl) consoleEl.textContent = `Error: ${e.message}`;
+        if (consoleEl) {
+          consoleEl.textContent = `[ERROR] ${e.message}`;
+        }
         toast('Bedrock Action Error: ' + e.message);
       }
     }

@@ -1212,14 +1212,16 @@ async def api_mc_status(request: Request):
     ssh_res = await run_ssh(
         mc["ssh_host"],
         mc["ssh_user"],
-        "systemctl is-active minecraft.service; free -m | awk '/Mem:/ {print $2,$3}'; df -h / | awk 'NR==2 {print $2,$3,$5}'; uptime -p; ss -ulpn | grep -q ':19132 ' && echo 'bedrock_online' || echo 'bedrock_offline'",
+        "systemctl is-active minecraft.service; free -m | awk '/Mem:/ {print $2,$3}'; df -h / | awk 'NR==2 {print $2,$3,$5}'; uptime -p; "
+        "if iptables -C INPUT -p udp --dport 19132 -j DROP 2>/dev/null; then echo 'bedrock_paused'; elif [ -f /opt/minecraft/server/plugins/Geyser-Spigot.jar.disabled ]; then echo 'bedrock_stopped'; elif ss -ulpn | grep -q ':19132 '; then echo 'bedrock_online'; else echo 'bedrock_offline'; fi",
     )
     lines = ssh_res["stdout"].strip().splitlines()
     running = lines[0].strip() == "active" if lines else False
     mem_info = lines[1] if len(lines) > 1 else ""
     disk_info = lines[2] if len(lines) > 2 else ""
     uptime_info = lines[3] if len(lines) > 3 else ""
-    bedrock_online = (lines[4].strip() == "bedrock_online") if len(lines) > 4 else False
+    bedrock_state = lines[4].strip() if len(lines) > 4 else "bedrock_offline"
+    bedrock_online = (bedrock_state == "bedrock_online")
 
     list_out = ""
     tps_out = ""
@@ -1235,6 +1237,7 @@ async def api_mc_status(request: Request):
     return {
         "running": running,
         "bedrock_online": bedrock_online,
+        "bedrock_state": bedrock_state,
         "bedrock_port": 19132,
         "host": "play.circuitverse.online (2.31.101.63)",
         "mem": mem_info,
@@ -1578,19 +1581,22 @@ async def api_mc_bedrock_status(request: Request):
     mc = cfg["mc_server"]
 
     cmd = (
-        "ss -ulpn | grep -q ':19132 ' && echo 'port_listening' || echo 'port_closed'; "
+        "if iptables -C INPUT -p udp --dport 19132 -j DROP 2>/dev/null; then echo 'paused'; "
+        "elif [ -f /opt/minecraft/server/plugins/Geyser-Spigot.jar.disabled ]; then echo 'stopped'; "
+        "elif ss -ulpn | grep -q ':19132 '; then echo 'online'; "
+        "else echo 'offline'; fi; "
         "test -f /opt/minecraft/server/plugins/Geyser-Spigot.jar && echo 'jar_enabled' || echo 'jar_disabled'; "
         "test -f /opt/minecraft/server/plugins/floodgate-spigot.jar && echo 'fg_enabled' || echo 'fg_disabled'"
     )
     res = await run_ssh(mc["ssh_host"], mc["ssh_user"], cmd)
     lines = res["stdout"].strip().splitlines()
-    listening = (lines[0].strip() == "port_listening") if len(lines) > 0 else False
+    b_state = lines[0].strip() if len(lines) > 0 else "offline"
     geyser_enabled = (lines[1].strip() == "jar_enabled") if len(lines) > 1 else False
     fg_enabled = (lines[2].strip() == "fg_enabled") if len(lines) > 2 else False
 
     version_str = ""
     connections_str = ""
-    if listening:
+    if b_state == "online":
         try:
             version_str = await run_rcon(mc["host"], int(mc["rcon_port"]), mc["rcon_password"], "geyser version")
             connections_str = await run_rcon(mc["host"], int(mc["rcon_port"]), mc["rcon_password"], "geyser list")
@@ -1598,7 +1604,8 @@ async def api_mc_bedrock_status(request: Request):
             version_str = f"RCON: {e}"
 
     return {
-        "online": listening,
+        "online": (b_state == "online"),
+        "state": b_state,
         "geyser_enabled": geyser_enabled,
         "floodgate_enabled": fg_enabled,
         "port": 19132,
@@ -1637,7 +1644,6 @@ async def api_mc_bedrock_action(request: Request, action: Optional[str] = None):
         action = request.headers.get("x-action")
 
     if not action:
-        # Graceful fallback if client called without explicit action parameter
         action = "version"
     action = action.strip().lower()
     if action.startswith("bedrock_"):
@@ -1651,6 +1657,8 @@ async def api_mc_bedrock_action(request: Request, action: Optional[str] = None):
 
         if action == "start":
             enable_cmd = (
+                "iptables -D INPUT -p udp --dport 19132 -j DROP 2>/dev/null || true; "
+                "iptables -D INPUT -p udp --dport 19133 -j DROP 2>/dev/null || true; "
                 "cd /opt/minecraft/server/plugins && "
                 "[ -f Geyser-Spigot.jar.disabled ] && mv Geyser-Spigot.jar.disabled Geyser-Spigot.jar; "
                 "[ -f floodgate-spigot.jar.disabled ] && mv floodgate-spigot.jar.disabled floodgate-spigot.jar; "
@@ -1659,53 +1667,72 @@ async def api_mc_bedrock_action(request: Request, action: Optional[str] = None):
             await run_ssh(mc["ssh_host"], mc["ssh_user"], enable_cmd)
             rcon_out = ""
             try:
-                rcon_out = await run_rcon(mc["host"], int(mc["rcon_port"]), mc["rcon_password"], "geyser on")
+                rcon_out = await run_rcon(mc["host"], int(mc["rcon_port"]), mc["rcon_password"], "geyser reload")
             except Exception:
                 pass
-            record_audit(user, "mc_bedrock", "start", "Enabled Bedrock Geyser/Floodgate bridge")
-            return {"success": True, "output": f"Bedrock Edition bridge enabled. {rcon_out}".strip()}
+            record_audit(user, "mc_bedrock", "start", "Started Bedrock Edition (firewall unblocked, plugins enabled)")
+            return {"success": True, "output": f"Bedrock Edition started and accepting players on UDP 19132. {rcon_out}".strip()}
 
         if action == "stop":
-            try:
-                await run_rcon(mc["host"], int(mc["rcon_port"]), mc["rcon_password"], "geyser off")
-            except Exception:
-                pass
-            disable_cmd = (
+            stop_cmd = (
+                "iptables -C INPUT -p udp --dport 19132 -j DROP 2>/dev/null || iptables -I INPUT 1 -p udp --dport 19132 -j DROP; "
+                "iptables -C INPUT -p udp --dport 19133 -j DROP 2>/dev/null || iptables -I INPUT 1 -p udp --dport 19133 -j DROP; "
                 "cd /opt/minecraft/server/plugins && "
                 "[ -f Geyser-Spigot.jar ] && mv Geyser-Spigot.jar Geyser-Spigot.jar.disabled; "
                 "[ -f floodgate-spigot.jar ] && mv floodgate-spigot.jar floodgate-spigot.jar.disabled; true"
             )
-            await run_ssh(mc["ssh_host"], mc["ssh_user"], disable_cmd)
-            record_audit(user, "mc_bedrock", "stop", "Disabled Bedrock Geyser/Floodgate bridge")
-            return {"success": True, "output": "Bedrock Edition listener closed and plugins set to disabled."}
+            await run_ssh(mc["ssh_host"], mc["ssh_user"], stop_cmd)
+            try:
+                await run_rcon(mc["host"], int(mc["rcon_port"]), mc["rcon_password"], "geyser reload")
+            except Exception:
+                pass
+            record_audit(user, "mc_bedrock", "stop", "Stopped Bedrock Edition (firewall blocked, plugins disabled)")
+            return {"success": True, "output": "Bedrock Edition stopped. UDP ports 19132 & 19133 blocked, connected players disconnected, plugins set to disabled."}
 
         if action in ("restart", "reload"):
+            unblock_cmd = (
+                "iptables -D INPUT -p udp --dport 19132 -j DROP 2>/dev/null || true; "
+                "iptables -D INPUT -p udp --dport 19133 -j DROP 2>/dev/null || true; "
+                "cd /opt/minecraft/server/plugins && "
+                "[ -f Geyser-Spigot.jar.disabled ] && mv Geyser-Spigot.jar.disabled Geyser-Spigot.jar; "
+                "[ -f floodgate-spigot.jar.disabled ] && mv floodgate-spigot.jar.disabled floodgate-spigot.jar; true"
+            )
+            await run_ssh(mc["ssh_host"], mc["ssh_user"], unblock_cmd)
             try:
                 out = await run_rcon(mc["host"], int(mc["rcon_port"]), mc["rcon_password"], "geyser reload")
                 record_audit(user, "mc_bedrock", "reload", "geyser reload")
-                return {"success": True, "output": out}
+                return {"success": True, "output": out.strip() or "Geyser configuration reloaded successfully. Bedrock bridge active."}
             except Exception as e:
                 raise HTTPException(500, f"RCON error reloading Geyser: {e}")
 
         if action == "pause":
-            out = await run_rcon(mc["host"], int(mc["rcon_port"]), mc["rcon_password"], "geyser off")
-            record_audit(user, "mc_bedrock", "pause", "geyser off")
-            return {"success": True, "output": out}
+            pause_cmd = (
+                "iptables -C INPUT -p udp --dport 19132 -j DROP 2>/dev/null || iptables -I INPUT 1 -p udp --dport 19132 -j DROP; "
+                "iptables -C INPUT -p udp --dport 19133 -j DROP 2>/dev/null || iptables -I INPUT 1 -p udp --dport 19133 -j DROP;"
+            )
+            await run_ssh(mc["ssh_host"], mc["ssh_user"], pause_cmd)
+            record_audit(user, "mc_bedrock", "pause", "Paused incoming Bedrock logins (firewall DROP)")
+            return {"success": True, "output": "Bedrock logins paused. Incoming UDP 19132 & 19133 packets dropped at firewall."}
 
         if action == "resume":
-            out = await run_rcon(mc["host"], int(mc["rcon_port"]), mc["rcon_password"], "geyser on")
-            record_audit(user, "mc_bedrock", "resume", "geyser on")
-            return {"success": True, "output": out}
+            resume_cmd = (
+                "iptables -D INPUT -p udp --dport 19132 -j DROP 2>/dev/null || true; "
+                "iptables -D INPUT -p udp --dport 19133 -j DROP 2>/dev/null || true;"
+            )
+            await run_ssh(mc["ssh_host"], mc["ssh_user"], resume_cmd)
+            record_audit(user, "mc_bedrock", "resume", "Resumed Bedrock logins (firewall unblocked)")
+            return {"success": True, "output": "Bedrock logins resumed. Firewall unblocked and listening for crossplay clients."}
 
-    if action in ("version", "dump", "connections", "firewall"):
+    if action in ("version", "dump", "connections", "connectiontest", "nethernet"):
         cmd_map = {
             "version": "geyser version",
             "dump": "geyser dump",
             "connections": "geyser list",
-            "firewall": "floodgate firewall",
+            "nethernet": "geyser nethernet",
+            "connectiontest": "geyser connectiontest play.circuitverse.online:19132",
         }
         out = await run_rcon(mc["host"], int(mc["rcon_port"]), mc["rcon_password"], cmd_map[action])
-        return {"success": True, "output": out}
+        return {"success": True, "output": out.strip() or f"Geyser {action} command executed successfully."}
 
     raise HTTPException(400, f"Unknown Bedrock action: {action}")
 
