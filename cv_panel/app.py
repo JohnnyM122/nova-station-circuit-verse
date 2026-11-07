@@ -1599,14 +1599,21 @@ async def api_mc_bedrock_status(request: Request):
         "tier": user["access"]["mc"]
     }
 
+@app.get("/api/mc/bedrock/action")
 @app.post("/api/mc/bedrock/action")
-async def api_mc_bedrock_action(request: Request):
+async def api_mc_bedrock_action(request: Request, action: Optional[str] = None):
     user = await get_current_user(request)
     if not user or not user["access"]["mc"]:
         raise HTTPException(403, "Requires Minecraft Staff role")
     tier = user["access"]["mc"]
-    body = await request.json()
-    action = body.get("action")
+    if request.method == "POST":
+        try:
+            body = await request.json()
+            action = body.get("action") or action
+        except Exception:
+            pass
+    if not action:
+        raise HTTPException(400, "Action required")
     cfg = load_config()
     mc = cfg["mc_server"]
 

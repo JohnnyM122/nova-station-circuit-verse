@@ -2241,7 +2241,10 @@
       const consoleEl = document.getElementById('mc-bedrock-console-out');
       if (consoleEl) consoleEl.textContent = `Executing Bedrock action [${action}]...`;
       try {
-        const res = await api('/api/mc/bedrock/action', { action });
+        const res = await api('/api/mc/bedrock/action', {
+          method: 'POST',
+          body: JSON.stringify({ action })
+        });
         if (consoleEl) consoleEl.textContent = res.output || 'Action completed successfully.';
         toast(`Bedrock ${action}: ${res.output ? res.output.slice(0, 60) : 'Success'}`);
         await loadMcBedrock();
@@ -2354,9 +2357,12 @@
 
       try {
         const res = await api('/api/mc/bedrock/settings', {
-          geyser_config: g,
-          floodgate_config: f,
-          reload_after: true
+          method: 'POST',
+          body: JSON.stringify({
+            geyser_config: g,
+            floodgate_config: f,
+            reload_after: true
+          })
         });
         toast(res.message || 'Bedrock settings saved & reloaded!');
         await loadMcBedrock();
@@ -2381,7 +2387,10 @@
       }
 
       try {
-        const res = await api('/api/mc/bedrock/settings', payload);
+        const res = await api('/api/mc/bedrock/settings', {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
         toast(res.message || 'Saved and reloaded Bedrock configuration!');
         await loadMcBedrock();
         parseBedrockQuickSettings();
