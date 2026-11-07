@@ -1702,6 +1702,7 @@
 #include "code\game\turfs\space\space_turf.dm"
 #include "code\game\turfs\space\transit.dm"
 #include "code\game\verbs\ooc.dm"
+#include "code\game\verbs\player_badges.dm"
 #include "code\game\verbs\randomtip.dm"
 #include "code\game\verbs\suicide.dm"
 #include "code\game\verbs\switch_server.dm"

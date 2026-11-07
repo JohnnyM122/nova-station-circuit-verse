@@ -112,6 +112,10 @@ GLOBAL_VAR_INIT(admin_ooc_colour, "#b82e00")
 				if(prefs.toggles & PREFTOGGLE_DONATOR_PUBLIC)
 					display_name = "<font color='[donator_level_color(donator_level)]'>&#9733;</font> [display_name]"
 
+			var/progression_badge = get_player_progression_badge(ckey)
+			if(progression_badge)
+				display_name = "[progression_badge][display_name]"
+
 			if(holder)
 				if(holder.fakekey)
 					if(C.holder && C.holder.rights & R_ADMIN)

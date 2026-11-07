@@ -42,7 +42,7 @@
 <p>Want to stay connected with Nova Station outside of the game?</p>
 <p>Our Discord is the central hub for community announcements, development updates, discussions, player support, and staff applications.</p>
 <p>&#128172; <b>Join the Nova Station Discord:</b><br>
-<a href="https://discord.com/invite/KmZgUPET9C">https://discord.com/invite/KmZgUPET9C</a></p>
+<a href="https://discord.gg/M7R8EY28q6">https://discord.gg/M7R8EY28q6</a></p>
 <p>We encourage every player to join so they don't miss important announcements, updates, or community events.</p>
 <hr>
 
@@ -64,7 +64,7 @@
 <li>Future events and activities.</li>
 </ul>
 <p><b>Official Discord:</b><br>
-<a href="https://discord.com/invite/KmZgUPET9C">https://discord.com/invite/KmZgUPET9C</a></p>
+<a href="https://discord.gg/M7R8EY28q6">https://discord.gg/M7R8EY28q6</a></p>
 <p>Thank you for being part of Nova Station and supporting Circuit Verse Community!</p>
 <hr>
 
