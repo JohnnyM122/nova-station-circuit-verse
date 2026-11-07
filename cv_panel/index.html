@@ -2238,12 +2238,14 @@
     }
 
     async function mcBedrockAction(action) {
+      if (!action) return;
       const consoleEl = document.getElementById('mc-bedrock-console-out');
       if (consoleEl) consoleEl.textContent = `Executing Bedrock action [${action}]...`;
       try {
-        const res = await api('/api/mc/bedrock/action', {
+        const res = await api('/api/mc/bedrock/action?action=' + encodeURIComponent(action), {
           method: 'POST',
-          body: JSON.stringify({ action })
+          headers: { 'Content-Type': 'application/json', 'X-Action': action },
+          body: JSON.stringify({ action: action })
         });
         if (consoleEl) consoleEl.textContent = res.output || 'Action completed successfully.';
         toast(`Bedrock ${action}: ${res.output ? res.output.slice(0, 60) : 'Success'}`);

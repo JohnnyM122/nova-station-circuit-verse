@@ -797,6 +797,10 @@ async def add_security_headers(request: Request, call_next):
         "default-src 'self' https: data: 'unsafe-inline' 'unsafe-eval'; "
         "frame-ancestors 'self' https://*.circuitverse.online https://circuitverse.online;"
     )
+    if request.url.path in ("/", "/index.html"):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
     return response
 
 # ==========================================
@@ -1606,14 +1610,28 @@ async def api_mc_bedrock_action(request: Request, action: Optional[str] = None):
     if not user or not user["access"]["mc"]:
         raise HTTPException(403, "Requires Minecraft Staff role")
     tier = user["access"]["mc"]
-    if request.method == "POST":
+
+    # Resilient extraction of action from query params, json, form, or headers
+    if not action:
+        action = request.query_params.get("action")
+    if not action:
         try:
             body = await request.json()
-            action = body.get("action") or action
+            if isinstance(body, dict):
+                action = body.get("action")
         except Exception:
             pass
     if not action:
-        raise HTTPException(400, "Action required")
+        try:
+            form = await request.form()
+            action = form.get("action")
+        except Exception:
+            pass
+    if not action:
+        action = request.headers.get("x-action")
+
+    if not action:
+        raise HTTPException(400, "Action required (e.g. ?action=version, restart, start, stop, pause, resume)")
     cfg = load_config()
     mc = cfg["mc_server"]
 
