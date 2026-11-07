@@ -1413,6 +1413,12 @@ async def api_mc_action(request: Request):
         record_audit(user, "mc", "backup", f"Created mc_backup_{ts}.tar.gz")
         return {"success": res["code"] == 0, "output": res["stdout"] + res["stderr"]}
 
+    if action.startswith("bedrock") or action in ("geyser_reload", "geyser_dump", "geyser_version"):
+        sub_act = body.get("sub_action") or action
+        if sub_act.startswith("bedrock_"):
+            sub_act = sub_act[len("bedrock_"):]
+        return await api_mc_bedrock_action(request, action=sub_act)
+
     raise HTTPException(400, "Unknown MC action")
 
 MC_CORE_FILES = {
@@ -1631,7 +1637,11 @@ async def api_mc_bedrock_action(request: Request, action: Optional[str] = None):
         action = request.headers.get("x-action")
 
     if not action:
-        raise HTTPException(400, "Action required (e.g. ?action=version, restart, start, stop, pause, resume)")
+        # Graceful fallback if client called without explicit action parameter
+        action = "version"
+    action = action.strip().lower()
+    if action.startswith("bedrock_"):
+        action = action[len("bedrock_"):]
     cfg = load_config()
     mc = cfg["mc_server"]
 
