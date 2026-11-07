@@ -800,3 +800,20 @@ footer {
     grid-template-columns: 1fr;
   }
 }
+
+.badge-pz {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.btn-pz {
+  background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+  color: #fff;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.btn-pz:hover {
+  box-shadow: 0 0 25px rgba(239, 68, 68, 0.4);
+  transform: translateY(-2px);
+}
