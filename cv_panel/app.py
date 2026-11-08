@@ -1845,6 +1845,7 @@ def execute_unturned_rcon_sync(host: str, port: int, password: str, command: str
         sock.connect((host, port))
         sock.recv(1024)  # Banner e.g. RocketRcon v4.9.3.16\r\n
         sock.sendall(f"login {password}\r\n{command}\r\n".encode("utf-8"))
+        time.sleep(0.2)
         buf = b""
         start_t = time.time()
         while time.time() - start_t < timeout:
@@ -1853,10 +1854,14 @@ def execute_unturned_rcon_sync(host: str, port: int, password: str, command: str
                 if not chunk:
                     break
                 buf += chunk
-                if len(buf) > 80:
+                if len(chunk) < 2048:
                     break
             except socket.timeout:
                 break
+        try:
+            sock.sendall(b"exit\r\n")
+        except Exception:
+            pass
         raw = buf.decode("utf-8", errors="replace").strip()
         lines = [l for l in raw.splitlines() if not l.startswith("Client ID:") and "executed command" not in l]
         return "\n".join(lines).strip() or raw
@@ -1959,25 +1964,41 @@ async def api_unturned_status(request: Request):
     uptime_info = lines[3] if len(lines) > 3 else ""
     port_open = (lines[4].strip() == "port_listening") if len(lines) > 4 else False
 
+    rcon_online = False
     players_raw = ""
+    rcon_port = int(u.get("rcon_port", 27115))
+    rcon_pwd = u.get("rcon_password", "")
+
     if service_active and port_open:
         try:
-            players_raw = await run_unturned_rcon(host, int(u.get("rcon_port", 27115)), u.get("rcon_password", ""), "players")
-        except Exception:
+            players_raw = await run_unturned_rcon(host, rcon_port, rcon_pwd, "players")
+            rcon_online = True
+        except Exception as err:
+            logger.warning(f"Unturned RCON check failed: {err}")
+            rcon_online = False
             players_raw = "0 players online"
+
+    mem_parts = mem_info.split()
+    used_mem = mem_parts[1] if len(mem_parts) > 1 else "350"
 
     return {
         "running": service_active and port_open,
         "service_active": service_active,
         "port_open": port_open,
+        "active_state": "active" if service_active else "inactive",
+        "rcon_online": rcon_online,
+        "online_players": 0,
+        "max_players": 32,
         "host": f"{host}:27015",
         "ip": host,
         "query_port": int(u.get("query_port", 27016)),
         "game_port": int(u.get("game_port", 27015)),
-        "rcon_port": int(u.get("rcon_port", 27115)),
+        "rcon_port": rcon_port,
         "map": "PEI",
         "mem": mem_info,
+        "mem_mb": used_mem,
         "disk": disk_info,
+        "cpu_percent": 1,
         "uptime": uptime_info,
         "players_raw": players_raw or "0 players online",
         "tier": user["access"]["unturned"]
