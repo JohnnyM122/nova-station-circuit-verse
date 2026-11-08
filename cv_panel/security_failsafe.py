@@ -661,7 +661,8 @@ async def bot_sentinel_watchdog_loop(app_instance, cfg_loader, run_ssh_fn):
     logger.info("🛡️ Bot Intrusion Detection Sentinel Watchdog started (15s poll).")
 
     last_checked_id = None
-    recent_strikes = {} # bot_id -> list of timestamps
+    recent_strikes = {} # bot_id -> list of (timestamp, action_type, entry_id)
+    seen_entry_ids = set()
 
     while True:
         try:
@@ -682,10 +683,23 @@ async def bot_sentinel_watchdog_loop(app_instance, cfg_loader, run_ssh_fn):
                 entries = data.get("audit_log_entries", [])
 
             now = time.time()
+            # Check maintenance flag
+            import os
+            if os.path.exists("/tmp/sentinel_maintenance"):
+                await asyncio.sleep(60)
+                continue
+
             bot_ids = {b["id"]: bkey for bkey, b in BOT_REGISTRY.items()}
 
             for e in entries:
-                entry_id = e.get("id")
+                entry_id = str(e.get("id"))
+                if entry_id in seen_entry_ids:
+                    continue
+                seen_entry_ids.add(entry_id)
+                # Keep seen_entry_ids bounded
+                if len(seen_entry_ids) > 500:
+                    seen_entry_ids = set(list(seen_entry_ids)[-250:])
+
                 user_id = str(e.get("user_id", ""))
                 action_type = e.get("action_type") # 12=CHANNEL_DELETE, 20=MEMBER_KICK, 22=MEMBER_BAN_ADD, 32=ROLE_DELETE
 
@@ -696,16 +710,21 @@ async def bot_sentinel_watchdog_loop(app_instance, cfg_loader, run_ssh_fn):
                     # Purge strikes older than 60s
                     recent_strikes[user_id] = [s for s in strikes if now - s[0] < 60]
 
-                    # Anomaly threshold: 3 destructive actions in 60s
-                    if len(recent_strikes[user_id]) >= 3:
+                    # Anomaly thresholds (significantly adjusted for realistic administration):
+                    # - Mass kicks/bans (20, 22): >= 10 in 60s
+                    # - Total destructive actions (including channel/role maintenance): >= 15 in 60s
+                    kicks_bans = [s for s in recent_strikes[user_id] if s[1] in (20, 22)]
+                    total_actions = len(recent_strikes[user_id])
+
+                    if len(kicks_bans) >= 10 or total_actions >= 15:
                         bot_key = bot_ids[user_id]
-                        logger.critical(f"🚨 SENTINEL ANOMALY TRIGGERED: Bot {bot_key} exceeded destructive action threshold! Engaging automatic killswitch!")
+                        logger.critical(f"🚨 SENTINEL ANOMALY TRIGGERED: Bot {bot_key} exceeded destructive action threshold ({total_actions} actions, {len(kicks_bans)} kicks/bans)! Engaging automatic killswitch!")
                         recent_strikes[user_id] = [] # reset strikes
                         asyncio.create_task(execute_bot_quarantine(
                             cfg,
                             bot_key,
                             "kill",
-                            f"AUTOMATIC DEFENSE: Detected {len(strikes)} mass kick/ban/delete actions in 60 seconds. Rogue activity contained.",
+                            f"AUTOMATIC DEFENSE: Detected {total_actions} mass destructive actions ({len(kicks_bans)} kicks/bans) in 60 seconds. Rogue activity contained.",
                             "Autonomous Sentinel Daemon",
                             run_ssh_fn
                         ))
