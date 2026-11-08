@@ -343,6 +343,10 @@
         <span>⛏️ Minecraft Panel</span>
         <span class="tier-pill" id="badge-mc">Locked</span>
       </button>
+      <button class="nav-btn" data-panel="unturned" onclick="switchPanel('unturned')">
+        <span>🌲 Unturned Panel</span>
+        <span class="tier-pill" id="badge-unturned">Locked</span>
+      </button>
       <button class="nav-btn" data-panel="ns13" onclick="switchPanel('ns13')">
         <span>🚀 Nova Station 13</span>
         <span class="tier-pill" id="badge-ns13">Locked</span>
@@ -388,6 +392,11 @@
             <div class="card-title">⛏️ Minecraft Server</div>
             <p style="color:var(--muted); font-size:0.85rem; margin:8px 0 14px;">Purpur 1.21.4 power controls, live RCON console, LuckPerms rank assignment, player moderation & config editor.</p>
             <span class="btn btn-primary" style="width:100%;">Open MC Control Panel →</span>
+          </div>
+          <div class="card" style="cursor:pointer;" onclick="switchPanel('unturned')">
+            <div class="card-title">🌲 Unturned Dedicated Server</div>
+            <p style="color:var(--muted); font-size:0.85rem; margin:8px 0 14px;">Unturned EU Dedicated Server (RocketMod), live RCON console, one-click plugin installer, staff rank assignment & config editor.</p>
+            <span class="btn btn-primary" style="width:100%;">Open Unturned Control Panel →</span>
           </div>
           <div class="card" style="cursor:pointer;" onclick="switchPanel('ns13')">
             <div class="card-title">🚀 Nova Station 13</div>
@@ -1068,6 +1077,218 @@
                   <button class="btn" onclick="loadMcLogs()">🔄 Refresh Log</button>
                 </div>
                 <pre class="console-box" id="mc-log-box" style="min-height:360px;"></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PANEL: UNTURNED -->
+      <section id="panel-unturned" class="panel-sec" style="display:none;">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🌲 Unturned Dedicated Server Control Panel (RocketMod • 2.31.169.227:27015)</div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button class="btn" onclick="loadUnturned()">🔄 Refresh</button>
+              <button class="btn btn-success" onclick="unturnedService('start')">▶ Start</button>
+              <button class="btn btn-warning" onclick="unturnedService('restart')">🔄 Save & Restart</button>
+              <button class="btn btn-danger" onclick="unturnedService('stop')">⏹ Stop</button>
+              <button class="btn btn-purple" onclick="unturnedAction('save')">💾 Save World</button>
+            </div>
+          </div>
+          <div class="grid-4" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap:12px; margin-bottom:16px;">
+            <div class="stat-box"><div class="stat-label">Server Status</div><div class="stat-value" id="unturned-st-state">—</div></div>
+            <div class="stat-box"><div class="stat-label">RocketMod RCON</div><div class="stat-value" id="unturned-st-rcon" style="font-size:0.95rem;">—</div></div>
+            <div class="stat-box"><div class="stat-label">Online Players</div><div class="stat-value" id="unturned-st-players" style="font-size:0.95rem;">—</div></div>
+            <div class="stat-box"><div class="stat-label">Map & Resources</div><div class="stat-value" id="unturned-st-map" style="font-size:0.95rem;">—</div></div>
+          </div>
+
+          <div class="subtabs">
+            <button class="subtab active" onclick="switchUnturnedTab('unturned-tab-main', this)">🎛️ Console, Players & Live Staff</button>
+            <button class="subtab" onclick="switchUnturnedTab('unturned-tab-plugins', this)">🧩 One-Click Plugin Installer (RocketMod)</button>
+            <button class="subtab" onclick="switchUnturnedTab('unturned-tab-ranks', this)">🎖️ Ranks & Permissions Editor (RocketMod)</button>
+            <button class="subtab" onclick="switchUnturnedTab('unturned-tab-files', this)">📝 Config Editor & Logs</button>
+          </div>
+
+          <!-- UNTURNED Subtab 1: Console, Players & Live Staff -->
+          <div id="unturned-tab-main" class="unturned-sub">
+            <div class="grid-2">
+              <div>
+                <h4 style="margin-bottom:10px;">💻 Live RocketMod RCON Console & Quick Actions</h4>
+                <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;">
+                  <button class="btn" onclick="unturnedRcon('p')">👥 Players (p)</button>
+                  <button class="btn" onclick="unturnedRcon('save')">💾 Save World</button>
+                  <button class="btn btn-purple" onclick="unturnedRcon('p reload')">🔄 Reload RocketMod</button>
+                  <button class="btn btn-warning" onclick="unturnedRcon('shutdown 60')">⏱ Shutdown (60s)</button>
+                  <button class="btn" onclick="unturnedRcon('day')">☀️ Set Day</button>
+                  <button class="btn" onclick="unturnedRcon('night')">🌙 Set Night</button>
+                  <button class="btn" onclick="unturnedRcon('weather none')">⛅ Clear Weather</button>
+                </div>
+                <div style="display:flex; gap:8px; margin-bottom:10px;">
+                  <input id="unturned-rcon-cmd" placeholder="Enter RCON command (e.g. p, broadcast Welcome!, give [SteamID]/[ItemID]/[Amount])..." onkeydown="if(event.key==='Enter')unturnedRcon()" />
+                  <button class="btn btn-primary" onclick="unturnedRcon()">Execute</button>
+                </div>
+                <div style="display:flex; gap:8px; margin-bottom:10px;">
+                  <input id="unturned-broadcast-msg" placeholder="Broadcast server announcement message to all players..." onkeydown="if(event.key==='Enter')unturnedBroadcast()" />
+                  <button class="btn btn-warning" onclick="unturnedBroadcast()">📢 Broadcast</button>
+                </div>
+                <pre class="console-box" id="unturned-console-out" style="max-height:280px;">RocketMod RCON ready.</pre>
+              </div>
+
+              <div>
+                <h4 style="margin-bottom:10px; color:var(--cyan);">⚡ Live Staff & Rank Assignment (Zero Restart Needed)</h4>
+                <div style="display:grid; gap:10px;">
+                  <input id="unturned-plr-id" placeholder="Player Steam64 ID or Character Name (e.g. 76561198000000000)" />
+                  <div style="display:flex; gap:8px; align-items:center;">
+                    <select id="unturned-staff-rank-sel">
+                      <option value="host">Unturned Server Host (host)</option>
+                      <option value="manager">Unturned Server Manager (manager)</option>
+                      <option value="admin">Unturned Server Admin (admin)</option>
+                      <option value="mod">Unturned Server Mod (mod)</option>
+                      <option value="staff">Unturned Server Staff (staff)</option>
+                      <option value="vip">VIP Member (vip)</option>
+                      <option value="default">Default Player (default)</option>
+                    </select>
+                    <input id="unturned-plr-discord" placeholder="Discord User ID (Optional)" style="max-width:210px;" />
+                    <button class="btn btn-success" style="white-space:nowrap;" onclick="unturnedAssignStaffLive()">⚡ Assign Rank Live</button>
+                  </div>
+                  <input id="unturned-plr-reason" placeholder="Moderation Reason / Note (optional)" />
+                  <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <button class="btn btn-warning" onclick="unturnedPlayer('kick')">👢 Kick</button>
+                    <button class="btn btn-danger" onclick="unturnedPlayer('ban')">🔨 Ban</button>
+                    <button class="btn btn-success" onclick="unturnedPlayer('unban')">🔓 Unban</button>
+                    <button class="btn btn-purple" onclick="unturnedPlayer('admin')">⚡ Set Admin</button>
+                    <button class="btn" onclick="unturnedPlayer('unadmin')">➖ Remove Admin</button>
+                    <button class="btn btn-danger" onclick="unturnedPlayer('slay')">💀 Slay Player</button>
+                  </div>
+                  <div style="display:flex; gap:8px; align-items:center;">
+                    <input id="unturned-tp-target" placeholder="Teleport Target: Target Player Name or X Y Z" />
+                    <button class="btn" onclick="unturnedPlayer('tp')">🚀 Teleport</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- UNTURNED Subtab 2: One-Click Plugin Installer -->
+          <div id="unturned-tab-plugins" class="unturned-sub" style="display:none;">
+            <div class="grid-2">
+              <div class="stat-box">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                  <h4 style="color:var(--cyan); margin:0;">🧩 Curated One-Click RocketMod Plugins</h4>
+                  <button class="btn" onclick="loadUnturnedPlugins()">🔄 Refresh Catalog</button>
+                </div>
+                <p style="font-size:0.82rem; color:var(--muted); margin-bottom:10px;">
+                  Popular, fully compatible RocketMod plugins verified for Unturned 3.x. Instantly installs to <code>/Rocket/Plugins</code> and runs <code>p reload</code> automatically.
+                </p>
+                <div style="max-height:450px; overflow-y:auto;">
+                  <table>
+                    <thead><tr><th>Plugin</th><th>Description</th><th>Action</th></tr></thead>
+                    <tbody id="unturned-plugins-curated-tbody"></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="stat-box">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                  <h4 style="color:var(--green); margin:0;">📦 Installed RocketMod Plugins</h4>
+                  <button class="btn" onclick="loadUnturnedPlugins()">🔄 Refresh</button>
+                </div>
+                <p style="font-size:0.82rem; color:var(--muted); margin-bottom:10px;">
+                  Active plugins located in <code>Servers/CircuitVerse/Rocket/Plugins/</code>:
+                </p>
+                <div style="max-height:450px; overflow-y:auto;">
+                  <table>
+                    <thead><tr><th>Filename</th><th>Size</th><th>Last Modified</th><th>Action</th></tr></thead>
+                    <tbody id="unturned-plugins-installed-tbody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- UNTURNED Subtab 3: In-Game Ranks & Permissions Editor -->
+          <div id="unturned-tab-ranks" class="unturned-sub" style="display:none;">
+            <div class="grid-2">
+              <div class="stat-box">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                  <h4 style="color:var(--purple); margin:0;">🎖️ Edit Unturned Rank (`Permissions.config.xml`)</h4>
+                  <button class="btn btn-primary" onclick="unturnedSaveRank()">💾 Save & Sync Permissions</button>
+                </div>
+                <p style="font-size:0.82rem; color:var(--muted); margin-bottom:10px;">
+                  Synchronized with Discord roles and RocketMod groups. Changes hot reload in-game via <code>p reload</code> without restarting.
+                </p>
+                <div style="display:grid; gap:10px;">
+                  <div>
+                    <label style="font-size:0.76rem; color:var(--muted);">Select Group</label>
+                    <select id="unturned-rank-sel" onchange="unturnedSelectRank(this.value)"></select>
+                  </div>
+                  <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;">
+                    <div>
+                      <label style="font-size:0.76rem; color:var(--muted);">Display Name</label>
+                      <input id="unturned-rank-display" placeholder="e.g. Unturned Admin" />
+                    </div>
+                    <div>
+                      <label style="font-size:0.76rem; color:var(--muted);">Priority</label>
+                      <input id="unturned-rank-priority" type="number" value="100" />
+                    </div>
+                    <div>
+                      <label style="font-size:0.76rem; color:var(--muted);">Chat Color (Hex or Name)</label>
+                      <input id="unturned-rank-color" placeholder="e.g. #e74c3c or red" />
+                    </div>
+                  </div>
+                  <div>
+                    <label style="font-size:0.76rem; color:var(--muted);">Permissions (one per line, e.g. <code>rocket</code>, <code>p</code>, <code>*</code>, <code>kits</code>, <code>tpa</code>, <code>home</code>)</label>
+                    <textarea id="unturned-rank-perms" class="code-editor" style="min-height:220px;"></textarea>
+                  </div>
+                </div>
+              </div>
+
+              <div class="stat-box">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                  <h4 style="margin:0;">📋 All Configured Unturned Ranks</h4>
+                  <button class="btn" onclick="loadUnturnedRanks()">🔄 Refresh</button>
+                </div>
+                <div style="max-height:450px; overflow-y:auto;">
+                  <table>
+                    <thead><tr><th>Group ID</th><th>Display Name</th><th>Priority</th><th>Color</th><th>Perms Count</th></tr></thead>
+                    <tbody id="unturned-ranks-overview-tbody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- UNTURNED Subtab 4: Config Editor & Logs -->
+          <div id="unturned-tab-files" class="unturned-sub" style="display:none;">
+            <div class="grid-2">
+              <div class="stat-box">
+                <div class="card-header" style="flex-wrap:wrap; gap:8px;">
+                  <div class="card-title">⚙️ Configuration File Editor</div>
+                  <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                    <select id="unturned-file-select" onchange="loadUnturnedFile(this.value)" style="width:280px; max-width:100%;">
+                      <option value="Commands.dat (Server Settings)">Commands.dat (Server Settings)</option>
+                      <option value="Config.txt (Game Mechanics)">Config.txt (Game Mechanics)</option>
+                      <option value="Permissions.config.xml (Ranks)">Permissions.config.xml (Ranks)</option>
+                      <option value="Rocket.config.xml (Engine & RCON)">Rocket.config.xml (Engine & RCON)</option>
+                      <option value="WorkshopDownloadConfig.json (Mods)">WorkshopDownloadConfig.json (Mods)</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="saveUnturnedFile()">💾 Save</button>
+                    <button class="btn btn-warning" onclick="saveUnturnedFile(true)" title="Save changes and immediately execute p reload in-game">⚡ Save & In-Game Reload</button>
+                  </div>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin:4px 0 8px 0; font-size:0.8rem; color:var(--muted);">
+                  <span id="unturned-file-status">Editing: <code>Commands.dat</code></span>
+                </div>
+                <textarea id="unturned-file-editor" class="code-editor" style="min-height:480px;"></textarea>
+              </div>
+
+              <div class="stat-box">
+                <div class="card-header">
+                  <div class="card-title">📜 Live Server Log (`Rocket.log` / `journalctl`)</div>
+                  <button class="btn" onclick="loadUnturnedLogs()">🔄 Refresh Log</button>
+                </div>
+                <pre class="console-box" id="unturned-log-box" style="min-height:480px;"></pre>
               </div>
             </div>
           </div>
@@ -1979,6 +2200,7 @@
 
       setBadge('badge-pz', u.access.pz);
       setBadge('badge-mc', u.access.mc);
+      setBadge('badge-unturned', u.access.unturned);
       setBadge('badge-ns13', u.access.ns13);
       setBadge('badge-radio', u.access.radio);
       setBadge('badge-website', u.access.website);
@@ -2005,6 +2227,7 @@
 
       if (panel === 'pz') { loadPz(); loadPzRanks(); loadPzMods(); }
       if (panel === 'mc') { loadMc(); loadMcRanks(); loadMcPlugins(); loadMcFile('server.properties'); loadMcLogs(); }
+      if (panel === 'unturned') { loadUnturned(); loadUnturnedRanks(); loadUnturnedPlugins(); loadUnturnedFile('Commands.dat (Server Settings)'); loadUnturnedLogs(); }
       if (panel === 'ns13') { loadNs13(); loadNs13Ranks(); loadNs13File('motd.txt'); loadNs13Logs(); }
       if (panel === 'radio') { loadRadio(); searchRadioSongs(); }
       if (panel === 'website') loadPortalWebsite();
@@ -3071,6 +3294,253 @@
         toast(`Plugin ${op} complete`);
         loadMcPlugins();
       } catch (e) { toast(e.message); }
+    }
+
+    // ================= UNTURNED PANEL =================
+    let UNTURNED_RANKS_DATA = [];
+
+    async function loadUnturned() {
+      try {
+        const st = await api('/api/unturned/status');
+        const stEl = document.getElementById('unturned-st-state');
+        if (stEl) {
+          stEl.innerHTML = st.running
+            ? `<span style="color:var(--green); font-weight:700;">● ONLINE</span> <span style="font-size:0.75rem; color:var(--muted);">(${st.active_state})</span>`
+            : `<span style="color:var(--red); font-weight:700;">● OFFLINE</span>`;
+        }
+        const rconEl = document.getElementById('unturned-st-rcon');
+        if (rconEl) {
+          rconEl.innerHTML = st.rcon_online
+            ? `<span style="color:var(--green); font-weight:700;">● ACTIVE (Port ${st.rcon_port})</span>`
+            : `<span style="color:var(--yellow); font-weight:700;">⚠️ DISCONNECTED</span>`;
+        }
+        const plrEl = document.getElementById('unturned-st-players');
+        if (plrEl) plrEl.textContent = `${st.online_players || 0} / ${st.max_players || 32} Players`;
+        const mapEl = document.getElementById('unturned-st-map');
+        if (mapEl) mapEl.textContent = `${st.map || 'PEI'} | RAM: ${st.mem_mb || 0} MB | CPU: ${st.cpu_percent || 0}%`;
+      } catch (e) {
+        toast('Unturned Access: ' + e.message);
+      }
+    }
+
+    function switchUnturnedTab(id, btn) {
+      document.querySelectorAll('#panel-unturned .subtab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('.unturned-sub').forEach(s => s.style.display = 'none');
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'block';
+      if (id === 'unturned-tab-plugins') loadUnturnedPlugins();
+      if (id === 'unturned-tab-ranks') loadUnturnedRanks();
+      if (id === 'unturned-tab-files') { loadUnturnedFile(); loadUnturnedLogs(); }
+    }
+
+    async function unturnedService(action) {
+      if (action === 'restart') {
+        if (!confirm('Reboot Unturned dedicated server? This will safely save world data first.')) return;
+      } else {
+        if (!confirm(`Confirm ${action.toUpperCase()} on Unturned dedicated server?`)) return;
+      }
+      try {
+        const res = await api('/api/unturned/action', { method: 'POST', body: JSON.stringify({ action }) });
+        toast(res.message || res.output || `Unturned ${action} executed!`);
+        setTimeout(loadUnturned, 2000);
+      } catch (e) { toast(e.message); }
+    }
+
+    async function unturnedAction(action, extra = {}) {
+      try {
+        const res = await api('/api/unturned/action', { method: 'POST', body: JSON.stringify({ action, ...extra }) });
+        toast(res.message || res.output || 'Action executed successfully!');
+      } catch (e) { toast(e.message); }
+    }
+
+    async function unturnedRcon(preset) {
+      const command = preset || document.getElementById('unturned-rcon-cmd').value;
+      if (!command) return;
+      try {
+        const res = await api('/api/unturned/action', { method: 'POST', body: JSON.stringify({ action: 'command', command }) });
+        const box = document.getElementById('unturned-console-out');
+        box.textContent = `> ${command}\n${res.output || '(no output)'}\n\n` + box.textContent;
+        if (!preset) document.getElementById('unturned-rcon-cmd').value = '';
+      } catch (e) { toast(e.message); }
+    }
+
+    async function unturnedBroadcast() {
+      const msg = document.getElementById('unturned-broadcast-msg').value.trim();
+      if (!msg) return toast('Enter a broadcast message');
+      try {
+        const res = await api('/api/unturned/action', { method: 'POST', body: JSON.stringify({ action: 'broadcast', message: msg }) });
+        toast(res.message || 'Announcement broadcasted in-game!');
+        document.getElementById('unturned-broadcast-msg').value = '';
+      } catch (e) { toast(e.message); }
+    }
+
+    async function unturnedPlayer(action) {
+      const player = document.getElementById('unturned-plr-id').value.trim();
+      const reason = document.getElementById('unturned-plr-reason').value.trim() || 'Staff Moderation';
+      const target = document.getElementById('unturned-tp-target') ? document.getElementById('unturned-tp-target').value.trim() : '';
+      if (!player) return toast('Enter player Steam64 ID or character name');
+      try {
+        const res = await api('/api/unturned/player', { method: 'POST', body: JSON.stringify({ action, player, reason, target }) });
+        toast(res.message || res.output || `Action ${action} executed!`);
+        loadUnturned();
+      } catch (e) { toast(e.message); }
+    }
+
+    async function unturnedAssignStaffLive() {
+      const player_steamid = document.getElementById('unturned-plr-id').value.trim();
+      const group_id = document.getElementById('unturned-staff-rank-sel').value;
+      const discord_id = document.getElementById('unturned-plr-discord').value.trim();
+      if (!player_steamid) return toast('Enter player Steam64 ID');
+      try {
+        const res = await api('/api/unturned/staff/assign', { method: 'POST', body: JSON.stringify({ player_steamid, group_id, discord_id }) });
+        toast(res.message || 'Assigned Unturned rank live!');
+      } catch (e) { toast(e.message); }
+    }
+
+    async function loadUnturnedPlugins() {
+      try {
+        const d = await api('/api/unturned/plugins');
+        const curatedTbody = document.getElementById('unturned-plugins-curated-tbody');
+        if (curatedTbody) {
+          curatedTbody.innerHTML = (d.available || []).map(p => `
+            <tr>
+              <td><strong>${p.name}</strong><br/><span style="font-size:0.75rem; color:var(--cyan);">${p.category} • v${p.version}</span></td>
+              <td style="font-size:0.8rem; color:var(--muted);">${p.description}</td>
+              <td>
+                ${p.installed
+                  ? `<button class="btn btn-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="unturnedPluginUninstall('${p.id}')">Uninstall</button>`
+                  : `<button class="btn btn-success" style="padding:4px 8px; font-size:0.75rem; white-space:nowrap;" onclick="unturnedPluginInstall('${p.id}')">⚡ Install</button>`
+                }
+              </td>
+            </tr>
+          `).join('');
+        }
+        const instTbody = document.getElementById('unturned-plugins-installed-tbody');
+        if (instTbody) {
+          instTbody.innerHTML = (d.installed || []).map(p => `
+            <tr>
+              <td><code>${p.filename}</code></td>
+              <td>${p.size}</td>
+              <td style="font-size:0.78rem; color:var(--muted);">${p.modified}</td>
+              <td>
+                <button class="btn btn-danger" style="padding:3px 8px; font-size:0.74rem;" onclick="unturnedPluginUninstall('${p.plugin_id}')">Remove</button>
+              </td>
+            </tr>
+          `).join('') || '<tr><td colspan="4" style="color:var(--muted); text-align:center;">No custom plugins installed yet.</td></tr>';
+        }
+      } catch (e) { toast('Plugins: ' + e.message); }
+    }
+
+    async function unturnedPluginInstall(plugin_id) {
+      toast(`Installing RocketMod plugin ${plugin_id}...`);
+      try {
+        const res = await api('/api/unturned/plugins/install', { method: 'POST', body: JSON.stringify({ plugin_id }) });
+        toast(res.message || 'Plugin installed successfully!');
+        loadUnturnedPlugins();
+      } catch (e) { toast(e.message); }
+    }
+
+    async function unturnedPluginUninstall(plugin_id) {
+      if (!confirm(`Uninstall plugin ${plugin_id}?`)) return;
+      try {
+        const res = await api('/api/unturned/plugins/uninstall', { method: 'POST', body: JSON.stringify({ plugin_id }) });
+        toast(res.message || 'Plugin uninstalled!');
+        loadUnturnedPlugins();
+      } catch (e) { toast(e.message); }
+    }
+
+    async function loadUnturnedRanks() {
+      try {
+        const d = await api('/api/unturned/ranks');
+        UNTURNED_RANKS_DATA = d.ranks || d.groups || [];
+        const sel = document.getElementById('unturned-rank-sel');
+        if (sel) {
+          sel.innerHTML = UNTURNED_RANKS_DATA.map(g => `<option value="${g.id}">${g.name || g.display_name || g.id} (${g.id})</option>`).join('');
+          if (UNTURNED_RANKS_DATA.length > 0) unturnedSelectRank(UNTURNED_RANKS_DATA[0].id);
+        }
+        const tbody = document.getElementById('unturned-ranks-overview-tbody');
+        if (tbody) {
+          tbody.innerHTML = UNTURNED_RANKS_DATA.map(g => `
+            <tr>
+              <td><code>${g.id}</code></td>
+              <td><strong>${g.name || g.display_name}</strong></td>
+              <td>${g.priority}</td>
+              <td><span style="color:${g.color}; font-weight:bold;">${g.color}</span></td>
+              <td>${(g.permissions || []).length} perms</td>
+            </tr>
+          `).join('');
+        }
+      } catch (e) { toast('Ranks: ' + e.message); }
+    }
+
+    function unturnedSelectRank(groupId) {
+      const g = UNTURNED_RANKS_DATA.find(x => x.id === groupId);
+      if (!g) return;
+      const dEl = document.getElementById('unturned-rank-display');
+      const pEl = document.getElementById('unturned-rank-priority');
+      const cEl = document.getElementById('unturned-rank-color');
+      const permEl = document.getElementById('unturned-rank-perms');
+      if (dEl) dEl.value = g.name || g.display_name || '';
+      if (pEl) pEl.value = g.priority || 100;
+      if (cEl) cEl.value = g.color || 'white';
+      if (permEl) permEl.value = (g.permissions || []).join('\n');
+    }
+
+    async function unturnedSaveRank() {
+      const group_id = document.getElementById('unturned-rank-sel').value;
+      const display_name = document.getElementById('unturned-rank-display').value.trim();
+      const priority = parseInt(document.getElementById('unturned-rank-priority').value, 10) || 100;
+      const color = document.getElementById('unturned-rank-color').value.trim();
+      const permsRaw = document.getElementById('unturned-rank-perms').value;
+      const permissions = permsRaw.split('\n').map(s => s.trim()).filter(Boolean);
+      if (!group_id) return toast('Select a rank first');
+      toast(`Saving ${display_name || group_id}...`);
+      try {
+        const res = await api('/api/unturned/ranks', {
+          method: 'POST',
+          body: JSON.stringify({ group_id, display_name, priority, color, permissions })
+        });
+        toast(res.message || 'Rank saved and reloaded live in-game!');
+        loadUnturnedRanks();
+      } catch (e) { toast(e.message); }
+    }
+
+    async function loadUnturnedFile(name) {
+      if (!name) name = document.getElementById('unturned-file-select').value || 'Commands.dat (Server Settings)';
+      try {
+        const res = await api(`/api/unturned/file?name=${encodeURIComponent(name)}`);
+        const ed = document.getElementById('unturned-file-editor');
+        if (ed) ed.value = res.content || '';
+        const st = document.getElementById('unturned-file-status');
+        if (st) st.innerHTML = `Editing: <code>${res.name}</code> (${(res.content || '').length} characters)`;
+      } catch (e) { toast('File Error: ' + e.message); }
+    }
+
+    async function saveUnturnedFile(reloadInGame = false) {
+      const name = document.getElementById('unturned-file-select').value;
+      const content = document.getElementById('unturned-file-editor').value;
+      toast(`Saving ${name}...`);
+      try {
+        const res = await api('/api/unturned/file', { method: 'POST', body: JSON.stringify({ name, content }) });
+        toast(res.message || 'File saved successfully!');
+        if (reloadInGame) {
+          await unturnedRcon('p reload');
+          toast('Executed in-game reload (p reload)!');
+        }
+      } catch (e) { toast(e.message); }
+    }
+
+    async function loadUnturnedLogs() {
+      const box = document.getElementById('unturned-log-box');
+      if (box) box.textContent = 'Fetching recent Unturned server logs...';
+      try {
+        const res = await api('/api/unturned/logs?lines=200');
+        if (box) {
+          box.textContent = res.logs || 'No recent logs found.';
+          box.scrollTop = box.scrollHeight;
+        }
+      } catch (e) { toast('Logs Error: ' + e.message); }
     }
 
     // ================= NS13 PANEL & EXTENSIONS =================

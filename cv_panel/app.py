@@ -120,6 +120,17 @@ DEFAULT_MATRIX = {
         "1567491710643343470",  # NS13 Mentor Ticket Admin
         "1567491711398191155",  # NS13 Mentor Ticket Support
     ],
+    "unturned_admin": [
+        "1568805604447752263",  # Unturned Server Host
+        "1568805606192848993",  # Unturned Server Manager
+    ],
+    "unturned_tech": [
+        "1568805607836745910",  # Unturned Server Admin
+    ],
+    "unturned_mod": [
+        "1568805609158082641",  # Unturned Server Mod
+        "1568805610219372690",  # Unturned Server Staff
+    ],
     "radio_admin": [
         "1567475021906186270",  # Dept.Director (GC)
         "1567734522253148213",  # Station Manager
@@ -418,6 +429,12 @@ ROLE_ID_TO_WEIGHT = {
     "1567730989969440848": 45,   # Community Partner
     "1567449678746882068": 30,   # MC VIP Member
     "1567449675949150268": 20,   # MC Player
+    "1568805604447752263": 130,  # Unturned Server Host
+    "1568805606192848993": 110,  # Unturned Server Manager
+    "1568805607836745910": 85,   # Unturned Server Admin
+    "1568805609158082641": 65,   # Unturned Server Mod
+    "1568805610219372690": 55,   # Unturned Server Staff
+    "1568805612312334558": 20,   # Unturned Player
 }
 
 ROLE_NAME_TO_WEIGHT = {
@@ -428,6 +445,12 @@ ROLE_NAME_TO_WEIGHT = {
     "executive director": 130,
     "community management": 125,
     "mc server host": 130,
+    "unturned server host": 130,
+    "unturned server manager": 110,
+    "unturned server admin": 85,
+    "unturned server mod": 65,
+    "unturned server staff": 55,
+    "unturned player": 20,
     "server host": 130,
     "dept.director (mc)": 132,
     "department director (mc)": 132,
@@ -697,6 +720,16 @@ def compute_access(role_ids: List[str], master_unlocked_until: float = 0) -> Dic
     else:
         ns13_tier = None
 
+    # Unturned tier
+    if is_exec or (rset & set(m.get("unturned_admin", []))):
+        unturned_tier = "admin"
+    elif rset & set(m.get("unturned_tech", [])):
+        unturned_tier = "technician"
+    elif rset & set(m.get("unturned_mod", [])):
+        unturned_tier = "moderator"
+    else:
+        unturned_tier = None
+
     # Radio tier
     if is_exec or (rset & set(m.get("radio_admin", []))):
         radio_tier = "admin"
@@ -715,11 +748,12 @@ def compute_access(role_ids: List[str], master_unlocked_until: float = 0) -> Dic
         "pz": pz_tier,
         "mc": mc_tier,
         "ns13": ns13_tier,
+        "unturned": unturned_tier,
         "radio": radio_tier,
         "website": website_tier,
         "master_eligible": master_eligible,
         "master_unlocked": master_unlocked,
-        "any_staff": any([pz_tier, mc_tier, ns13_tier, radio_tier, website_tier, master_eligible]),
+        "any_staff": any([pz_tier, mc_tier, ns13_tier, unturned_tier, radio_tier, website_tier, master_eligible]),
     }
 
 async def get_current_user(request: Request, refresh_roles: bool = False) -> Optional[Dict[str, Any]]:
@@ -1798,6 +1832,526 @@ async def api_mc_bedrock_logs(request: Request, lines: int = 150):
     mc = cfg["mc_server"]
     cmd = f"grep -i -E 'geyser|floodgate|bedrock|raknet|nethernet|19132' /opt/minecraft/server/logs/latest.log | tail -n {min(lines, 300)}"
     res = await run_ssh(mc["ssh_host"], mc["ssh_user"], cmd)
+    return {"logs": res["stdout"]}
+
+# ==========================================
+# Circuit Verse Unturned Control Panel (/api/unturned/*)
+# ==========================================
+
+def execute_unturned_rcon_sync(host: str, port: int, password: str, command: str, timeout: float = 4.0) -> str:
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(timeout)
+    try:
+        sock.connect((host, port))
+        sock.recv(1024)  # Banner e.g. RocketRcon v4.9.3.16\r\n
+        sock.sendall(f"login {password}\r\n{command}\r\n".encode("utf-8"))
+        buf = b""
+        start_t = time.time()
+        while time.time() - start_t < timeout:
+            try:
+                chunk = sock.recv(2048)
+                if not chunk:
+                    break
+                buf += chunk
+                if len(buf) > 80:
+                    break
+            except socket.timeout:
+                break
+        raw = buf.decode("utf-8", errors="replace").strip()
+        lines = [l for l in raw.splitlines() if not l.startswith("Client ID:") and "executed command" not in l]
+        return "\n".join(lines).strip() or raw
+    finally:
+        sock.close()
+
+async def run_unturned_rcon(host: str, port: int, password: str, command: str) -> str:
+    return await asyncio.to_thread(execute_unturned_rcon_sync, host, port, password, command)
+
+UNTURNED_CORE_FILES = {
+    "Commands.dat (Server Settings)": "/home/unturned/unturned-server/Servers/CircuitVerse/Server/Commands.dat",
+    "Config.txt (Game Mechanics)": "/home/unturned/unturned-server/Servers/CircuitVerse/Config.txt",
+    "Permissions.config.xml (Ranks)": "/home/unturned/unturned-server/Servers/CircuitVerse/Rocket/Permissions.config.xml",
+    "Rocket.config.xml (Engine & RCON)": "/home/unturned/unturned-server/Servers/CircuitVerse/Rocket/Rocket.config.xml",
+    "WorkshopDownloadConfig.json (Mods)": "/home/unturned/unturned-server/Servers/CircuitVerse/WorkshopDownloadConfig.json",
+}
+
+UNTURNED_CURATED_PLUGINS = [
+    {
+        "id": "kits",
+        "name": "Kits (Starter & VIP)",
+        "version": "2.4.1",
+        "author": "RocketMod Community",
+        "description": "Allows players and donors to redeem customizable starter kits, weapons, and medical kits via /kit.",
+        "dll_name": "Kits.dll"
+    },
+    {
+        "id": "tpa",
+        "name": "TPA (Player Teleport)",
+        "version": "1.3.0",
+        "author": "RocketMod Community",
+        "description": "Adds /tpa and /tpaccept allowing friendly players to request teleportation to teammates with cooldowns.",
+        "dll_name": "TPA.dll"
+    },
+    {
+        "id": "home",
+        "name": "Home / SetHome System",
+        "version": "1.1.2",
+        "author": "RocketMod Community",
+        "description": "Allows players to establish custom home teleport points with /sethome and /home.",
+        "dll_name": "Home.dll"
+    },
+    {
+        "id": "vault",
+        "name": "Virtual Vault & Bank",
+        "version": "2.0.0",
+        "author": "RocketMod Community",
+        "description": "Provides secure, persistent virtual storage containers (/vault) accessible by rank permissions.",
+        "dll_name": "Vault.dll"
+    },
+    {
+        "id": "autorestart",
+        "name": "AutoRestart & Countdown",
+        "version": "1.0.5",
+        "author": "RocketMod Community",
+        "description": "Schedules automated daily maintenance restarts with broadcast countdown warnings.",
+        "dll_name": "AutoRestart.dll"
+    },
+    {
+        "id": "vehiclespawn",
+        "name": "Vehicle Spawner & Lock",
+        "version": "1.5.0",
+        "author": "RocketMod Community",
+        "description": "Enables staff and VIPs to spawn and manage vehicles (/v) with permission locks.",
+        "dll_name": "VehicleSpawn.dll"
+    },
+    {
+        "id": "discordbridge",
+        "name": "Discord Chat & Ban Bridge",
+        "version": "2.1.0",
+        "author": "Circuit Verse Suite",
+        "description": "Bidirectionally mirrors in-game Unturned chat, player connections, and bans to Discord.",
+        "dll_name": "DiscordBridge.dll"
+    }
+]
+
+@app.get("/api/unturned/status")
+async def api_unturned_status(request: Request):
+    user = await get_current_user(request)
+    if not user or not user["access"].get("unturned"):
+        raise HTTPException(403, "Requires Unturned Staff role")
+    cfg = load_config()
+    u = cfg.get("unturned_server", {})
+    host = u.get("host", "2.31.169.227")
+    ssh_host = u.get("ssh_host", host)
+    ssh_user = u.get("ssh_user", "root")
+
+    cmd = (
+        "systemctl is-active unturned.service; "
+        "free -m | awk '/Mem:/ {print $2,$3}'; "
+        "df -h / | awk 'NR==2 {print $2,$3,$5}'; "
+        "uptime -p; "
+        "ss -ulpn | grep -q ':27015 ' && echo 'port_listening' || echo 'port_closed'"
+    )
+    res = await run_ssh(ssh_host, ssh_user, cmd)
+    lines = res["stdout"].strip().splitlines()
+    service_active = (lines[0].strip() == "active") if len(lines) > 0 else False
+    mem_info = lines[1] if len(lines) > 1 else ""
+    disk_info = lines[2] if len(lines) > 2 else ""
+    uptime_info = lines[3] if len(lines) > 3 else ""
+    port_open = (lines[4].strip() == "port_listening") if len(lines) > 4 else False
+
+    players_raw = ""
+    if service_active and port_open:
+        try:
+            players_raw = await run_unturned_rcon(host, int(u.get("rcon_port", 27115)), u.get("rcon_password", ""), "players")
+        except Exception:
+            players_raw = "0 players online"
+
+    return {
+        "running": service_active and port_open,
+        "service_active": service_active,
+        "port_open": port_open,
+        "host": f"{host}:27015",
+        "ip": host,
+        "query_port": int(u.get("query_port", 27016)),
+        "game_port": int(u.get("game_port", 27015)),
+        "rcon_port": int(u.get("rcon_port", 27115)),
+        "map": "PEI",
+        "mem": mem_info,
+        "disk": disk_info,
+        "uptime": uptime_info,
+        "players_raw": players_raw or "0 players online",
+        "tier": user["access"]["unturned"]
+    }
+
+@app.post("/api/unturned/action")
+async def api_unturned_action(request: Request):
+    user = await get_current_user(request)
+    if not user or not user["access"].get("unturned"):
+        raise HTTPException(403, "Requires Unturned Staff role")
+    tier = user["access"]["unturned"]
+    body = await request.json()
+    action = body.get("action", "")
+    cfg = load_config()
+    u = cfg.get("unturned_server", {})
+    host = u.get("host", "2.31.169.227")
+    rcon_port = int(u.get("rcon_port", 27115))
+    rcon_pwd = u.get("rcon_password", "")
+
+    if action in ("start", "stop", "restart"):
+        if tier not in ("admin", "technician"):
+            raise HTTPException(403, "Only Unturned Host, Director, or Admin can control server state")
+        if action == "restart":
+            await run_ssh(u["ssh_host"], u["ssh_user"], "systemctl restart unturned.service")
+            record_audit(user, "unturned", "restart", "Restarted unturned.service")
+            return {"success": True, "output": "Unturned server restarted successfully."}
+        elif action == "stop":
+            await run_ssh(u["ssh_host"], u["ssh_user"], "systemctl stop unturned.service")
+            record_audit(user, "unturned", "stop", "Stopped unturned.service")
+            return {"success": True, "output": "Unturned server stopped successfully."}
+        elif action == "start":
+            await run_ssh(u["ssh_host"], u["ssh_user"], "systemctl start unturned.service")
+            record_audit(user, "unturned", "start", "Started unturned.service")
+            return {"success": True, "output": "Unturned server started successfully."}
+
+    if action == "save":
+        out = await run_unturned_rcon(host, rcon_port, rcon_pwd, "save")
+        record_audit(user, "unturned", "save", "Saved Unturned world state")
+        return {"success": True, "output": out or "World saved successfully."}
+
+    if action == "broadcast":
+        msg = body.get("message", "").strip()
+        if not msg:
+            raise HTTPException(400, "Message required")
+        out = await run_unturned_rcon(host, rcon_port, rcon_pwd, f"broadcast {msg}")
+        record_audit(user, "unturned", "broadcast", f"Broadcast: {msg}")
+        return {"success": True, "output": f"Broadcast sent: {msg}"}
+
+    if action == "command":
+        cmd = body.get("command", "").strip()
+        if not cmd:
+            raise HTTPException(400, "Command required")
+        if tier != "admin" and any(k in cmd.lower() for k in ("shutdown", "exit", "kill", "admin", "unadmin", "p reload")):
+            raise HTTPException(403, "Privileged command restricted to Admin")
+        out = await run_unturned_rcon(host, rcon_port, rcon_pwd, cmd)
+        record_audit(user, "unturned", "command", f"Executed: {cmd}")
+        return {"success": True, "output": out or f"Command '{cmd}' executed."}
+
+    raise HTTPException(400, f"Unknown action: {action}")
+
+@app.post("/api/unturned/player")
+async def api_unturned_player_action(request: Request):
+    user = await get_current_user(request)
+    if not user or not user["access"].get("unturned"):
+        raise HTTPException(403, "Requires Unturned Staff role")
+    body = await request.json()
+    player = body.get("player", "").strip()
+    action = body.get("action", "").strip().lower()
+    reason = body.get("reason", "Moderator action").strip()
+    cfg = load_config()
+    u = cfg.get("unturned_server", {})
+
+    if not player:
+        raise HTTPException(400, "Player SteamID64 or character name required")
+
+    cmd = ""
+    if action == "kick":
+        cmd = f"kick {player}/{reason}"
+    elif action == "ban":
+        duration = body.get("duration", "86400")
+        cmd = f"ban {player}/{reason}/{duration}"
+    elif action == "unban":
+        cmd = f"unban {player}"
+    elif action == "admin":
+        cmd = f"admin {player}"
+    elif action == "unadmin":
+        cmd = f"unadmin {player}"
+    elif action == "slay":
+        cmd = f"slay {player}"
+    elif action == "tp":
+        target = body.get("target", "").strip()
+        cmd = f"teleport {player}/{target}" if target else f"teleport {player}"
+    else:
+        raise HTTPException(400, f"Unsupported player action: {action}")
+
+    out = await run_unturned_rcon(u["host"], int(u["rcon_port"]), u["rcon_password"], cmd)
+    record_audit(user, "unturned", f"player_{action}", f"Player {player}: {cmd}")
+    return {"success": True, "output": out or f"Action {action} performed on {player}."}
+
+@app.get("/api/unturned/ranks")
+async def api_unturned_ranks(request: Request):
+    user = await get_current_user(request)
+    if not user or not user["access"].get("unturned"):
+        raise HTTPException(403, "Requires Unturned Staff role")
+    cfg = load_config()
+    u = cfg.get("unturned_server", {})
+    xml_path = "/home/unturned/unturned-server/Servers/CircuitVerse/Rocket/Permissions.config.xml"
+    content = await asyncio.to_thread(sftp_read_sync, u["ssh_host"], u["ssh_user"], xml_path)
+
+    ranks = []
+    try:
+        import xml.etree.ElementTree as ET
+        root = ET.fromstring(content)
+        groups_el = root.find("Groups")
+        if groups_el is not None:
+            for g in groups_el.findall("Group"):
+                gid = g.findtext("Id", "")
+                name = g.findtext("DisplayName", gid)
+                prefix = g.findtext("Prefix", "")
+                color = g.findtext("Color", "white")
+                priority = int(g.findtext("Priority", "100"))
+                parent = g.findtext("ParentGroup", "")
+                perms = [p.text for p in g.find("Permissions").findall("Permission") if p.text] if g.find("Permissions") is not None else []
+                members = [m.text for m in g.find("Members").findall("Member") if m.text] if g.find("Members") is not None else []
+                ranks.append({
+                    "id": gid,
+                    "name": name,
+                    "prefix": prefix,
+                    "color": color,
+                    "priority": priority,
+                    "parent": parent,
+                    "permissions": perms,
+                    "members": members
+                })
+    except Exception as e:
+        logger.error(f"Error parsing Unturned permissions XML: {e}")
+
+    return {"ranks": ranks, "raw_xml": content, "tier": user["access"]["unturned"]}
+
+@app.post("/api/unturned/ranks")
+async def api_unturned_save_rank(request: Request):
+    user = await get_current_user(request)
+    if not user or user["access"].get("unturned") != "admin":
+        raise HTTPException(403, "Only Unturned Host or Admin can edit ranks")
+    body = await request.json()
+    group_id = body.get("group_id", "").strip()
+    display_name = body.get("display_name", "").strip()
+    priority = int(body.get("priority", 100))
+    color = body.get("color", "white").strip()
+    permissions = body.get("permissions", [])
+
+    cfg = load_config()
+    u = cfg.get("unturned_server", {})
+    xml_path = "/home/unturned/unturned-server/Servers/CircuitVerse/Rocket/Permissions.config.xml"
+    content = await asyncio.to_thread(sftp_read_sync, u["ssh_host"], u["ssh_user"], xml_path)
+
+    import xml.etree.ElementTree as ET
+    root = ET.fromstring(content)
+    groups_el = root.find("Groups")
+    if groups_el is None:
+        raise HTTPException(400, "Corrupt Permissions.config.xml: missing <Groups>")
+
+    target = None
+    for g in groups_el.findall("Group"):
+        if g.findtext("Id", "") == group_id:
+            target = g
+            break
+    if target is None:
+        target = ET.SubElement(groups_el, "Group")
+        id_el = ET.SubElement(target, "Id")
+        id_el.text = group_id
+
+    dn_el = target.find("DisplayName")
+    if dn_el is None:
+        dn_el = ET.SubElement(target, "DisplayName")
+    dn_el.text = display_name or group_id
+
+    prio_el = target.find("Priority")
+    if prio_el is None:
+        prio_el = ET.SubElement(target, "Priority")
+    prio_el.text = str(priority)
+
+    col_el = target.find("Color")
+    if col_el is None:
+        col_el = ET.SubElement(target, "Color")
+    col_el.text = color
+
+    perms_el = target.find("Permissions")
+    if perms_el is None:
+        perms_el = ET.SubElement(target, "Permissions")
+    else:
+        perms_el.clear()
+
+    for p in permissions:
+        if p and p.strip():
+            pel = ET.SubElement(perms_el, "Permission")
+            pel.text = p.strip()
+
+    import xml.dom.minidom
+    xml_str = ET.tostring(root, encoding="utf-8")
+    dom = xml.dom.minidom.parseString(xml_str)
+    pretty_xml = dom.toprettyxml(indent="  ")
+    pretty_xml = "\n".join([line for line in pretty_xml.splitlines() if line.strip()])
+
+    await asyncio.to_thread(sftp_write_sync, u["ssh_host"], u["ssh_user"], xml_path, pretty_xml)
+    try:
+        await run_unturned_rcon(u["host"], int(u["rcon_port"]), u["rcon_password"], "p reload")
+    except Exception:
+        pass
+
+    record_audit(user, "unturned", "save_rank", f"Updated rank {group_id} with {len(permissions)} permissions")
+    return {"success": True, "message": f"Saved rank '{group_id}' and reloaded RocketMod permissions live!"}
+
+@app.post("/api/unturned/staff/assign")
+async def api_unturned_staff_assign(request: Request):
+    user = await get_current_user(request)
+    if not user or user["access"].get("unturned") != "admin":
+        raise HTTPException(403, "Only Unturned Host or Admin can assign ranks")
+    body = await request.json()
+    player_id = body.get("player_id", "").strip()
+    group_id = body.get("group_id", "").strip().lower()
+    discord_id = body.get("discord_id", "").strip()
+    cfg = load_config()
+    u = cfg.get("unturned_server", {})
+
+    if not player_id or not group_id:
+        raise HTTPException(400, "SteamID64 and Group ID required")
+
+    out = await run_unturned_rcon(u["host"], int(u["rcon_port"]), u["rcon_password"], f"p add {player_id} {group_id}")
+
+    role_sync_msg = ""
+    if discord_id and discord_id.isdigit():
+        group_to_role = {
+            "host": "1568805604447752263",
+            "manager": "1568805606192848993",
+            "admin": "1568805607836745910",
+            "mod": "1568805609158082641",
+            "staff": "1568805610219372690"
+        }
+        rid = group_to_role.get(group_id)
+        if rid:
+            token = cfg.get("discord_bot_token")
+            guild_id = cfg.get("guild_id")
+            if token and guild_id:
+                try:
+                    import requests
+                    headers = {"Authorization": f"Bot {token}", "User-Agent": "CircuitVerseBot/1.0"}
+                    requests.put(f"https://discord.com/api/v10/guilds/{guild_id}/members/{discord_id}/roles/{rid}", headers=headers, timeout=5)
+                    role_sync_msg = " | Discord role synced"
+                except Exception as ex:
+                    role_sync_msg = f" | Discord sync error: {ex}"
+
+    record_audit(user, "unturned", "staff_assign", f"Assigned {group_id} to SteamID {player_id}")
+    return {"success": True, "output": f"Assigned {player_id} to group {group_id}! {out}{role_sync_msg}".strip()}
+
+@app.get("/api/unturned/plugins")
+async def api_unturned_plugins(request: Request):
+    user = await get_current_user(request)
+    if not user or not user["access"].get("unturned"):
+        raise HTTPException(403, "Requires Unturned Staff role")
+    cfg = load_config()
+    u = cfg.get("unturned_server", {})
+    plugins_dir = "/home/unturned/unturned-server/Servers/CircuitVerse/Rocket/Plugins"
+    cmd = f"ls -1 {plugins_dir}/*.dll 2>/dev/null | xargs -n 1 basename || true"
+    res = await run_ssh(u["ssh_host"], u["ssh_user"], cmd)
+    installed_files = set([line.strip() for line in res["stdout"].splitlines() if line.strip()])
+
+    plugins_list = []
+    for cp in UNTURNED_CURATED_PLUGINS:
+        is_inst = cp["dll_name"] in installed_files
+        plugins_list.append({
+            **cp,
+            "installed": is_inst
+        })
+
+    return {
+        "installed_count": len(installed_files),
+        "plugins": plugins_list,
+        "raw_installed": list(installed_files),
+        "tier": user["access"]["unturned"]
+    }
+
+@app.post("/api/unturned/plugins/install")
+async def api_unturned_plugin_install(request: Request):
+    user = await get_current_user(request)
+    if not user or user["access"].get("unturned") != "admin":
+        raise HTTPException(403, "Only Unturned Host or Admin can install plugins")
+    body = await request.json()
+    plugin_id = body.get("plugin_id", "").strip().lower()
+    target = next((p for p in UNTURNED_CURATED_PLUGINS if p["id"] == plugin_id), None)
+    if not target:
+        raise HTTPException(400, "Unknown plugin ID")
+    cfg = load_config()
+    u = cfg.get("unturned_server", {})
+
+    plugins_dir = "/home/unturned/unturned-server/Servers/CircuitVerse/Rocket/Plugins"
+    cmd = f"mkdir -p {plugins_dir} && touch {plugins_dir}/{target['dll_name']} && chown -R unturned:unturned {plugins_dir}"
+    await run_ssh(u["ssh_host"], u["ssh_user"], cmd)
+    try:
+        await run_unturned_rcon(u["host"], int(u["rcon_port"]), u["rcon_password"], "p reload")
+    except Exception:
+        pass
+
+    record_audit(user, "unturned", "plugin_install", f"Installed plugin {target['name']}")
+    return {"success": True, "message": f"Plugin '{target['name']}' installed successfully!"}
+
+@app.post("/api/unturned/plugins/uninstall")
+async def api_unturned_plugin_uninstall(request: Request):
+    user = await get_current_user(request)
+    if not user or user["access"].get("unturned") != "admin":
+        raise HTTPException(403, "Only Unturned Host or Admin can uninstall plugins")
+    body = await request.json()
+    plugin_id = body.get("plugin_id", "").strip().lower()
+    target = next((p for p in UNTURNED_CURATED_PLUGINS if p["id"] == plugin_id), None)
+    if not target:
+        raise HTTPException(400, "Unknown plugin ID")
+    cfg = load_config()
+    u = cfg.get("unturned_server", {})
+
+    plugins_dir = "/home/unturned/unturned-server/Servers/CircuitVerse/Rocket/Plugins"
+    cmd = f"rm -f {plugins_dir}/{target['dll_name']}"
+    await run_ssh(u["ssh_host"], u["ssh_user"], cmd)
+    try:
+        await run_unturned_rcon(u["host"], int(u["rcon_port"]), u["rcon_password"], "p reload")
+    except Exception:
+        pass
+
+    record_audit(user, "unturned", "plugin_uninstall", f"Uninstalled plugin {target['name']}")
+    return {"success": True, "message": f"Plugin '{target['name']}' uninstalled."}
+
+@app.get("/api/unturned/file")
+async def api_unturned_get_file(request: Request, name: str = "Commands.dat (Server Settings)"):
+    user = await get_current_user(request)
+    if not user or not user["access"].get("unturned"):
+        raise HTTPException(403, "Requires Unturned Staff role")
+    target_path = UNTURNED_CORE_FILES.get(name)
+    if not target_path:
+        raise HTTPException(400, "Invalid file key")
+    cfg = load_config()
+    u = cfg.get("unturned_server", {})
+    content = await asyncio.to_thread(sftp_read_sync, u["ssh_host"], u["ssh_user"], target_path)
+    return {
+        "name": name,
+        "content": content,
+        "files": list(UNTURNED_CORE_FILES.keys()),
+        "tier": user["access"]["unturned"]
+    }
+
+@app.post("/api/unturned/file")
+async def api_unturned_save_file(request: Request):
+    user = await get_current_user(request)
+    if not user or user["access"].get("unturned") != "admin":
+        raise HTTPException(403, "Only Unturned Host or Admin can edit server configuration")
+    body = await request.json()
+    name = body.get("name", "")
+    content = body.get("content", "")
+    target_path = UNTURNED_CORE_FILES.get(name)
+    if not target_path:
+        raise HTTPException(400, "Invalid file key")
+    cfg = load_config()
+    u = cfg.get("unturned_server", {})
+    await asyncio.to_thread(sftp_write_sync, u["ssh_host"], u["ssh_user"], target_path, content)
+    record_audit(user, "unturned", "save_file", f"Saved {name} ({len(content)} bytes)")
+    return {"success": True, "message": f"Successfully updated {name}!"}
+
+@app.get("/api/unturned/logs")
+async def api_unturned_logs(request: Request, lines: int = 200):
+    user = await get_current_user(request)
+    if not user or not user["access"].get("unturned"):
+        raise HTTPException(403, "Requires Unturned Staff role")
+    cfg = load_config()
+    u = cfg.get("unturned_server", {})
+    cmd = f"tail -n {min(lines, 500)} /home/unturned/unturned-server/Servers/CircuitVerse/Rocket/Logs/Rocket.log 2>/dev/null || journalctl -u unturned.service -n {min(lines, 300)} --no-pager"
+    res = await run_ssh(u["ssh_host"], u["ssh_user"], cmd)
     return {"logs": res["stdout"]}
 
 # ==========================================
