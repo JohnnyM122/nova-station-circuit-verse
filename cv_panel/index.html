@@ -1087,7 +1087,7 @@
       <section id="panel-unturned" class="panel-sec" style="display:none;">
         <div class="card">
           <div class="card-header">
-            <div class="card-title">🌲 Unturned Dedicated Server Control Panel (RocketMod • 2.31.169.227:27015)</div>
+            <div class="card-title">🌲 Unturned Dedicated Server Control Panel (RocketMod • 91.107.198.243:27015)</div>
             <div style="display:flex; gap:8px; flex-wrap:wrap;">
               <button class="btn" onclick="loadUnturned()">🔄 Refresh</button>
               <button class="btn btn-success" onclick="unturnedService('start')">▶ Start</button>
@@ -1105,9 +1105,10 @@
 
           <div class="subtabs">
             <button class="subtab active" onclick="switchUnturnedTab('unturned-tab-main', this)">🎛️ Console, Players & Live Staff</button>
-            <button class="subtab" onclick="switchUnturnedTab('unturned-tab-plugins', this)">🧩 One-Click Plugin Installer (RocketMod)</button>
-            <button class="subtab" onclick="switchUnturnedTab('unturned-tab-ranks', this)">🎖️ Ranks & Permissions Editor (RocketMod)</button>
-            <button class="subtab" onclick="switchUnturnedTab('unturned-tab-files', this)">📝 Config Editor & Logs</button>
+            <button class="subtab" onclick="switchUnturnedTab('unturned-tab-plugins', this); loadUnturnedPlugins();">🧩 Plugins & Mods Manager</button>
+            <button class="subtab" onclick="switchUnturnedTab('unturned-tab-motd', this); loadUnturnedMotd();">🖼️ MOTD & Server Branding</button>
+            <button class="subtab" onclick="switchUnturnedTab('unturned-tab-ranks', this); loadUnturnedRanks();">🎖️ Ranks & Permissions Editor</button>
+            <button class="subtab" onclick="switchUnturnedTab('unturned-tab-files', this); loadUnturnedFile();">📝 Server Files & Logs</button>
           </div>
 
           <!-- UNTURNED Subtab 1: Console, Players & Live Staff -->
@@ -1170,38 +1171,113 @@
             </div>
           </div>
 
-          <!-- UNTURNED Subtab 2: One-Click Plugin Installer -->
+          <!-- UNTURNED Subtab 2: One-Click Plugin Installer & Manager -->
           <div id="unturned-tab-plugins" class="unturned-sub" style="display:none;">
-            <div class="grid-2">
+            <div class="grid-2" style="margin-bottom:16px;">
               <div class="stat-box">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                  <h4 style="color:var(--cyan); margin:0;">🧩 Curated One-Click RocketMod Plugins</h4>
-                  <button class="btn" onclick="loadUnturnedPlugins()">🔄 Refresh Catalog</button>
+                  <h4 style="color:var(--green); margin:0;">📦 Installed RocketMod Plugins & Controls</h4>
+                  <button class="btn" onclick="loadUnturnedPlugins()">🔄 Refresh</button>
                 </div>
                 <p style="font-size:0.82rem; color:var(--muted); margin-bottom:10px;">
-                  Popular, fully compatible RocketMod plugins verified for Unturned 3.x. Instantly installs to <code>/Rocket/Plugins</code> and runs <code>p reload</code> automatically.
+                  Active modules in <code>Servers/CircuitVerse/Rocket/Plugins/</code> with live start, stop, reload & config controls:
                 </p>
-                <div style="max-height:450px; overflow-y:auto;">
+                <div style="max-height:420px; overflow-y:auto;">
                   <table>
-                    <thead><tr><th>Plugin</th><th>Description</th><th>Action</th></tr></thead>
-                    <tbody id="unturned-plugins-curated-tbody"></tbody>
+                    <thead><tr><th>Plugin / File</th><th>Size</th><th>Last Modified</th><th>Actions</th></tr></thead>
+                    <tbody id="unturned-plugins-installed-tbody"></tbody>
                   </table>
                 </div>
               </div>
 
               <div class="stat-box">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                  <h4 style="color:var(--green); margin:0;">📦 Installed RocketMod Plugins</h4>
-                  <button class="btn" onclick="loadUnturnedPlugins()">🔄 Refresh</button>
+                  <h4 style="color:var(--cyan); margin:0;">🧩 Curated One-Click RocketMod Plugins</h4>
+                  <button class="btn" onclick="loadUnturnedPlugins()">🔄 Refresh Catalog</button>
                 </div>
                 <p style="font-size:0.82rem; color:var(--muted); margin-bottom:10px;">
-                  Active plugins located in <code>Servers/CircuitVerse/Rocket/Plugins/</code>:
+                  Popular, fully compatible RocketMod plugins verified for Unturned 3.x. Instantly installs to <code>/Rocket/Plugins</code> and reloads automatically.
                 </p>
-                <div style="max-height:450px; overflow-y:auto;">
+                <div style="max-height:420px; overflow-y:auto;">
                   <table>
-                    <thead><tr><th>Filename</th><th>Size</th><th>Last Modified</th><th>Action</th></tr></thead>
-                    <tbody id="unturned-plugins-installed-tbody"></tbody>
+                    <thead><tr><th>Plugin</th><th>Description</th><th>Action</th></tr></thead>
+                    <tbody id="unturned-plugins-curated-tbody"></tbody>
                   </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Plugin Configuration Editor Section -->
+            <div class="stat-box">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+                <h4 style="color:var(--yellow); margin:0;">⚙️ Unturned Plugin Configuration Editor</h4>
+                <div style="display:flex; gap:8px; align-items:center;">
+                  <select id="unturned-cfg-plugin-sel" class="input" style="font-size:0.85rem;" onchange="unturnedOnPluginSelect(this.value)">
+                    <option value="">-- Select Plugin to Configure --</option>
+                  </select>
+                  <select id="unturned-cfg-file-sel" class="input" style="font-size:0.85rem;" onchange="unturnedLoadPluginConfigFile()">
+                    <option value="">-- Select Config File --</option>
+                  </select>
+                  <button class="btn btn-primary" onclick="unturnedSavePluginConfig()">💾 Save & Reload Configuration</button>
+                </div>
+              </div>
+              <p style="font-size:0.8rem; color:var(--muted); margin-bottom:10px;">
+                Directly edit plugin XML and JSON configuration files. Saving will automatically trigger a clean live reload of that plugin via RCON.
+              </p>
+              <textarea id="unturned-plugin-cfg-editor" class="input" style="width:100%; height:320px; font-family:Consolas, monospace; font-size:0.84rem; line-height:1.4;" placeholder="Select a plugin and config file above to view and edit..."></textarea>
+            </div>
+          </div>
+
+          <!-- UNTURNED Subtab: MOTD & Server Branding -->
+          <div id="unturned-tab-motd" class="unturned-sub" style="display:none;">
+            <div class="grid-2">
+              <div class="stat-box">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                  <h4 style="color:var(--cyan); margin:0;">🎨 Server Branding & MOTD Configuration</h4>
+                  <button class="btn btn-primary" onclick="unturnedSaveMotd()">💾 Save MOTD & Branding</button>
+                </div>
+                <div style="margin-bottom:12px;">
+                  <label style="font-size:0.8rem; color:var(--muted); display:block; margin-bottom:4px;">Server Display Name (Server Browser)</label>
+                  <input type="text" id="unturned-motd-name" class="input" style="width:100%; font-weight:bold;" value="Circuit Verse - Official Unturned Server" oninput="updateUnturnedBrandingPreview()">
+                </div>
+                <div style="margin-bottom:12px;">
+                  <label style="font-size:0.8rem; color:var(--muted); display:block; margin-bottom:4px;">Welcome Chat MOTD (Displayed in chat upon connection)</label>
+                  <textarea id="unturned-motd-welcome" class="input" rows="3" style="width:100%; font-family:monospace; font-size:0.85rem;" placeholder="Welcome message..." oninput="updateUnturnedBrandingPreview()"></textarea>
+                </div>
+                <div style="margin-bottom:12px;">
+                  <label style="font-size:0.8rem; color:var(--muted); display:block; margin-bottom:4px;">Permanent Discord Community Link</label>
+                  <input type="text" id="unturned-motd-discord" class="input" style="width:100%;" value="https://discord.gg/M7R8EY28q6" oninput="updateUnturnedBrandingPreview()">
+                </div>
+                <div style="margin-bottom:12px;">
+                  <label style="font-size:0.8rem; color:var(--muted); display:block; margin-bottom:4px;">Server Lobby Icon URL (Direct PNG/JPG)</label>
+                  <input type="text" id="unturned-motd-icon" class="input" style="width:100%; font-size:0.85rem;" value="https://circuitverse.online/assets/circuit_verse_logo.png" oninput="updateUnturnedBrandingPreview()">
+                </div>
+                <div style="margin-bottom:12px; display:flex; align-items:center; gap:8px;">
+                  <input type="checkbox" id="unturned-motd-whitelist" checked style="width:18px; height:18px; accent-color:var(--cyan);" onchange="updateUnturnedBrandingPreview()">
+                  <label for="unturned-motd-whitelist" style="font-size:0.85rem; font-weight:bold; color:var(--light); cursor:pointer;">
+                    Require Discord Membership to Play (Enforce Server Whitelist)
+                  </label>
+                </div>
+              </div>
+
+              <div class="stat-box">
+                <h4 style="color:var(--green); margin-bottom:12px;">👁️ In-Game Lobby & Browser Live Preview</h4>
+                <div style="background:#131824; border:1px solid var(--border); border-radius:8px; padding:16px;">
+                  <div style="display:flex; gap:14px; align-items:center; margin-bottom:12px;">
+                    <img id="unturned-preview-icon" src="https://circuitverse.online/assets/circuit_verse_logo.png" style="width:64px; height:64px; border-radius:6px; object-fit:contain; background:#0d111a; border:1px solid rgba(255,255,255,0.1);" alt="Icon">
+                    <div>
+                      <div id="unturned-preview-name" style="font-size:1.1rem; font-weight:bold; color:#fff;">Circuit Verse - Official Unturned Server</div>
+                      <div style="font-size:0.8rem; color:var(--green);">● Online • Port 27015 • PEI Survival</div>
+                    </div>
+                  </div>
+                  <div style="background:#0b0e14; border-radius:6px; padding:12px; font-size:0.82rem; margin-bottom:12px;">
+                    <div style="color:var(--cyan); font-weight:bold; margin-bottom:4px;">💬 Welcome Chat Announcement:</div>
+                    <div id="unturned-preview-welcome" style="color:var(--light); font-family:monospace;">Welcome to Circuit Verse - Official Unturned Server! Join our Discord: https://discord.gg/M7R8EY28q6</div>
+                  </div>
+                  <div style="border-top:1px solid rgba(255,255,255,0.08); padding-top:10px; display:flex; justify-content:space-between; font-size:0.78rem; color:var(--muted);">
+                    <span>Security: <strong id="unturned-preview-security" style="color:var(--yellow);">Discord Whitelist Active</strong></span>
+                    <span>Discord: <strong id="unturned-preview-discord" style="color:var(--cyan);">discord.gg/M7R8EY28q6</strong></span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -3330,6 +3406,7 @@
       const el = document.getElementById(id);
       if (el) el.style.display = 'block';
       if (id === 'unturned-tab-plugins') loadUnturnedPlugins();
+      if (id === 'unturned-tab-motd') loadUnturnedMotd();
       if (id === 'unturned-tab-ranks') loadUnturnedRanks();
       if (id === 'unturned-tab-files') { loadUnturnedFile(); loadUnturnedLogs(); }
     }
@@ -3398,14 +3475,19 @@
       } catch (e) { toast(e.message); }
     }
 
+    let UNTURNED_INSTALLED_PLUGINS_CACHE = [];
+
     async function loadUnturnedPlugins() {
       try {
         const d = await api('/api/unturned/plugins');
+        UNTURNED_INSTALLED_PLUGINS_CACHE = d.installed || [];
+
+        // Curated catalog
         const curatedTbody = document.getElementById('unturned-plugins-curated-tbody');
         if (curatedTbody) {
           curatedTbody.innerHTML = (d.available || []).map(p => `
             <tr>
-              <td><strong>${p.name}</strong><br/><span style="font-size:0.75rem; color:var(--cyan);">${p.category} • v${p.version}</span></td>
+              <td><strong>${p.name}</strong><br/><span style="font-size:0.75rem; color:var(--cyan);">${p.category || 'General'} • v${p.version}</span></td>
               <td style="font-size:0.8rem; color:var(--muted);">${p.description}</td>
               <td>
                 ${p.installed
@@ -3416,20 +3498,160 @@
             </tr>
           `).join('');
         }
+
+        // Installed table with Start / Stop / Restart / Config / Remove
         const instTbody = document.getElementById('unturned-plugins-installed-tbody');
         if (instTbody) {
-          instTbody.innerHTML = (d.installed || []).map(p => `
+          instTbody.innerHTML = UNTURNED_INSTALLED_PLUGINS_CACHE.map(p => {
+            const hasCfg = p.config_files && p.config_files.length > 0;
+            return `
             <tr>
-              <td><code>${p.filename}</code></td>
-              <td>${p.size}</td>
-              <td style="font-size:0.78rem; color:var(--muted);">${p.modified}</td>
               <td>
-                <button class="btn btn-danger" style="padding:3px 8px; font-size:0.74rem;" onclick="unturnedPluginUninstall('${p.plugin_id}')">Remove</button>
+                <strong>${p.name}</strong><br/>
+                <code style="font-size:0.72rem; color:var(--muted);">${p.filename}</code>
+              </td>
+              <td style="font-size:0.78rem;">${p.size}</td>
+              <td style="font-size:0.75rem; color:var(--muted);">${p.modified}</td>
+              <td>
+                <div style="display:flex; gap:4px; flex-wrap:wrap;">
+                  <button class="btn btn-success" title="Start / Load Plugin" style="padding:2px 6px; font-size:0.7rem;" onclick="unturnedPluginControl('${p.name}', 'start')">▶</button>
+                  <button class="btn btn-danger" title="Stop / Unload Plugin" style="padding:2px 6px; font-size:0.7rem;" onclick="unturnedPluginControl('${p.name}', 'stop')">⏹</button>
+                  <button class="btn btn-warning" title="Restart / Reload Plugin" style="padding:2px 6px; font-size:0.7rem;" onclick="unturnedPluginControl('${p.name}', 'restart')">🔄</button>
+                  ${hasCfg ? `<button class="btn btn-purple" title="Edit Configuration" style="padding:2px 6px; font-size:0.7rem;" onclick="unturnedOpenPluginConfig('${p.name}', '${p.config_files[0]}')">⚙️</button>` : ''}
+                  <button class="btn" title="Uninstall" style="padding:2px 6px; font-size:0.7rem; color:var(--red);" onclick="unturnedPluginUninstall('${p.plugin_id}')">🗑️</button>
+                </div>
               </td>
             </tr>
-          `).join('') || '<tr><td colspan="4" style="color:var(--muted); text-align:center;">No custom plugins installed yet.</td></tr>';
+          `}).join('') || '<tr><td colspan="4" style="color:var(--muted); text-align:center;">No custom plugins installed yet.</td></tr>';
+        }
+
+        // Populate Config editor plugin dropdown
+        const pSel = document.getElementById('unturned-cfg-plugin-sel');
+        if (pSel) {
+          const configurable = UNTURNED_INSTALLED_PLUGINS_CACHE.filter(p => p.config_files && p.config_files.length > 0);
+          pSel.innerHTML = '<option value="">-- Select Plugin to Configure --</option>' + 
+            configurable.map(p => `<option value="${p.name}">${p.name} (${p.config_files.length} configs)</option>`).join('');
         }
       } catch (e) { toast('Plugins: ' + e.message); }
+    }
+
+    async function unturnedPluginControl(plugin, action) {
+      toast(`Executing ${action} on ${plugin}...`);
+      try {
+        const res = await api('/api/unturned/plugins/control', { method: 'POST', body: JSON.stringify({ plugin, action }) });
+        toast(res.output || `Plugin ${plugin} ${action}ed!`);
+      } catch (e) { toast(e.message); }
+    }
+
+    function unturnedOnPluginSelect(pluginName) {
+      const fSel = document.getElementById('unturned-cfg-file-sel');
+      if (!fSel) return;
+      fSel.innerHTML = '<option value="">-- Select Config File --</option>';
+      const p = UNTURNED_INSTALLED_PLUGINS_CACHE.find(x => x.name === pluginName);
+      if (p && p.config_files) {
+        p.config_files.forEach(f => {
+          const opt = document.createElement('option');
+          opt.value = f;
+          opt.textContent = f;
+          fSel.appendChild(opt);
+        });
+        if (p.config_files.length > 0) {
+          fSel.value = p.config_files[0];
+          unturnedLoadPluginConfigFile();
+        }
+      }
+    }
+
+    async function unturnedOpenPluginConfig(pluginName, fileName) {
+      const pSel = document.getElementById('unturned-cfg-plugin-sel');
+      if (pSel) {
+        pSel.value = pluginName;
+        unturnedOnPluginSelect(pluginName);
+        const fSel = document.getElementById('unturned-cfg-file-sel');
+        if (fSel && fileName) fSel.value = fileName;
+        await unturnedLoadPluginConfigFile();
+        // Scroll to editor
+        document.getElementById('unturned-plugin-cfg-editor')?.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+
+    async function unturnedLoadPluginConfigFile() {
+      const plugin = document.getElementById('unturned-cfg-plugin-sel').value;
+      const file = document.getElementById('unturned-cfg-file-sel').value;
+      const editor = document.getElementById('unturned-plugin-cfg-editor');
+      if (!plugin || !file || !editor) return;
+      try {
+        editor.value = "Loading configuration...";
+        const res = await api(`/api/unturned/plugin-config?plugin=${encodeURIComponent(plugin)}&file=${encodeURIComponent(file)}`);
+        editor.value = res.content || '';
+      } catch (e) {
+        editor.value = `Error loading config: ${e.message}`;
+      }
+    }
+
+    async function unturnedSavePluginConfig() {
+      const plugin = document.getElementById('unturned-cfg-plugin-sel').value;
+      const file = document.getElementById('unturned-cfg-file-sel').value;
+      const content = document.getElementById('unturned-plugin-cfg-editor').value;
+      if (!plugin || !file) return toast('Select a plugin and config file first');
+      try {
+        const res = await api('/api/unturned/plugin-config', {
+          method: 'POST',
+          body: JSON.stringify({ plugin, file, content })
+        });
+        toast(res.message || 'Plugin configuration saved & reloaded!');
+      } catch (e) { toast(e.message); }
+    }
+
+    async function loadUnturnedMotd() {
+      try {
+        const d = await api('/api/unturned/motd');
+        if (document.getElementById('unturned-motd-name')) document.getElementById('unturned-motd-name').value = d.server_name || '';
+        if (document.getElementById('unturned-motd-welcome')) document.getElementById('unturned-motd-welcome').value = d.welcome || '';
+        if (document.getElementById('unturned-motd-discord')) document.getElementById('unturned-motd-discord').value = d.links || d.discord_invite || '';
+        if (document.getElementById('unturned-motd-icon')) document.getElementById('unturned-motd-icon').value = d.icon || '';
+        if (document.getElementById('unturned-motd-whitelist')) document.getElementById('unturned-motd-whitelist').checked = d.whitelisted !== false;
+        updateUnturnedBrandingPreview();
+      } catch (e) { toast('MOTD: ' + e.message); }
+    }
+
+    function updateUnturnedBrandingPreview() {
+      const name = document.getElementById('unturned-motd-name')?.value || 'Circuit Verse - Official Unturned Server';
+      const welcome = document.getElementById('unturned-motd-welcome')?.value || 'Welcome to Circuit Verse!';
+      const discord = document.getElementById('unturned-motd-discord')?.value || 'https://discord.gg/M7R8EY28q6';
+      const icon = document.getElementById('unturned-motd-icon')?.value || 'https://circuitverse.online/assets/circuit_verse_logo.png';
+      const wl = document.getElementById('unturned-motd-whitelist')?.checked;
+
+      const pName = document.getElementById('unturned-preview-name');
+      if (pName) pName.textContent = name;
+      const pWel = document.getElementById('unturned-preview-welcome');
+      if (pWel) pWel.textContent = welcome;
+      const pIcon = document.getElementById('unturned-preview-icon');
+      if (pIcon && icon) pIcon.src = icon;
+      const pSec = document.getElementById('unturned-preview-security');
+      if (pSec) {
+        pSec.textContent = wl ? 'Discord Whitelist Active' : 'Public / Open';
+        pSec.style.color = wl ? 'var(--yellow)' : 'var(--green)';
+      }
+      const pDisc = document.getElementById('unturned-preview-discord');
+      if (pDisc) pDisc.textContent = discord.replace('https://', '');
+    }
+
+    async function unturnedSaveMotd() {
+      const server_name = document.getElementById('unturned-motd-name').value.trim();
+      const welcome = document.getElementById('unturned-motd-welcome').value.trim();
+      const links = document.getElementById('unturned-motd-discord').value.trim();
+      const icon = document.getElementById('unturned-motd-icon').value.trim();
+      const whitelisted = document.getElementById('unturned-motd-whitelist').checked;
+
+      try {
+        const res = await api('/api/unturned/motd', {
+          method: 'POST',
+          body: JSON.stringify({ server_name, welcome, links, icon, whitelisted })
+        });
+        toast(res.message || 'Saved MOTD & Server Branding!');
+        updateUnturnedBrandingPreview();
+      } catch (e) { toast(e.message); }
     }
 
     async function unturnedPluginInstall(plugin_id) {

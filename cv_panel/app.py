@@ -1881,60 +1881,244 @@ UNTURNED_CORE_FILES = {
 
 UNTURNED_CURATED_PLUGINS = [
     {
+        "id": "duty",
+        "name": "Duty (Staff Duty Mode)",
+        "category": "Staff Management",
+        "version": "1.0.4",
+        "author": "RestoreMonarchy",
+        "description": "Toggles staff on/off duty mode with inventory switching, invulnerability, and staff chat.",
+        "dll_name": "Duty.dll",
+        "download_url": "https://github.com/RestoreMonarchyPlugins/Duty/releases/download/v1.0.4/Duty-v1.0.4.zip"
+    },
+    {
+        "id": "appleadmincontrol",
+        "name": "AppleAdminControl",
+        "category": "Staff Management",
+        "version": "1.1.2",
+        "author": "XanderCodes",
+        "description": "Anti-admin abuse system preventing unauthorized item spawning and elevated command abuse.",
+        "dll_name": "AppleAdminControl.dll",
+        "download_url": "https://github.com/XanderCodes/AppleAdminControl/releases/download/1.1.2/AppleAdminControl-1.1.2.zip"
+    },
+    {
+        "id": "playerinfolib",
+        "name": "PlayerInfoLib",
+        "category": "Security & Moderation",
+        "version": "1.3.1",
+        "author": "RocketMod",
+        "description": "Player forensic tracking, SteamID database, IP address logging, and alt-account detection.",
+        "dll_name": "PlayerInfoLib.dll",
+        "download_url": "https://github.com/RocketModPlugins/PlayerInfoLib/releases/download/d-r-1/PlayerInfoLib.zip"
+    },
+    {
+        "id": "isabusing",
+        "name": "IsAbusing (Admin Audit)",
+        "category": "Security & Moderation",
+        "version": "1.0.0",
+        "author": "RocketMod",
+        "description": "Audits administrative actions, detects suspicious vanish/godmode usage, and logs to Admin-Abuse.txt.",
+        "dll_name": "IsAbusing.dll",
+        "download_url": "https://github.com/RocketModPlugins/IsAbusing/releases/download/d-r-1/IsAbusing.zip"
+    },
+    {
+        "id": "uessentials",
+        "name": "uEssentials Suite",
+        "category": "Administration",
+        "version": "1.0.40",
+        "author": "TH3AL3X",
+        "description": "Essential administration utility commands, automated broadcasts, warps, and moderation tools.",
+        "dll_name": "uEssentials.dll",
+        "download_url": "https://github.com/TH3AL3X/uEssentials/releases/download/v1.0.40/uEssentials.zip"
+    },
+    {
+        "id": "morehomes",
+        "name": "MoreHomes",
+        "category": "Quality of Life",
+        "version": "1.10.3",
+        "author": "RestoreMonarchy",
+        "description": "Allows players to establish and teleport between multiple custom home points (/sethome, /home).",
+        "dll_name": "MoreHomes.dll",
+        "download_url": "https://github.com/RestoreMonarchyPlugins/MoreHomes/releases/download/v1.10.3/MoreHomes-v1.10.3.zip"
+    },
+    {
+        "id": "teleportation",
+        "name": "Teleportation (TPA)",
+        "category": "Quality of Life",
+        "version": "1.8.3",
+        "author": "RestoreMonarchy",
+        "description": "Complete player-to-player teleportation request system (/tpa, /tpaccept, /tpdeny) with cooldowns.",
+        "dll_name": "Teleportation.dll",
+        "download_url": "https://github.com/RestoreMonarchyPlugins/Teleportation/releases/download/v1.8.3/Teleportation-v1.8.3.zip"
+    },
+    {
         "id": "kits",
         "name": "Kits (Starter & VIP)",
-        "version": "2.4.1",
-        "author": "RocketMod Community",
-        "description": "Allows players and donors to redeem customizable starter kits, weapons, and medical kits via /kit.",
-        "dll_name": "Kits.dll"
-    },
-    {
-        "id": "tpa",
-        "name": "TPA (Player Teleport)",
-        "version": "1.3.0",
-        "author": "RocketMod Community",
-        "description": "Adds /tpa and /tpaccept allowing friendly players to request teleportation to teammates with cooldowns.",
-        "dll_name": "TPA.dll"
-    },
-    {
-        "id": "home",
-        "name": "Home / SetHome System",
+        "category": "Gameplay & Progression",
         "version": "1.1.2",
-        "author": "RocketMod Community",
-        "description": "Allows players to establish custom home teleport points with /sethome and /home.",
-        "dll_name": "Home.dll"
+        "author": "RestoreMonarchy",
+        "description": "Customizable player loadouts and claimable kit packages with role permission cooldowns.",
+        "dll_name": "Kits.dll",
+        "download_url": "https://github.com/RestoreMonarchyPlugins/Kits/releases/download/v1.1.2/Kits-v1.1.2.zip"
     },
     {
-        "id": "vault",
-        "name": "Virtual Vault & Bank",
-        "version": "2.0.0",
-        "author": "RocketMod Community",
-        "description": "Provides secure, persistent virtual storage containers (/vault) accessible by rank permissions.",
-        "dll_name": "Vault.dll"
+        "id": "respawnprotection",
+        "name": "RespawnProtection",
+        "category": "Quality of Life",
+        "version": "1.3.1",
+        "author": "RestoreMonarchy",
+        "description": "Prevents spawn-camping by granting newly spawned or revived players temporary invulnerability.",
+        "dll_name": "RespawnProtection.dll",
+        "download_url": "https://github.com/RestoreMonarchyPlugins/RespawnProtection/releases/download/v1.3.1/RespawnProtection-v1.3.1.zip"
     },
     {
-        "id": "autorestart",
-        "name": "AutoRestart & Countdown",
-        "version": "1.0.5",
-        "author": "RocketMod Community",
-        "description": "Schedules automated daily maintenance restarts with broadcast countdown warnings.",
-        "dll_name": "AutoRestart.dll"
+        "id": "richmessageannouncer",
+        "name": "RichMessageAnnouncer",
+        "category": "Announcements",
+        "version": "1.3.2",
+        "author": "RestoreMonarchy",
+        "description": "Periodic automated rich chat notices with customized colors, links, and Discord announcements.",
+        "dll_name": "RichMessageAnnouncer.dll",
+        "download_url": "https://github.com/RestoreMonarchyPlugins/RichMessageAnnouncer/releases/download/v1.3.2/RichMessageAnnouncer-v1.3.2.zip"
     },
     {
-        "id": "vehiclespawn",
-        "name": "Vehicle Spawner & Lock",
-        "version": "1.5.0",
-        "author": "RocketMod Community",
-        "description": "Enables staff and VIPs to spawn and manage vehicles (/v) with permission locks.",
-        "dll_name": "VehicleSpawn.dll"
+        "id": "upets",
+        "name": "UPets (Companion Pets)",
+        "category": "Quality of Life",
+        "version": "3.0.4",
+        "author": "RestoreMonarchy",
+        "description": "Allows players to spawn, ride, and tame custom animal companions and pets with persistence.",
+        "dll_name": "UPets.dll",
+        "download_url": "https://github.com/RestoreMonarchyPlugins/AdamPlugins/releases/download/v3.0/UPets.zip"
     },
     {
-        "id": "discordbridge",
-        "name": "Discord Chat & Ban Bridge",
-        "version": "2.1.0",
-        "author": "Circuit Verse Suite",
-        "description": "Bidirectionally mirrors in-game Unturned chat, player connections, and bans to Discord.",
-        "dll_name": "DiscordBridge.dll"
+        "id": "blacklisteditems",
+        "name": "BlacklistedItems",
+        "category": "Security & Moderation",
+        "version": "1.0.1",
+        "author": "RestoreMonarchy",
+        "description": "Restricts prohibited items, rocket launchers, or destructive explosives from being equipped.",
+        "dll_name": "BlacklistedItems.dll",
+        "download_url": "https://github.com/RestoreMonarchyPlugins/BlacklistedItems/releases/download/v1.0.1/BlacklistedItems-v1.0.1.zip"
+    },
+    {
+        "id": "buildingrestrictions",
+        "name": "BuildingRestrictions",
+        "category": "Anti-Griefing",
+        "version": "1.3.0",
+        "author": "RestoreMonarchy",
+        "description": "Limits excessive building spam, base height, and barricade density to maintain high tickrates.",
+        "dll_name": "BuildingRestrictions.dll",
+        "download_url": "https://github.com/RestoreMonarchyPlugins/BuildingRestrictions/releases/download/v1.3.0/BuildingRestrictions-v1.3.0.zip"
+    },
+    {
+        "id": "airdropmanager3",
+        "name": "AirdropManager 3",
+        "category": "Gameplay & Progression",
+        "version": "3.1.3",
+        "author": "RestoreMonarchy",
+        "description": "Automated custom supply drops with custom loot tables, map drop zones, and flare mechanics.",
+        "dll_name": "AirdropManager3.dll",
+        "download_url": "https://github.com/RestoreMonarchyPlugins/AirdropManager3/releases/download/v3.1.3/AirdropManager3-v3.1.3.zip"
+    },
+    {
+        "id": "playerstats",
+        "name": "PlayerStats & Leaderboards",
+        "category": "Gameplay & Progression",
+        "version": "1.2.0",
+        "author": "RestoreMonarchy",
+        "description": "Tracks player kills, deaths, headshots, and KD ratio with in-game /stats and /top rankings.",
+        "dll_name": "PlayerStats.dll",
+        "download_url": "https://github.com/RestoreMonarchyPlugins/PlayerStats/releases/download/v1.2.0/PlayerStats-v1.2.0.zip"
+    },
+    {
+        "id": "vehicleessentials",
+        "name": "VehicleEssentials",
+        "category": "Gameplay & Progression",
+        "version": "1.0.1",
+        "author": "IcePlugins",
+        "description": "Vehicle locking, remote refueling, vehicle health repair commands, and auto-despawn safety.",
+        "dll_name": "VehicleEssentials.dll",
+        "download_url": "https://github.com/IcePlugins/VehicleEssentials/releases/download/1.0.1/VehicleEssentials.dll"
+    },
+    {
+        "id": "spawnsmanager",
+        "name": "SpawnsManager",
+        "category": "Gameplay & Progression",
+        "version": "1.0.3",
+        "author": "RestoreMonarchy",
+        "description": "Deep customization for zombie spawns, vehicle spawn points, and item drop rates per map.",
+        "dll_name": "SpawnsManager.dll",
+        "download_url": "https://github.com/RestoreMonarchyPlugins/SpawnsManager/releases/download/v1.0.3/SpawnsManager-v1.0.3.zip"
+    },
+    {
+        "id": "pvptoggle",
+        "name": "PVPToggle",
+        "category": "Gameplay & Progression",
+        "version": "1.0.0",
+        "author": "IcePlugins",
+        "description": "Permits players to flag themselves peaceful or hostile with configurable combat timers.",
+        "dll_name": "PVPToggle.dll",
+        "download_url": "https://github.com/IcePlugins/PVPToggle/releases/download/1.0.0/PVPToggle.dll"
+    },
+    {
+        "id": "killstreaks",
+        "name": "KillStreaks",
+        "category": "Combat & Rewards",
+        "version": "1.0.0",
+        "author": "IcePlugins",
+        "description": "Rewards consecutive player kills with custom items, cash, and server-wide killstreak alerts.",
+        "dll_name": "KillStreaks.dll",
+        "download_url": "https://github.com/IcePlugins/Killstreaks/releases/download/1.0.0/KillStreaks.dll"
+    },
+    {
+        "id": "steamgrouprewards",
+        "name": "SteamGroupRewards",
+        "category": "Community Engagement",
+        "version": "1.0.1",
+        "author": "RestoreMonarchy",
+        "description": "Validates Steam group membership and delivers recurring player currency or kit perks.",
+        "dll_name": "SteamGroupRewards.dll",
+        "download_url": "https://github.com/RestoreMonarchyPlugins/SteamGroupRewards/releases/download/v1.0.1/SteamGroupRewards-v1.0.1.zip"
+    },
+    {
+        "id": "uconomy",
+        "name": "Uconomy (Economy Engine)",
+        "category": "Economy & Shop",
+        "version": "2.1.4",
+        "author": "RestoreMonarchy",
+        "description": "High performance MySQL economy engine with player balances, payments, salaries, and bank accounts.",
+        "dll_name": "Uconomy.dll",
+        "download_url": "https://github.com/RestoreMonarchyPlugins/Uconomy/releases/download/v2.1.4/Uconomy-v2.1.4.zip"
+    },
+    {
+        "id": "zaupshop",
+        "name": "ZaupShop (Marketplace)",
+        "category": "Economy & Shop",
+        "version": "2.1.2",
+        "author": "RestoreMonarchy",
+        "description": "In-game item and vehicle shop with dynamic pricing, /buy, /sell, and player transaction history.",
+        "dll_name": "ZaupShop.dll",
+        "download_url": "https://github.com/RestoreMonarchyPlugins/ZaupShop/releases/download/v2.1.2/ZaupShop-v2.1.2.zip"
+    },
+    {
+        "id": "colorize",
+        "name": "Colorize (Chat Formatting)",
+        "category": "Quality of Life",
+        "version": "1.0.1",
+        "author": "IcePlugins",
+        "description": "Enables colored player names and styled text in global and group chat channels.",
+        "dll_name": "Colorize.dll",
+        "download_url": "https://github.com/IcePlugins/Colorize/releases/download/1.0.1/Colorize.dll"
+    },
+    {
+        "id": "superbroadcaster",
+        "name": "SuperBroadcaster",
+        "category": "Announcements",
+        "version": "1.1.0",
+        "author": "IcePlugins",
+        "description": "Broadcasts server-wide UI announcements, event alerts, and important notifications.",
+        "dll_name": "SuperBroadcaster.dll",
+        "download_url": "https://github.com/IcePlugins/SuperBroadcaster/releases/download/1.1/SuperBroadcaster.dll"
     }
 ]
 
@@ -2262,24 +2446,88 @@ async def api_unturned_plugins(request: Request):
     cfg = load_config()
     u = cfg.get("unturned_server", {})
     plugins_dir = "/home/unturned/unturned-server/Servers/CircuitVerse/Rocket/Plugins"
-    cmd = f"ls -1 {plugins_dir}/*.dll 2>/dev/null | xargs -n 1 basename || true"
-    res = await run_ssh(u["ssh_host"], u["ssh_user"], cmd)
-    installed_files = set([line.strip() for line in res["stdout"].splitlines() if line.strip()])
+    
+    # Query installed DLLs and their metadata plus configs
+    scan_script = f"""python3 -c "
+import os, json, time
+pdir = '{plugins_dir}'
+res = []
+if os.path.exists(pdir):
+    for f in sorted(os.listdir(pdir)):
+        if f.endswith('.dll'):
+            fp = os.path.join(pdir, f)
+            st = os.stat(fp)
+            cname = f[:-4]
+            cdir = os.path.join(pdir, cname)
+            cfgs = []
+            if os.path.isdir(cdir):
+                cfgs = [cf for cf in sorted(os.listdir(cdir)) if cf.endswith('.xml') or cf.endswith('.json')]
+            res.append({
+                'filename': f,
+                'name': cname,
+                'plugin_id': cname.lower(),
+                'size': f'{st.st_size/1024:.1f} KB',
+                'bytes': st.st_size,
+                'modified': time.strftime('%Y-%m-%d %H:%M', time.localtime(st.st_mtime)),
+                'config_files': cfgs
+            })
+print(json.dumps(res))
+"""
+    res = await run_ssh(u["ssh_host"], u["ssh_user"], scan_script)
+    installed_records = []
+    try:
+        raw_out = res["stdout"].strip()
+        if raw_out.startswith("[") and raw_out.endswith("]"):
+            installed_records = json.loads(raw_out)
+    except Exception as err:
+        logger.warning(f"Error parsing installed plugins: {err}")
 
-    plugins_list = []
+    installed_filenames = set(p["filename"] for p in installed_records)
+
+    available_list = []
     for cp in UNTURNED_CURATED_PLUGINS:
-        is_inst = cp["dll_name"] in installed_files
-        plugins_list.append({
+        is_inst = cp["dll_name"] in installed_filenames
+        available_list.append({
             **cp,
             "installed": is_inst
         })
 
     return {
-        "installed_count": len(installed_files),
-        "plugins": plugins_list,
-        "raw_installed": list(installed_files),
+        "installed_count": len(installed_records),
+        "available": available_list,
+        "installed": installed_records,
+        "plugins": available_list,
+        "raw_installed": list(installed_filenames),
         "tier": user["access"]["unturned"]
     }
+
+@app.post("/api/unturned/plugins/control")
+async def api_unturned_plugin_control(request: Request):
+    user = await get_current_user(request)
+    if not user or user["access"].get("unturned") != "admin":
+        raise HTTPException(403, "Only Unturned Host or Admin can control plugins")
+    body = await request.json()
+    plugin = body.get("plugin", "").strip()
+    action = body.get("action", "").strip().lower()
+    if not plugin:
+        raise HTTPException(400, "Plugin name is required")
+        
+    cfg = load_config()
+    u = cfg.get("unturned_server", {})
+    
+    rcon_cmd = ""
+    if action in ["start", "load"]:
+        rcon_cmd = f"rocket load {plugin}"
+    elif action in ["stop", "unload"]:
+        rcon_cmd = f"rocket unload {plugin}"
+    elif action in ["restart", "reload"]:
+        rcon_cmd = f"rocket reload {plugin}"
+    else:
+        raise HTTPException(400, f"Invalid action: {action}")
+        
+    out = await run_unturned_rcon(u["host"], int(u["rcon_port"]), u["rcon_password"], rcon_cmd)
+    record_audit(user, "unturned", f"plugin_{action}", f"Executed '{rcon_cmd}' on {plugin}")
+    return {"success": True, "action": action, "plugin": plugin, "output": out or "Command executed."}
 
 @app.post("/api/unturned/plugins/install")
 async def api_unturned_plugin_install(request: Request):
@@ -2295,10 +2543,32 @@ async def api_unturned_plugin_install(request: Request):
     u = cfg.get("unturned_server", {})
 
     plugins_dir = "/home/unturned/unturned-server/Servers/CircuitVerse/Rocket/Plugins"
-    cmd = f"mkdir -p {plugins_dir} && touch {plugins_dir}/{target['dll_name']} && chown -R unturned:unturned {plugins_dir}"
-    await run_ssh(u["ssh_host"], u["ssh_user"], cmd)
+    download_url = target.get("download_url")
+    if download_url:
+        dl_script = f"""python3 -c "
+import urllib.request, zipfile, io, os
+url = '{download_url}'
+req = urllib.request.Request(url, headers={{'User-Agent': 'Mozilla/5.0'}})
+data = urllib.request.urlopen(req).read()
+if url.endswith('.zip'):
+    zf = zipfile.ZipFile(io.BytesIO(data))
+    for item in zf.namelist():
+        fname = os.path.basename(item)
+        if fname.endswith('.dll') and not item.lower().startswith('libraries'):
+            with open(os.path.join('{plugins_dir}', fname), 'wb') as f:
+                f.write(zf.read(item))
+else:
+    with open(os.path.join('{plugins_dir}', '{target['dll_name']}'), 'wb') as f:
+        f.write(data)
+os.system('chown -R unturned:unturned {plugins_dir}')
+"""
+        await run_ssh(u["ssh_host"], u["ssh_user"], dl_script)
+    else:
+        cmd = f"mkdir -p {plugins_dir} && touch {plugins_dir}/{target['dll_name']} && chown -R unturned:unturned {plugins_dir}"
+        await run_ssh(u["ssh_host"], u["ssh_user"], cmd)
+
     try:
-        await run_unturned_rcon(u["host"], int(u["rcon_port"]), u["rcon_password"], "p reload")
+        await run_unturned_rcon(u["host"], int(u["rcon_port"]), u["rcon_password"], "rocket reload")
     except Exception:
         pass
 
@@ -2313,21 +2583,162 @@ async def api_unturned_plugin_uninstall(request: Request):
     body = await request.json()
     plugin_id = body.get("plugin_id", "").strip().lower()
     target = next((p for p in UNTURNED_CURATED_PLUGINS if p["id"] == plugin_id), None)
-    if not target:
-        raise HTTPException(400, "Unknown plugin ID")
+    dll_name = target["dll_name"] if target else (f"{plugin_id}.dll" if not plugin_id.endswith(".dll") else plugin_id)
+    plugin_name = target["name"] if target else dll_name
+
     cfg = load_config()
     u = cfg.get("unturned_server", {})
 
     plugins_dir = "/home/unturned/unturned-server/Servers/CircuitVerse/Rocket/Plugins"
-    cmd = f"rm -f {plugins_dir}/{target['dll_name']}"
-    await run_ssh(u["ssh_host"], u["ssh_user"], cmd)
+    cname = dll_name[:-4] if dll_name.endswith(".dll") else dll_name
+    
+    # Try unload via RCON first
     try:
-        await run_unturned_rcon(u["host"], int(u["rcon_port"]), u["rcon_password"], "p reload")
+        await run_unturned_rcon(u["host"], int(u["rcon_port"]), u["rcon_password"], f"rocket unload {cname}")
     except Exception:
         pass
 
-    record_audit(user, "unturned", "plugin_uninstall", f"Uninstalled plugin {target['name']}")
-    return {"success": True, "message": f"Plugin '{target['name']}' uninstalled."}
+    cmd = f"rm -f {plugins_dir}/{dll_name}"
+    await run_ssh(u["ssh_host"], u["ssh_user"], cmd)
+
+    record_audit(user, "unturned", "plugin_uninstall", f"Uninstalled plugin {plugin_name}")
+    return {"success": True, "message": f"Plugin '{plugin_name}' uninstalled."}
+
+@app.get("/api/unturned/plugin-config")
+async def api_unturned_get_plugin_config(request: Request, plugin: str, file: str):
+    user = await get_current_user(request)
+    if not user or not user["access"].get("unturned"):
+        raise HTTPException(403, "Requires Unturned Staff role")
+    if ".." in plugin or "/" in plugin or "\\" in plugin or ".." in file or "/" in file or "\\" in file:
+        raise HTTPException(400, "Invalid plugin or filename")
+    target_path = f"/home/unturned/unturned-server/Servers/CircuitVerse/Rocket/Plugins/{plugin}/{file}"
+    cfg = load_config()
+    u = cfg.get("unturned_server", {})
+    content = await asyncio.to_thread(sftp_read_sync, u["ssh_host"], u["ssh_user"], target_path)
+    return {"plugin": plugin, "file": file, "content": content}
+
+@app.post("/api/unturned/plugin-config")
+async def api_unturned_save_plugin_config(request: Request):
+    user = await get_current_user(request)
+    if not user or user["access"].get("unturned") != "admin":
+        raise HTTPException(403, "Only Unturned Host or Admin can edit plugin configuration")
+    body = await request.json()
+    plugin = body.get("plugin", "").strip()
+    file_name = body.get("file", "").strip()
+    content = body.get("content", "")
+    if ".." in plugin or "/" in plugin or "\\" in plugin or ".." in file_name or "/" in file_name or "\\" in file_name:
+        raise HTTPException(400, "Invalid plugin or filename")
+    target_path = f"/home/unturned/unturned-server/Servers/CircuitVerse/Rocket/Plugins/{plugin}/{file_name}"
+    cfg = load_config()
+    u = cfg.get("unturned_server", {})
+    await asyncio.to_thread(sftp_write_sync, u["ssh_host"], u["ssh_user"], target_path, content)
+    
+    # Reload plugin via RCON
+    try:
+        await run_unturned_rcon(u["host"], int(u["rcon_port"]), u["rcon_password"], f"rocket reload {plugin}")
+    except Exception:
+        pass
+        
+    record_audit(user, "unturned", "save_plugin_config", f"Saved configuration {plugin}/{file_name} ({len(content)} bytes)")
+    return {"success": True, "message": f"Successfully updated {plugin}/{file_name} and reloaded plugin!"}
+
+@app.get("/api/unturned/motd")
+async def api_unturned_get_motd(request: Request):
+    user = await get_current_user(request)
+    if not user or not user["access"].get("unturned"):
+        raise HTTPException(403, "Requires Unturned Staff role")
+    cfg = load_config()
+    u = cfg.get("unturned_server", {})
+    cmd_path = "/home/unturned/unturned-server/Servers/CircuitVerse/Server/Commands.dat"
+    cfg_path = "/home/unturned/unturned-server/Servers/CircuitVerse/Config.txt"
+    cmd_content = await asyncio.to_thread(sftp_read_sync, u["ssh_host"], u["ssh_user"], cmd_path)
+    cfg_content = await asyncio.to_thread(sftp_read_sync, u["ssh_host"], u["ssh_user"], cfg_path)
+    
+    server_name = "Circuit Verse - Official Unturned Server"
+    welcome_msg = ""
+    links_url = "https://discord.gg/M7R8EY28q6"
+    whitelisted = False
+    for line in cmd_content.splitlines():
+        if line.startswith("Name "):
+            server_name = line[5:].strip()
+        elif line.startswith("Welcome "):
+            welcome_msg = line[8:].strip()
+        elif line.startswith("Links ") or line.startswith("Link "):
+            links_url = line.split(maxsplit=1)[1].strip()
+        elif line.strip() == "Whitelisted":
+            whitelisted = True
+
+    return {
+        "server_name": server_name,
+        "welcome": welcome_msg,
+        "links": links_url,
+        "whitelisted": whitelisted,
+        "icon": "https://circuitverse.online/assets/circuit_verse_logo.png",
+        "thumbnail": "https://circuitverse.online/assets/circuit_verse_logo.png",
+        "banner": "https://circuitverse.online/assets/nova_station_banner.png",
+        "discord_invite": "https://discord.gg/M7R8EY28q6"
+    }
+
+@app.post("/api/unturned/motd")
+async def api_unturned_save_motd(request: Request):
+    user = await get_current_user(request)
+    if not user or user["access"].get("unturned") != "admin":
+        raise HTTPException(403, "Only Unturned Host or Admin can edit server branding")
+    body = await request.json()
+    server_name = body.get("server_name", "Circuit Verse - Official Unturned Server").strip()
+    welcome_msg = body.get("welcome", "").strip()
+    links_url = body.get("links", "https://discord.gg/M7R8EY28q6").strip()
+    whitelisted = bool(body.get("whitelisted", True))
+    icon_url = body.get("icon", "https://circuitverse.online/assets/circuit_verse_logo.png").strip()
+
+    cfg = load_config()
+    u = cfg.get("unturned_server", {})
+    cmd_path = "/home/unturned/unturned-server/Servers/CircuitVerse/Server/Commands.dat"
+    cmd_content = await asyncio.to_thread(sftp_read_sync, u["ssh_host"], u["ssh_user"], cmd_path)
+    
+    # Rebuild Commands.dat
+    new_lines = []
+    seen = set()
+    for line in cmd_content.splitlines():
+        if line.startswith("Name "):
+            new_lines.append(f"Name {server_name}")
+            seen.add("Name")
+        elif line.startswith("Welcome "):
+            new_lines.append(f"Welcome {welcome_msg}")
+            seen.add("Welcome")
+        elif line.startswith("Links ") or line.startswith("Link "):
+            new_lines.append(f"Links {links_url}")
+            seen.add("Links")
+        elif line.strip() == "Whitelisted":
+            if whitelisted:
+                new_lines.append("Whitelisted")
+            seen.add("Whitelisted")
+        else:
+            new_lines.append(line)
+            
+    if "Name" not in seen:
+        new_lines.insert(0, f"Name {server_name}")
+    if "Welcome" not in seen and welcome_msg:
+        new_lines.append(f"Welcome {welcome_msg}")
+    if "Links" not in seen and links_url:
+        new_lines.append(f"Links {links_url}")
+    if "Whitelisted" not in seen and whitelisted:
+        new_lines.append("Whitelisted")
+        
+    await asyncio.to_thread(sftp_write_sync, u["ssh_host"], u["ssh_user"], cmd_path, "\n".join(new_lines))
+    
+    # Update Config.txt Browser section
+    cfg_path = "/home/unturned/unturned-server/Servers/CircuitVerse/Config.txt"
+    cfg_content = await asyncio.to_thread(sftp_read_sync, u["ssh_host"], u["ssh_user"], cfg_path)
+    if "Browser" in cfg_content and icon_url:
+        cfg_content = re.sub(r'(\tIcon)[^\n]*', f'\\1 {icon_url}', cfg_content)
+        cfg_content = re.sub(r'(\tThumbnail)[^\n]*', f'\\1 {icon_url}', cfg_content)
+        cfg_content = re.sub(r'(\tDesc_Hint)[^\n]*', f'\\1 Official Unturned Server | Discord Required: {links_url}', cfg_content)
+        cfg_content = re.sub(r'(\tDesc_Server_List)[^\n]*', f'\\1 Circuit Verse Official | Discord: {links_url}', cfg_content)
+        await asyncio.to_thread(sftp_write_sync, u["ssh_host"], u["ssh_user"], cfg_path, cfg_content)
+
+    record_audit(user, "unturned", "save_motd", f"Updated Server Name to '{server_name}' and MOTD")
+    return {"success": True, "message": "Successfully saved MOTD & Server Branding!"}
 
 @app.get("/api/unturned/file")
 async def api_unturned_get_file(request: Request, name: str = "Commands.dat (Server Settings)"):
