@@ -28,6 +28,34 @@ class ReactionRolesCog(commands.Cog):
             return f"<:{emoji.name}:{emoji.id}>"
         return str(emoji.name)
 
+
+    @commands.Cog.listener()
+    async def on_interaction(self, interaction: discord.Interaction):
+        if interaction.type != discord.InteractionType.component or not interaction.data:
+            return
+        cid = str(interaction.data.get("custom_id", ""))
+        if not cid.startswith("autorole:"):
+            return
+        role_id_str = cid.split(":", 1)[1]
+        if not role_id_str.isdigit() or not interaction.guild:
+            return
+        role = interaction.guild.get_role(int(role_id_str))
+        if not role:
+            await interaction.response.send_message("❌ That role could not be found.", ephemeral=True)
+            return
+        member = interaction.user
+        if not isinstance(member, discord.Member):
+            member = await interaction.guild.fetch_member(interaction.user.id)
+        try:
+            if role in member.roles:
+                await member.remove_roles(role, reason="Self-assignable role button toggle")
+                await interaction.response.send_message(f"🗑️ Removed role {role.mention}!", ephemeral=True)
+            else:
+                await member.add_roles(role, reason="Self-assignable role button toggle")
+                await interaction.response.send_message(f"✅ Granted role {role.mention}!", ephemeral=True)
+        except Exception as e:
+            await interaction.response.send_message(f"⚠️ Could not update role: {e}", ephemeral=True)
+
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
         if payload.user_id == self.bot.user.id or not payload.guild_id:
