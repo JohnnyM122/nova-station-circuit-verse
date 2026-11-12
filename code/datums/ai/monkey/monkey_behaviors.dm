@@ -274,7 +274,7 @@
 	var/mob/living/living_pawn = controller.pawn
 
 	for(var/mob/living/nearby_monkey in view(living_pawn, MONKEY_ENEMY_VISION))
-		if(QDELETED(nearby_monkey) || !HAS_AI_CONTROLLER_TYPE(nearby_monkey, /datum/ai_controller/monkey))
+		if(nearby_monkey == living_pawn || QDELETED(nearby_monkey) || !HAS_AI_CONTROLLER_TYPE(nearby_monkey, /datum/ai_controller/monkey))
 			continue
 		if(!SPT_PROB(MONKEY_RECRUIT_PROB, seconds_per_tick))
 			continue

@@ -113,6 +113,8 @@ RESTRICT_TYPE(/datum/ai_controller)
 
 /// Sets the current movement target, with an optional param to override the movement behavior
 /datum/ai_controller/proc/set_movement_target(source, atom/target, datum/ai_movement/new_movement)
+	if(target == pawn)
+		return
 	if(current_movement_target)
 		UnregisterSignal(current_movement_target, list(COMSIG_MOVABLE_MOVED, COMSIG_PARENT_PREQDELETED))
 	if(!isnull(target) && !isatom(target))

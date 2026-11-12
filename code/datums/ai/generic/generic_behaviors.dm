@@ -66,7 +66,7 @@
 /datum/ai_behavior/use_on_object/setup(datum/ai_controller/controller, target_key)
 	. = ..()
 	var/atom/target = controller.blackboard[target_key]
-	if(QDELETED(target))
+	if(QDELETED(target) || target == controller.pawn)
 		return FALSE
 	set_movement_target(controller, target)
 
@@ -131,6 +131,8 @@
 	. = ..()
 	var/list/possible_targets = list()
 	for(var/atom/thing in view(2, controller.pawn))
+		if(thing == controller.pawn)
+			continue
 		if(!thing.mouse_opacity)
 			continue
 		if(thing.IsObscured())
