@@ -263,6 +263,27 @@
       border-color: var(--purple);
       color: #fff;
     }
+    .perm-dept-btn {
+      padding: 6px 12px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: var(--muted);
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.82rem;
+      transition: all 0.15s ease;
+    }
+    .perm-dept-btn:hover {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+    }
+    .perm-dept-btn.active-dept-btn {
+      background: rgba(0, 240, 255, 0.16);
+      border-color: #00f0ff;
+      color: #00f0ff;
+      box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+    }
     .toast {
       position: fixed;
       bottom: 24px;
@@ -309,6 +330,23 @@
         <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.001-.09-.041-.106a13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.929 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.894.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028z"/></svg>
         One-Click Staff Login with Discord
       </a>
+
+      <!-- Emergency Master Passkey Login -->
+      <div style="margin: 24px 0 16px; display: flex; align-items: center; justify-content: center; gap: 12px; color: var(--muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px;">
+        <span style="height: 1px; background: rgba(255,255,255,0.12); flex: 1;"></span>
+        <span>Or Emergency Executive Direct Login</span>
+        <span style="height: 1px; background: rgba(255,255,255,0.12); flex: 1;"></span>
+      </div>
+
+      <div style="max-width: 440px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; gap: 8px;">
+          <input id="staff-master-pw-input" type="password" placeholder="Enter Super Secret Master Password..." style="flex: 1; padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border); background: rgba(0,0,0,0.5); color: var(--text); font-family: inherit; font-size: 0.95rem; outline: none;" onkeydown="if(event.key==='Enter')loginWithMasterPassword()" />
+          <button class="btn btn-purple" style="padding: 12px 20px; font-weight: 700; white-space: nowrap;" onclick="loginWithMasterPassword()">🔑 Sign In</button>
+        </div>
+        <div style="font-size: 0.78rem; color: var(--muted); text-align: center;">
+          Direct login for Community Founder & Server Hosts during Discord OAuth API renewal.
+        </div>
+      </div>
       <div class="grid-3" style="margin-top:34px; text-align:left;">
         <div class="stat-box">
           <div style="font-weight:700; color:#f87171;">🧟 Project Zomboid Panel</div>
@@ -442,12 +480,23 @@
           <div class="subtabs">
             <button class="subtab active" onclick="switchPzTab('pz-tab-zcp', this)">🖥️ Zomboid Control Panel (Full UI)</button>
             <button class="subtab" onclick="switchPzTab('pz-tab-staff', this)">⚡ Live Staff & In-Game Ranks Editor (No Restart)</button>
-            <button class="subtab" onclick="switchPzTab('pz-tab-mods', this)">🧩 One-Click Workshop Mod Installer</button>
+            <button class="subtab" onclick="switchPzTab('pz-tab-mods', this)">🧩 Mod Manager &amp; Configurator</button>
           </div>
 
           <!-- PZ Subtab 1: Embedded ZCP -->
           <div id="pz-tab-zcp" class="pz-sub">
-            <iframe id="zcp-iframe" src="about:blank" style="width:100%; height:76vh; border:1px solid var(--border); border-radius:12px; background:#090d16;"></iframe>
+            <div id="zcp-auth-banner" style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; padding:10px 16px; background:#121824; border:1px solid var(--border); border-radius:10px; flex-wrap:wrap; gap:10px;">
+              <div style="display:flex; align-items:center; gap:14px; font-size:0.86rem; flex-wrap:wrap;">
+                <span>👤 <b>Account:</b> <code id="zcp-badge-user" style="color:var(--accent); background:#1e293b; padding:3px 8px; border-radius:4px; font-weight:600;">cv_admin</code></span>
+                <span>🔑 <b>Password:</b> <code id="zcp-badge-pass" style="background:#1e293b; padding:3px 8px; border-radius:4px; font-family:monospace; cursor:pointer;" onclick="toggleZcpPassVisibility()" title="Click to show/hide">••••••••••••</code></span>
+                <button class="btn btn-secondary" style="padding:4px 10px; font-size:0.75rem;" onclick="copyZcpPassword()">📋 Copy Password</button>
+              </div>
+              <div style="display:flex; gap:8px;">
+                <button class="btn btn-primary" style="padding:5px 14px; font-size:0.8rem; background:linear-gradient(135deg,#059669,#10b981);" onclick="autoLoginZcp()">⚡ Auto-Sign In</button>
+                <a id="zcp-external-link" href="https://zcp.circuitverse.online/" target="_blank" class="btn btn-secondary" style="padding:5px 12px; font-size:0.8rem;">↗ Fullscreen ZCP</a>
+              </div>
+            </div>
+            <iframe id="zcp-iframe" src="about:blank" style="width:100%; height:74vh; border:1px solid var(--border); border-radius:12px; background:#090d16;"></iframe>
           </div>
 
           <!-- PZ Subtab 2: Live Staff & Ranks/Capabilities Editor -->
@@ -520,13 +569,44 @@
               </div>
 
               <div class="stat-box">
-                <h4 style="margin-bottom:8px; color:var(--green);">📦 Currently Configured Server Mods (`CircuitVersePZ.ini`)</h4>
+                <h4 style="margin-bottom:8px; color:var(--green);">📦 Configured Server Mods (`CircuitVersePZ.ini`)</h4>
                 <div style="max-height:420px; overflow-y:auto;">
                   <table>
                     <thead><tr><th>Workshop ID</th><th>Active Mod IDs</th><th>Action</th></tr></thead>
                     <tbody id="pz-installed-mods-tbody"></tbody>
                   </table>
                 </div>
+              </div>
+            </div>
+
+            <!-- Mod & Server Settings Configurator -->
+            <div style="margin-top:20px; background:#121824; border:1px solid var(--border); border-radius:12px; padding:18px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
+                <div>
+                  <h4 style="color:var(--accent); margin-bottom:4px;">⚙️ Live Mod & Server Configurator</h4>
+                  <p style="font-size:0.82rem; color:var(--muted); margin:0;">
+                    Configure server settings, sandbox rules, zombie behavior, and mod-specific variables without opening SSH.
+                  </p>
+                </div>
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                  <button id="btn-cfg-ini" class="btn btn-primary" onclick="switchModCfgTab('ini')">CircuitVersePZ.ini</button>
+                  <button id="btn-cfg-sandbox" class="btn btn-secondary" onclick="switchModCfgTab('sandbox')">SandboxVars.lua (Mod Options)</button>
+                  <button class="btn btn-success" onclick="saveActiveModConfig()">💾 Save Changes</button>
+                  <button class="btn btn-warning" onclick="saveActiveModConfig().then(() => pzService('restart'))">⚡ Save &amp; Restart PZ</button>
+                  <button class="btn btn-secondary" onclick="loadPzMods()">🔄 Reload</button>
+                </div>
+              </div>
+
+              <!-- INI Editor -->
+              <div id="pz-cfg-ini-container">
+                <div style="font-size:0.75rem; color:var(--muted); margin-bottom:6px;">Server Configuration: <code>/home/pz/Zomboid/Server/CircuitVersePZ.ini</code> (Auto-backed up before save)</div>
+                <textarea id="pz-ini-editor" spellcheck="false" style="width:100%; height:380px; font-family:'JetBrains Mono',monospace; font-size:0.85rem; background:#080b11; color:#38bdf8; border:1px solid var(--border); border-radius:8px; padding:12px; line-height:1.45;"></textarea>
+              </div>
+
+              <!-- SandboxVars Editor -->
+              <div id="pz-cfg-sandbox-container" style="display:none;">
+                <div style="font-size:0.75rem; color:var(--muted); margin-bottom:6px;">Sandbox & Mod Variables: <code>/home/pz/Zomboid/Server/CircuitVersePZ_SandboxVars.lua</code> (All mod-injected options)</div>
+                <textarea id="pz-sandbox-editor" spellcheck="false" style="width:100%; height:380px; font-family:'JetBrains Mono',monospace; font-size:0.85rem; background:#080b11; color:#4ade80; border:1px solid var(--border); border-radius:8px; padding:12px; line-height:1.45;"></textarea>
               </div>
             </div>
           </div>
@@ -1182,6 +1262,9 @@
                 <p style="font-size:0.82rem; color:var(--muted); margin-bottom:10px;">
                   Active modules in <code>Servers/CircuitVerse/Rocket/Plugins/</code> with live start, stop, reload & config controls:
                 </p>
+                <div style="margin-bottom:10px;">
+                  <input type="text" id="unturned-installed-search" class="input" style="width:100%; font-size:0.82rem; padding:6px 10px;" placeholder="🔍 Search installed plugins by name or filename..." oninput="filterUnturnedInstalledPlugins(this.value)">
+                </div>
                 <div style="max-height:420px; overflow-y:auto;">
                   <table>
                     <thead><tr><th>Plugin / File</th><th>Size</th><th>Last Modified</th><th>Actions</th></tr></thead>
@@ -1198,6 +1281,18 @@
                 <p style="font-size:0.82rem; color:var(--muted); margin-bottom:10px;">
                   Popular, fully compatible RocketMod plugins verified for Unturned 3.x. Instantly installs to <code>/Rocket/Plugins</code> and reloads automatically.
                 </p>
+                <div style="display:flex; gap:8px; margin-bottom:10px;">
+                  <input type="text" id="unturned-curated-search" class="input" style="flex:1; font-size:0.82rem; padding:6px 10px;" placeholder="🔍 Search catalog by name, category, or keyword..." oninput="filterUnturnedCuratedPlugins(this.value)">
+                  <select id="unturned-curated-category" class="input" style="font-size:0.82rem; padding:6px 8px; max-width:180px;" onchange="filterUnturnedCuratedPlugins(document.getElementById('unturned-curated-search').value)">
+                    <option value="">All Categories (47)</option>
+                    <option value="Staff Management">Staff Management</option>
+                    <option value="Security & Moderation">Security & Moderation</option>
+                    <option value="Quality of Life">Quality of Life</option>
+                    <option value="Gameplay & Progression">Gameplay & Progression</option>
+                    <option value="Economy & Shops">Economy & Shops</option>
+                    <option value="Infrastructure">Infrastructure</option>
+                  </select>
+                </div>
                 <div style="max-height:420px; overflow-y:auto;">
                   <table>
                     <thead><tr><th>Plugin</th><th>Description</th><th>Action</th></tr></thead>
@@ -1533,6 +1628,14 @@
           <div class="grid-2">
             <div>
               <h4 style="margin-bottom:10px;">🎵 Search & Queue Song Immediately</h4>
+              <div id="rad-preview-bar" style="display:none; background:rgba(88,101,242,0.15); border:1px solid rgba(88,101,242,0.4); border-radius:8px; padding:10px 14px; margin-bottom:12px; align-items:center; justify-content:space-between; gap:12px;">
+                <div style="flex:1; min-width:0;">
+                  <div style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.5px; color:#5865F2; font-weight:700;">🎧 Audio Preview Player</div>
+                  <div id="rad-preview-title" style="font-size:0.86rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--text);">—</div>
+                </div>
+                <audio id="rad-preview-audio" controls controlsList="nodownload" style="height:32px; width:220px;"></audio>
+                <button class="btn btn-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="stopRadioPreview()">✕</button>
+              </div>
               <div style="display:flex; gap:8px; margin-bottom:12px;">
                 <input id="rad-search-q" placeholder="Search track or artist..." onkeydown="if(event.key==='Enter')searchRadioSongs()" />
                 <button class="btn btn-primary" onclick="searchRadioSongs()">Search</button>
@@ -1604,14 +1707,14 @@
           <div style="background:rgba(14,165,233,0.08); border:1px solid rgba(14,165,233,0.35); border-left:4px solid #0ea5e9; border-radius:12px; padding:16px 18px; margin-bottom:18px;">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
               <div>
-                <h4 style="margin:0; color:#38bdf8;">?? Community Partnerships Manager (Website + Discord `#???partnerships` Auto-Sync)</h4>
+                <h4 style="margin:0; color:#38bdf8;">🤝 Community Partnerships Manager (Website + Discord `#🤝・partnerships` Auto-Sync)</h4>
                 <div style="font-size:0.8rem; color:var(--muted); margin-top:2px;">
-                  Adding a partner instantly updates <a href="https://circuitverse.online/partnerships.html" target="_blank" style="color:var(--cyan);">partnerships.html</a> and broadcasts an official embed in Discord <code>#???partnerships</code>.
+                  Adding a partner instantly updates <a href="https://circuitverse.online/partnerships.html" target="_blank" style="color:var(--cyan);">partnerships.html</a> and broadcasts an official embed in Discord <code>#🤝・partnerships</code>.
                 </div>
               </div>
-              <button class="btn" onclick="loadPortalPartnerships()">?? Refresh Partnerships</button>
+              <button class="btn" onclick="loadPortalPartnerships()">🔄 Refresh Partnerships</button>
             </div>
-            <div style="display:grid; grid-template-columns: 1fr 1.2fr 1fr auto; gap:10px; align-items:end; margin-bottom:12px;">
+            <div style="display:grid; grid-template-columns: 1fr 1.2fr 1fr; gap:10px; margin-bottom:10px;">
               <div>
                 <label style="font-size:0.75rem; color:var(--muted); font-weight:700;">Partner Name</label>
                 <input id="p-web-part-name" placeholder="e.g. Partner Gaming Network" />
@@ -1624,22 +1727,92 @@
                 <label style="font-size:0.75rem; color:var(--muted); font-weight:700;">Contact Rep</label>
                 <input id="p-web-part-contact" placeholder="e.g. @username (Representative)" />
               </div>
-              <button class="btn btn-primary" style="background:linear-gradient(135deg,#0ea5e9,#8b5cf6); border:none; height:38px;" onclick="addPortalPartnership()">
-                ? Add Partner & Post to Discord
+            </div>
+            <div style="display:grid; grid-template-columns: 1fr auto; gap:10px; align-items:end; margin-bottom:12px;">
+              <div>
+                <label style="font-size:0.75rem; color:var(--muted); font-weight:700;">Community Description / Overview (Broadcasted to Discord & Displayed on Website)</label>
+                <textarea id="p-web-part-desc" rows="2" style="width:100%; resize:vertical; font-size:0.85rem;" placeholder="e.g. Overview of their community features, activities, government/economic simulation..."></textarea>
+              </div>
+              <button class="btn btn-primary" style="background:linear-gradient(135deg,#0ea5e9,#8b5cf6); border:none; height:42px; padding:0 20px;" onclick="addPortalPartnership()">
+                ➕ Add Partner & Post to Discord
               </button>
             </div>
-            <div style="max-height:160px; overflow-y:auto;">
+            <div style="max-height:220px; overflow-y:auto;">
               <table>
                 <thead>
                   <tr>
                     <th>Partner Community Name</th>
                     <th>Discord / Website</th>
                     <th>Contact Rep</th>
+                    <th>Description</th>
                     <th>Action</th>
                   </tr>
                 </thead>
                 <tbody id="p-web-part-tbody">
-                  <tr><td colspan="4" style="text-align:center; color:var(--muted);">Loading partnerships...</td></tr>
+                  <tr><td colspan="5" style="text-align:center; color:var(--muted);">Loading partnerships...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Affiliates Manager within Website Portal -->
+          <div style="background:rgba(6,182,212,0.08); border:1px solid rgba(6,182,212,0.35); border-left:4px solid #06b6d4; border-radius:12px; padding:16px 18px; margin-bottom:18px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
+              <div>
+                <h4 style="margin:0; color:#22d3ee;">⭐ Community Affiliates & Creator Manager (Website + Discord `#🤝・affiliates` Auto-Sync)</h4>
+                <div style="font-size:0.8rem; color:var(--muted); margin-top:2px;">
+                  Adding an affiliate updates the official website and broadcasts an announcement embed in Discord <code>#🤝・affiliates</code> with the <span class="badge" style="background:#06b6d4; color:#fff; font-size:0.75rem; padding:1px 6px; border-radius:4px;">Affiliate Partner</span> role.
+                </div>
+              </div>
+              <button class="btn" onclick="loadPortalAffiliates()">🔄 Refresh Affiliates</button>
+            </div>
+            <div style="display:grid; grid-template-columns: 1fr 1.2fr 1fr 1fr; gap:10px; margin-bottom:10px;">
+              <div>
+                <label style="font-size:0.75rem; color:var(--muted); font-weight:700;">Affiliate / Creator Name</label>
+                <input id="p-web-aff-name" placeholder="e.g. PixelVoyager Gaming" />
+              </div>
+              <div>
+                <label style="font-size:0.75rem; color:var(--muted); font-weight:700;">Platform / Channel Link</label>
+                <input id="p-web-aff-link" placeholder="e.g. https://twitch.tv/example" />
+              </div>
+              <div>
+                <label style="font-size:0.75rem; color:var(--muted); font-weight:700;">Type / Category</label>
+                <select id="p-web-aff-type" style="height:38px;">
+                  <option value="Content Creator (Twitch / YouTube)">Content Creator (Twitch / YouTube)</option>
+                  <option value="Streaming Affiliate">Streaming Affiliate</option>
+                  <option value="Community Clan / Guild">Community Clan / Guild</option>
+                  <option value="Hosting / Tech Sponsor">Hosting / Tech Sponsor</option>
+                  <option value="Creative / Art Partner">Creative / Art Partner</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size:0.75rem; color:var(--muted); font-weight:700;">Contact Rep</label>
+                <input id="p-web-aff-contact" placeholder="e.g. @creator (Discord)" />
+              </div>
+            </div>
+            <div style="display:grid; grid-template-columns: 1fr auto; gap:10px; align-items:end; margin-bottom:12px;">
+              <div>
+                <label style="font-size:0.75rem; color:var(--muted); font-weight:700;">Affiliate Bio / Description (Optional)</label>
+                <textarea id="p-web-aff-desc" rows="2" style="width:100%; resize:vertical; font-size:0.85rem;" placeholder="e.g. Streaming variety games, Roblox events, community animation..."></textarea>
+              </div>
+              <button class="btn btn-primary" style="background:linear-gradient(135deg,#06b6d4,#3b82f6); border:none; height:42px; padding:0 20px;" onclick="addPortalAffiliate()">
+                ➕ Add Affiliate & Post to Discord
+              </button>
+            </div>
+            <div style="max-height:220px; overflow-y:auto;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Affiliate / Creator Name</th>
+                    <th>Platform Link</th>
+                    <th>Category</th>
+                    <th>Contact Rep</th>
+                    <th>Description</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="p-web-aff-tbody">
+                  <tr><td colspan="6" style="text-align:center; color:var(--muted);">Loading affiliates...</td></tr>
                 </tbody>
               </table>
             </div>
@@ -1655,6 +1828,7 @@
                 <option value="script.js">script.js (Interactive Scripts)</option>
                 <option value="directory.html">directory.html (Staff Directory)</option>
                 <option value="partnerships.html">partnerships.html (Partners Page)</option>
+                <option value="affiliates.html">affiliates.html (Affiliates Page)</option>
                 <option value="maintenance.html">maintenance.html (Maintenance Page)</option>
               </select>
               <button class="btn" onclick="loadPortalWebsiteFile(document.getElementById('p-web-file-select').value)">?? Reload</button>
@@ -1737,12 +1911,28 @@
 
             <!-- 1. Infrastructure & Hetzner -->
             <div id="m-infra" class="master-sub">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                <h4>🖥️ Hetzner Cloud Dedicated Instances & All Systemd Services</h4>
-                <button class="btn" onclick="loadMasterInfra()">🔄 Refresh Telemetry</button>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                <div>
+                  <h4 style="margin:0; font-size:1.15rem; color:#fff;">🖥️ Hetzner Bare-Metal Infrastructure & System Fleet</h4>
+                  <div style="font-size:0.8rem; color:var(--muted); margin-top:3px;">Live hardware telemetry, server task manager, Hetzner fleet power controls, and systemd fleet services</div>
+                </div>
+                <button class="btn" onclick="loadMasterInfra()" style="display:flex; align-items:center; gap:6px;">🔄 Refresh Telemetry</button>
               </div>
-              <div class="grid-3" id="m-hetzner-grid"></div>
-              <div class="grid-2" id="m-nodes-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));"></div>
+
+              <!-- Dedicated Hardware & Live Telemetry -->
+              <div id="m-dedicated-card" style="margin-bottom:18px;"></div>
+
+              <!-- Hetzner Servers Fleet (EX63 + Cloud Instances) -->
+              <div style="margin-bottom:20px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                  <strong style="font-size:0.95rem; color:#fff;">☁️ Hetzner Cloud & Dedicated Servers Fleet</strong>
+                  <span class="tier-pill tier-admin" style="font-size:0.7rem; letter-spacing:0.5px;">HETZNER POWER CONTROLS ACTIVE</span>
+                </div>
+                <div class="grid-3" id="m-hetzner-grid"></div>
+              </div>
+
+              <!-- Consolidated Fleet Systemd Services -->
+              <div id="m-nodes-grid"></div>
             </div>
 
             <!-- 2. Global Broadcast -->
@@ -1764,6 +1954,120 @@
 
             <!-- 3. Discord Bot Config & Cogs -->
             <div id="m-bot" class="master-sub" style="display:none;">
+              <!-- Staff Commands & Category Permissions Access Matrix -->
+              <div style="background:rgba(0,240,255,0.04); border:1px solid rgba(0,240,255,0.25); border-left:4px solid #00f0ff; border-radius:12px; padding:18px; margin-bottom:20px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:14px;">
+                  <div>
+                    <h3 style="margin:0; color:#00f0ff; font-size:1.15rem; display:flex; align-items:center; gap:8px;">
+                      🛡️ Staff Bot Commands & Category-Scoped Access Matrix
+                    </h3>
+                    <div style="font-size:0.85rem; color:var(--muted); margin-top:4px;">
+                      Configure global vs. category-scoped command permissions (e.g. Community Staff get global access; game server staff are restricted to their game's channels).
+                    </div>
+                  </div>
+                  <div style="display:flex; gap:8px;">
+                    <button class="btn btn-secondary" onclick="loadStaffPermissions()">🔄 Reload Matrix</button>
+                    <button class="btn btn-primary" onclick="saveStaffPermissions()">💾 Save Staff Permissions & Restart Bot</button>
+                  </div>
+                </div>
+
+                <div class="grid-2" style="gap:16px;">
+                  <!-- Global Staff Roles -->
+                  <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:14px; display:flex; flex-direction:column; gap:10px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                      <h4 style="margin:0; color:#38bdf8; display:flex; align-items:center; gap:6px;">
+                        🌐 Global Staff Roles (Universal Access)
+                      </h4>
+                      <span id="perm-global-count" style="font-size:0.75rem; color:var(--muted); background:rgba(255,255,255,0.05); padding:2px 8px; border-radius:10px;">0 selected</span>
+                    </div>
+                    <p style="font-size:0.8rem; color:var(--muted); margin:0;">
+                      Members with these roles can execute staff commands across <strong>all</strong> channels & categories (e.g. Founders, Directors, Community Admins).
+                    </p>
+
+                    <!-- Active Badges Tag Cloud -->
+                    <div>
+                      <div style="font-size:0.72rem; color:#94a3b8; margin-bottom:4px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Active Global Staff Roles:</div>
+                      <div id="perm-global-selected-pills" style="display:flex; flex-wrap:wrap; gap:5px; min-height:30px; padding:6px; background:rgba(0,0,0,0.25); border-radius:6px; border:1px dashed rgba(255,255,255,0.1); align-items:center;">
+                        <span style="color:var(--muted); font-size:0.75rem;">No global staff roles selected</span>
+                      </div>
+                    </div>
+
+                    <!-- Search & Filter Controls -->
+                    <div style="display:flex; gap:6px; align-items:center;">
+                      <div style="position:relative; flex:1;">
+                        <input type="text" id="perm-global-search" placeholder="🔍 Search roles by name..." oninput="renderGlobalRolesUI()" style="width:100%; padding:6px 10px; font-size:0.82rem; background:rgba(15,23,42,0.6); border:1px solid rgba(255,255,255,0.15); border-radius:6px; color:#fff;" />
+                      </div>
+                      <button type="button" class="btn btn-secondary" style="padding:5px 8px; font-size:0.75rem;" onclick="setGlobalFilterMode('all')" id="btn-global-filter-all">All</button>
+                      <button type="button" class="btn btn-secondary" style="padding:5px 8px; font-size:0.75rem;" onclick="setGlobalFilterMode('selected')" id="btn-global-filter-selected">Selected</button>
+                    </div>
+
+                    <!-- Role Checklist -->
+                    <div id="perm-global-roles-container" style="max-height:190px; overflow-y:auto; display:flex; flex-direction:column; gap:3px; padding-right:4px;">
+                      <div style="color:var(--muted); font-size:0.8rem;">Loading Discord roles...</div>
+                    </div>
+                  </div>
+
+                  <!-- Category / Server Staff Scopes -->
+                  <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:14px; display:flex; flex-direction:column; gap:10px;">
+                    <div>
+                      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                        <h4 style="margin:0; color:#34d399; display:flex; align-items:center; gap:6px;">
+                          📂 Server Category Scopes (Scoped Access Only)
+                        </h4>
+                      </div>
+                      <p style="font-size:0.8rem; color:var(--muted); margin:0 0 8px 0;">
+                        Members assigned below can <strong>only</strong> execute staff commands within their designated categories.
+                      </p>
+                      <!-- Scope Tabs Selector -->
+                      <div style="display:flex; gap:6px; flex-wrap:wrap;" id="perm-dept-tabs">
+                        <button type="button" class="btn perm-dept-btn active-dept-btn" data-dept="mc" onclick="switchDeptScope('mc')" style="padding:5px 10px; font-size:0.8rem; border-radius:6px; cursor:pointer;">⛏️ Minecraft</button>
+                        <button type="button" class="btn perm-dept-btn" data-dept="ns13" onclick="switchDeptScope('ns13')" style="padding:5px 10px; font-size:0.8rem; border-radius:6px; cursor:pointer;">🚀 Nova Station 13</button>
+                        <button type="button" class="btn perm-dept-btn" data-dept="pz" onclick="switchDeptScope('pz')" style="padding:5px 10px; font-size:0.8rem; border-radius:6px; cursor:pointer;">🧟 Project Zomboid</button>
+                        <button type="button" class="btn perm-dept-btn" data-dept="unturned" onclick="switchDeptScope('unturned')" style="padding:5px 10px; font-size:0.8rem; border-radius:6px; cursor:pointer;">🌲 Unturned</button>
+                      </div>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                      <!-- Allowed Staff Roles -->
+                      <div style="display:flex; flex-direction:column; gap:6px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                          <div style="font-weight:600; font-size:0.8rem; color:#a78bfa;">Allowed Roles</div>
+                          <span id="perm-dept-roles-count" style="font-size:0.75rem; color:var(--muted); background:rgba(255,255,255,0.05); padding:1px 6px; border-radius:10px;">0</span>
+                        </div>
+                        <div id="perm-dept-roles-pills" style="display:flex; flex-wrap:wrap; gap:4px; min-height:26px; padding:4px; background:rgba(0,0,0,0.25); border-radius:6px; border:1px dashed rgba(255,255,255,0.1); align-items:center;"></div>
+                        <input type="text" id="perm-dept-role-search" placeholder="🔍 Search roles..." oninput="renderDeptScopeUI(currentDeptScope)" style="width:100%; padding:5px 8px; font-size:0.78rem; background:rgba(15,23,42,0.6); border:1px solid rgba(255,255,255,0.15); border-radius:4px; color:#fff;" />
+                        <div id="perm-dept-roles-container" style="max-height:160px; overflow-y:auto; display:flex; flex-direction:column; gap:3px; padding-right:2px;"></div>
+                      </div>
+
+                      <!-- Authorized Categories -->
+                      <div style="display:flex; flex-direction:column; gap:6px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                          <div style="font-weight:600; font-size:0.8rem; color:#f472b6;">Authorized Categories</div>
+                          <span id="perm-dept-cats-count" style="font-size:0.75rem; color:var(--muted); background:rgba(255,255,255,0.05); padding:1px 6px; border-radius:10px;">0</span>
+                        </div>
+                        <div id="perm-dept-cats-pills" style="display:flex; flex-wrap:wrap; gap:4px; min-height:26px; padding:4px; background:rgba(0,0,0,0.25); border-radius:6px; border:1px dashed rgba(255,255,255,0.1); align-items:center;"></div>
+                        <input type="text" id="perm-dept-cat-search" placeholder="🔍 Search categories..." oninput="renderDeptScopeUI(currentDeptScope)" style="width:100%; padding:5px 8px; font-size:0.78rem; background:rgba(15,23,42,0.6); border:1px solid rgba(255,255,255,0.15); border-radius:4px; color:#fff;" />
+                        <div id="perm-dept-cats-container" style="max-height:160px; overflow-y:auto; display:flex; flex-direction:column; gap:3px; padding-right:2px;"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Command Summary Pill Bar -->
+                <div style="margin-top:14px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+                  <div style="font-size:0.8rem; color:var(--muted);">
+                    ⚡ <strong>Enforced Commands:</strong>
+                    <span class="badge" style="background:rgba(239,68,68,0.2); color:#fca5a5; margin-left:4px;">/purge_all</span>
+                    <span class="badge" style="background:rgba(249,115,22,0.2); color:#fdba74; margin-left:4px;">/purge</span>
+                    <span class="badge" style="background:rgba(234,179,8,0.2); color:#fef08a; margin-left:4px;">/warn</span>
+                    <span class="badge" style="background:rgba(59,130,246,0.2); color:#93c5fd; margin-left:4px;">/timeout</span>
+                    <span class="badge" style="background:rgba(168,85,247,0.2); color:#d8b4fe; margin-left:4px;">/kick</span>
+                    <span class="badge" style="background:rgba(236,72,153,0.2); color:#f472b6; margin-left:4px;">/discordban (Global Only)</span>
+                  </div>
+                  <div id="perm-save-status" style="font-size:0.8rem; color:#10b981;">✓ Synced with Live Helper Bot</div>
+                </div>
+              </div>
+
               <div class="grid-2">
                 <div>
                   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
@@ -1837,7 +2141,7 @@
                   </div>
                   <button class="btn" onclick="loadMasterPartnerships()">🔄 Refresh Partnerships</button>
                 </div>
-                <div style="display:grid; grid-template-columns: 1fr 1.2fr 1fr auto; gap:10px; align-items:end; margin-bottom:12px;">
+                <div style="display:grid; grid-template-columns: 1fr 1.2fr 1fr; gap:10px; margin-bottom:10px;">
                   <div>
                     <label style="font-size:0.75rem; color:var(--muted); font-weight:700;">Partnering Community Name</label>
                     <input id="m-part-name" placeholder="e.g. Example Gaming Network" />
@@ -1850,23 +2154,30 @@
                     <label style="font-size:0.75rem; color:var(--muted); font-weight:700;">Partnering Community Contact</label>
                     <input id="m-part-contact" placeholder="e.g. @username (Community Rep)" />
                   </div>
-                  <button class="btn btn-primary" style="background:linear-gradient(135deg,#ec4899,#8b5cf6); border:none; height:38px;" onclick="addMasterPartnership()">
+                </div>
+                <div style="display:grid; grid-template-columns: 1fr auto; gap:10px; align-items:end; margin-bottom:12px;">
+                  <div>
+                    <label style="font-size:0.75rem; color:var(--muted); font-weight:700;">Community Description / Overview (Optional - posted to Discord & website)</label>
+                    <textarea id="m-part-desc" rows="2" style="width:100%; resize:vertical; font-size:0.85rem;" placeholder="e.g. Overview of activities, events, simulation, features..."></textarea>
+                  </div>
+                  <button class="btn btn-primary" style="background:linear-gradient(135deg,#ec4899,#8b5cf6); border:none; height:42px; padding:0 20px;" onclick="addMasterPartnership()">
                     ➕ Add Partner & Post to Discord
                   </button>
                 </div>
-                <div style="max-height:190px; overflow-y:auto;">
+                <div style="max-height:220px; overflow-y:auto;">
                   <table>
                     <thead>
                       <tr>
                         <th>Partnering Community Name</th>
                         <th>Discord / Website</th>
                         <th>Community Contact</th>
+                        <th>Description</th>
                         <th>Discord Sync</th>
                         <th>Action</th>
                       </tr>
                     </thead>
                     <tbody id="m-part-tbody">
-                      <tr><td colspan="5" style="text-align:center; color:var(--muted);">No Current Partnerships</td></tr>
+                      <tr><td colspan="6" style="text-align:center; color:var(--muted);">No Current Partnerships</td></tr>
                     </tbody>
                   </table>
                 </div>
@@ -2089,7 +2400,7 @@
                       <span>Bot Intrusion Detection & Emergency Killswitch Center</span>
                     </div>
                     <p style="color: var(--muted); font-size: 0.84rem; margin-top: 4px;">
-                      Autonomous Sentinel continuously monitors Discord audit logs. If a bot token is compromised or exhibits rogue behavior (mass kicks, bans, or channel/role deletes), the Sentinel <strong>automatically masks the service on 2.31.173.113</strong> and <strong>evicts the bot from Discord</strong> within seconds.
+                      Autonomous Sentinel continuously monitors Discord audit logs. If a bot token is compromised or exhibits rogue behavior (mass kicks, bans, or channel/role deletes), the Sentinel <strong>automatically masks the service on Hetzner EX63 Dedicated (62.238.81.224)</strong> and <strong>evicts the bot from Discord</strong> within seconds.
                     </p>
                   </div>
                   <div style="display:flex; align-items:center; gap:10px;">
@@ -2116,6 +2427,17 @@
                   <div style="display:flex; gap:8px;">
                     <input id="m-new-master-pw" type="password" placeholder="New Master Password (min 12 chars)" />
                     <button class="btn btn-danger" onclick="changeMasterPw()">Update Password</button>
+                  </div>
+                  <h4 style="margin:16px 0 8px;">🤖 Discord Bot & OAuth Credentials</h4>
+                  <div style="display:flex; flex-direction:column; gap:8px;">
+                    <div style="display:flex; gap:8px;">
+                      <input id="m-discord-client-id" type="text" placeholder="Client ID (1566602346715160716)" style="flex:1;" />
+                      <input id="m-discord-client-secret" type="password" placeholder="New Client Secret from Dev Portal" style="flex:1;" />
+                      <button class="btn btn-purple" style="white-space:nowrap;" onclick="saveDiscordCredentials()">Save Credentials</button>
+                    </div>
+                    <div style="font-size:0.75rem; color:var(--muted);">
+                      Paste your refreshed Client Secret from Discord Developer Portal &gt; OAuth2 &gt; General to restore One-Click SSO.
+                    </div>
                   </div>
                 </div>
                 <div>
@@ -2146,7 +2468,23 @@
                   </div>
                   <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
                     <span id="m-ddos-threat-badge" class="tier-pill" style="font-size:0.85rem; padding:6px 14px; background:rgba(16,185,129,0.2); color:#10b981; border:1px solid #10b981;">EDGE THREAT LEVEL: NORMAL</span>
-                    <button class="btn btn-warning" onclick="hardenAllNodes()" style="font-size:0.8rem;">🔄 Re-Apply Sysctl to All Nodes</button>
+                    <button class="btn btn-warning" onclick="hardenAllNodes()" style="font-size:0.8rem;">🔄 Re-Apply Sysctl on EX63 Dedicated Server</button>
+                  </div>
+                </div>
+
+                <!-- Dedicated Host Security Card -->
+                <div style="background:rgba(10,20,35,0.7); padding:14px 18px; border-radius:10px; border:1px solid rgba(0,240,255,0.25); margin-bottom:18px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+                  <div>
+                    <div style="font-weight:700; color:#38bdf8; display:flex; align-items:center; gap:8px;">
+                      <span>🖥️</span> <span>Hetzner EX63 Dedicated Host (62.238.81.224)</span>
+                      <span class="tier-pill tier-admin" style="font-size:0.75rem;">BARE METAL PROTECTED</span>
+                    </div>
+                    <div style="font-size:0.82rem; color:var(--muted); margin-top:4px;">
+                      Kernel SYN Cookies: <strong>Active</strong> • RP Filter Anti-Spoof: <strong>Strict (1)</strong> • Fail2Ban SSH/Daemon Jail: <strong>Active</strong> • Port Hardening: <strong>RCON & DB Private</strong>
+                    </div>
+                  </div>
+                  <div style="display:flex; gap:8px;">
+                    <button class="btn btn-primary" onclick="hardenAllNodes()" style="font-size:0.8rem;">🛡️ Re-Enforce Host Hardening</button>
                   </div>
                 </div>
 
@@ -2225,12 +2563,36 @@
       }
     }
 
+    async function loginWithMasterPassword() {
+      const input = document.getElementById('staff-master-pw-input');
+      const pw = input ? input.value.trim() : '';
+      if (!pw) {
+        toast('Please enter the Master Password.');
+        return;
+      }
+      const params = new URLSearchParams(window.location.search);
+      const nextTarget = params.get('panel') ? ('/?panel=' + params.get('panel')) : '/?panel=master';
+
+      try {
+        const res = await api('/api/auth/master-login', {
+          method: 'POST',
+          body: JSON.stringify({ password: pw, next: nextTarget })
+        });
+        toast('Access granted! Unlocking control panels...');
+        setTimeout(() => {
+          window.location.href = res.redirect || nextTarget;
+        }, 400);
+      } catch (e) {
+        toast('Authentication failed: ' + e.message);
+      }
+    }
+
     async function initApp() {
       const params = new URLSearchParams(window.location.search);
       const err = params.get('error');
       if (err) {
-        if (err === 'token_exchange_failed') {
-          setTimeout(() => toast('Discord session expired or cancelled. Click below to sign in fresh!'), 300);
+        if (err === 'token_exchange_failed' || err === 'invalid_client_secret') {
+          setTimeout(() => toast('Discord OAuth Secret mismatch: Please use the Master Password below to sign in immediately.'), 300);
         } else if (err === 'oauth_cancelled') {
           setTimeout(() => toast('Discord authorization was cancelled.'), 300);
         } else {
@@ -2401,20 +2763,100 @@
       } catch (e) { toast(e.message); }
     }
 
+    let activeModCfgTab = 'ini';
+
+    function switchModCfgTab(tab) {
+      activeModCfgTab = tab;
+      const iniCont = document.getElementById('pz-cfg-ini-container');
+      const sbCont = document.getElementById('pz-cfg-sandbox-container');
+      const iniBtn = document.getElementById('btn-cfg-ini');
+      const sbBtn = document.getElementById('btn-cfg-sandbox');
+
+      if (tab === 'ini') {
+        if (iniCont) iniCont.style.display = 'block';
+        if (sbCont) sbCont.style.display = 'none';
+        if (iniBtn) iniBtn.className = 'btn btn-primary';
+        if (sbBtn) sbBtn.className = 'btn btn-secondary';
+      } else {
+        if (iniCont) iniCont.style.display = 'none';
+        if (sbCont) sbCont.style.display = 'block';
+        if (iniBtn) iniBtn.className = 'btn btn-secondary';
+        if (sbBtn) sbBtn.className = 'btn btn-primary';
+      }
+    }
+
     async function loadPzMods() {
       try {
         const d = await api('/api/pz/mods');
         renderPzCatalog(d.curated_catalog || [], d.workshop_ids || []);
-        const wids = d.workshop_ids || [];
-        const mids = d.mod_ids || [];
-        document.getElementById('pz-installed-mods-tbody').innerHTML = wids.length ? wids.map((w, i) => `
+        const items = d.installed_items || [];
+        document.getElementById('pz-installed-mods-tbody').innerHTML = items.length ? items.map((item, i) => `
           <tr>
-            <td><code>${w}</code></td>
-            <td><code>${mids[i] || '—'}</code></td>
-            <td><button class="btn btn-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="pzRemoveMod('${w}','${mids[i] || ''}')">Remove</button></td>
+            <td>
+              <div style="font-weight:600; color:var(--text); font-size:0.86rem; margin-bottom:2px;">${item.title || ('Workshop #' + item.workshop_id)}</div>
+              <a href="https://steamcommunity.com/sharedfiles/filedetails/?id=${item.workshop_id}" target="_blank" style="color:var(--accent); font-size:0.75rem; text-decoration:underline;"><code>${item.workshop_id}</code> ↗</a>
+            </td>
+            <td>
+              ${(item.mod_ids && item.mod_ids.length) ? item.mod_ids.map(m => `<span style="display:inline-block; background:#1e293b; color:#38bdf8; border:1px solid rgba(56,189,248,0.25); border-radius:4px; padding:2px 6px; font-size:0.75rem; margin:2px 3px 2px 0; font-family:'JetBrains Mono',monospace;">${m}</span>`).join('') : '<span style="color:var(--muted); font-size:0.75rem;">(Pending Mod ID)</span>'}
+              ${item.downloaded ? '<span style="display:inline-block; color:#4ade80; font-size:0.7rem; font-weight:600; margin-left:4px;">● Ready</span>' : '<span style="display:inline-block; color:#f59e0b; font-size:0.7rem; font-weight:600; margin-left:4px;">⏳ Downloading</span>'}
+            </td>
+            <td style="white-space:nowrap;">
+              <button class="btn btn-secondary" style="padding:3px 7px; font-size:0.75rem;" onclick="pzMoveMod(${i}, -1)" ${i === 0 ? 'disabled' : ''}>▲</button>
+              <button class="btn btn-secondary" style="padding:3px 7px; font-size:0.75rem;" onclick="pzMoveMod(${i}, 1)" ${i === items.length - 1 ? 'disabled' : ''}>▼</button>
+              <button class="btn btn-danger" style="padding:3px 7px; font-size:0.75rem; margin-left:4px;" onclick="pzRemoveMod('${item.workshop_id}','${(item.mod_ids || []).join(';')}')">✖</button>
+            </td>
           </tr>
-        `).join('') : '<tr><td colspan="3" style="color:var(--muted);">No Workshop mods currently in CircuitVersePZ.ini (Vanilla Build 42)</td></tr>';
-      } catch (e) {}
+        `).join('') : '<tr><td colspan="3" style="color:var(--muted); text-align:center; padding:16px;">No Workshop mods currently in CircuitVersePZ.ini (Vanilla Build 42)</td></tr>';
+
+        const iniEditor = document.getElementById('pz-ini-editor');
+        if (iniEditor && d.raw_ini) iniEditor.value = d.raw_ini;
+        const sbEditor = document.getElementById('pz-sandbox-editor');
+        if (sbEditor && d.raw_sandbox) sbEditor.value = d.raw_sandbox;
+      } catch (e) {
+        toast('Failed to load PZ Mods: ' + e.message);
+      }
+    }
+
+    async function pzMoveMod(index, direction) {
+      try {
+        const d = await api('/api/pz/mods');
+        const wids = [...(d.workshop_ids || [])];
+        const mids = [...(d.mod_ids || [])];
+        const newIdx = index + direction;
+        if (newIdx < 0 || newIdx >= wids.length) return;
+
+        const tempW = wids[index];
+        wids[index] = wids[newIdx];
+        wids[newIdx] = tempW;
+
+        if (index < mids.length && newIdx < mids.length) {
+          const tempM = mids[index];
+          mids[index] = mids[newIdx];
+          mids[newIdx] = tempM;
+        }
+
+        await api('/api/pz/mods/reorder', { method: 'POST', body: JSON.stringify({ workshop_ids: wids, mod_ids: mids }) });
+        toast('Load order updated!');
+        loadPzMods();
+      } catch (e) { toast(e.message); }
+    }
+
+    async function saveActiveModConfig() {
+      if (activeModCfgTab === 'ini') {
+        const content = document.getElementById('pz-ini-editor').value;
+        if (!confirm('Confirm saving CircuitVersePZ.ini? (A backup will be created automatically)')) return;
+        try {
+          const res = await api('/api/pz/mods/save-ini', { method: 'POST', body: JSON.stringify({ content }) });
+          toast(res.message);
+        } catch (e) { toast('Error saving INI: ' + e.message); }
+      } else {
+        const content = document.getElementById('pz-sandbox-editor').value;
+        if (!confirm('Confirm saving CircuitVersePZ_SandboxVars.lua? (A backup will be created automatically)')) return;
+        try {
+          const res = await api('/api/pz/mods/save-sandbox', { method: 'POST', body: JSON.stringify({ content }) });
+          toast(res.message);
+        } catch (e) { toast('Error saving SandboxVars: ' + e.message); }
+      }
     }
 
     function renderPzCatalog(items, installedWids = []) {
@@ -2453,9 +2895,23 @@
     }
 
     async function pzInstallModCustom() {
-      const wid = document.getElementById('pz-custom-wid').value.trim();
-      const mid = document.getElementById('pz-custom-mid').value.trim();
-      if (!wid || !mid) return toast('Enter both Workshop ID and Mod ID');
+      let wid = document.getElementById('pz-custom-wid').value.trim();
+      let mid = document.getElementById('pz-custom-mid').value.trim();
+      
+      const urlMatch = wid.match(/[?&]id=(\d+)/i) || wid.match(/\/(\d+)\/?$/);
+      if (urlMatch) wid = urlMatch[1];
+      if (!wid) return toast('Please enter a Steam Workshop ID or URL');
+
+      if (!mid) {
+        const curated = (window._pzCuratedCatalog || []).find(c => String(c.workshop_id) === String(wid));
+        if (curated) {
+          mid = curated.mod_id;
+        } else {
+          mid = prompt('Enter the Mod ID for this Workshop item (e.g. Explosives, commonSense):') || '';
+          mid = mid.trim();
+          if (!mid) return toast('Mod ID is required for Project Zomboid to load the mod');
+        }
+      }
       await pzInstallMod(wid, mid);
     }
 
@@ -2466,6 +2922,43 @@
         loadPzMods();
       } catch (e) { toast(e.message); }
     }
+    let currentZcpUser = 'cv_admin';
+    let currentZcpPass = '';
+    let zcpPassVisible = false;
+
+    function toggleZcpPassVisibility() {
+      zcpPassVisible = !zcpPassVisible;
+      const el = document.getElementById('zcp-badge-pass');
+      if (el) {
+        el.textContent = zcpPassVisible ? currentZcpPass : '••••••••••••';
+      }
+    }
+
+    function copyZcpPassword() {
+      if (!currentZcpPass) return;
+      navigator.clipboard.writeText(currentZcpPass).then(() => {
+        toast('Password copied to clipboard! Paste into the ZCP sign-in form.');
+      }).catch(() => {
+        prompt('Copy your ZCP Password:', currentZcpPass);
+      });
+    }
+
+    function autoLoginZcp() {
+      const iframe = document.getElementById('zcp-iframe');
+      if (!iframe || !currentZcpPass) return;
+      toast('Sending auto-authentication to ZCP...');
+      try {
+        iframe.contentWindow.postMessage({
+          type: 'CV_ZCP_LOGIN',
+          username: currentZcpUser,
+          password: currentZcpPass
+        }, '*');
+      } catch (e) {}
+
+      const baseUrl = (document.getElementById('zcp-external-link')?.href || 'https://zcp.circuitverse.online/').split('?')[0];
+      iframe.src = baseUrl + '?autouser=' + encodeURIComponent(currentZcpUser) + '&autopass=' + encodeURIComponent(currentZcpPass);
+    }
+
     async function loadPz() {
       try {
         const st = await api('/api/pz/status');
@@ -2473,9 +2966,21 @@
         badge.textContent = st.running ? 'ONLINE • RUNNING' : 'OFFLINE';
         badge.className = 'tier-pill ' + (st.running ? 'tier-admin' : 'tier-locked');
         document.getElementById('pz-rcon-out').textContent = st.players_raw || '';
+        
+        if (st.zcp_username) currentZcpUser = st.zcp_username;
+        if (st.zcp_password) currentZcpPass = st.zcp_password;
+        
+        const userEl = document.getElementById('zcp-badge-user');
+        if (userEl) userEl.textContent = currentZcpUser;
+        const passEl = document.getElementById('zcp-badge-pass');
+        if (passEl && !zcpPassVisible) passEl.textContent = '••••••••••••';
+        
+        const extLink = document.getElementById('zcp-external-link');
+        if (extLink && st.zcp_url) extLink.href = st.zcp_url + '/';
+
         const iframe = document.getElementById('zcp-iframe');
-        if (iframe.src === 'about:blank') {
-          iframe.src = st.zcp_url + '/';
+        if (iframe.src === 'about:blank' || !iframe.src) {
+          iframe.src = (st.zcp_url || 'https://zcp.circuitverse.online') + '/?autouser=' + encodeURIComponent(currentZcpUser) + '&autopass=' + encodeURIComponent(currentZcpPass);
         }
       } catch (e) {
         toast('PZ Access Error: ' + e.message);
@@ -2828,7 +3333,7 @@
     }
 
     async function mcBackup() {
-      toast('Creating compressed world backup on 2.31.101.63...');
+      toast('Creating compressed world backup on Hetzner EX63 Dedicated (62.238.81.224)...');
       try {
         const res = await api('/api/mc/action', { method: 'POST', body: JSON.stringify({ action: 'backup' }) });
         toast('Backup complete! ' + res.output);
@@ -3476,54 +3981,94 @@
     }
 
     let UNTURNED_INSTALLED_PLUGINS_CACHE = [];
+    let UNTURNED_CURATED_PLUGINS_CACHE = [];
+
+    function renderUnturnedCuratedTable(plugins) {
+      const curatedTbody = document.getElementById('unturned-plugins-curated-tbody');
+      if (!curatedTbody) return;
+      if (!plugins || plugins.length === 0) {
+        curatedTbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--muted); padding:16px;">No plugins found matching your search.</td></tr>';
+        return;
+      }
+      curatedTbody.innerHTML = plugins.map(p => `
+        <tr>
+          <td>
+            <strong>${p.name}</strong><br/>
+            <span style="font-size:0.75rem; color:var(--cyan);">${p.category || 'General'} • v${p.version || '1.0'}</span>
+          </td>
+          <td style="font-size:0.8rem; color:var(--muted);">${p.description}</td>
+          <td>
+            ${p.installed
+              ? `<button class="btn btn-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="unturnedPluginUninstall('${p.id}')">Uninstall</button>`
+              : `<button class="btn btn-success" style="padding:4px 8px; font-size:0.75rem; white-space:nowrap;" onclick="unturnedPluginInstall('${p.id}')">⚡ Install</button>`
+            }
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function filterUnturnedCuratedPlugins(query) {
+      query = (query || '').toLowerCase().trim();
+      const cat = (document.getElementById('unturned-curated-category')?.value || '').toLowerCase();
+      const filtered = UNTURNED_CURATED_PLUGINS_CACHE.filter(p => {
+        const matchesQuery = !query || 
+          (p.name && p.name.toLowerCase().includes(query)) ||
+          (p.category && p.category.toLowerCase().includes(query)) ||
+          (p.description && p.description.toLowerCase().includes(query)) ||
+          (p.author && p.author.toLowerCase().includes(query));
+        const matchesCat = !cat || (p.category && p.category.toLowerCase().includes(cat));
+        return matchesQuery && matchesCat;
+      });
+      renderUnturnedCuratedTable(filtered);
+    }
+
+    function renderUnturnedInstalledTable(plugins) {
+      const instTbody = document.getElementById('unturned-plugins-installed-tbody');
+      if (!instTbody) return;
+      if (!plugins || plugins.length === 0) {
+        instTbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--muted); padding:16px;">No matching installed plugins found.</td></tr>';
+        return;
+      }
+      instTbody.innerHTML = plugins.map(p => {
+        const hasCfg = p.config_files && p.config_files.length > 0;
+        return `
+        <tr>
+          <td>
+            <strong>${p.name}</strong><br/>
+            <code style="font-size:0.72rem; color:var(--muted);">${p.filename}</code>
+          </td>
+          <td style="font-size:0.78rem;">${p.size}</td>
+          <td style="font-size:0.75rem; color:var(--muted);">${p.modified}</td>
+          <td>
+            <div style="display:flex; gap:4px; flex-wrap:wrap;">
+              <button class="btn btn-success" title="Start / Load Plugin" style="padding:2px 6px; font-size:0.7rem;" onclick="unturnedPluginControl('${p.name}', 'start')">▶</button>
+              <button class="btn btn-danger" title="Stop / Unload Plugin" style="padding:2px 6px; font-size:0.7rem;" onclick="unturnedPluginControl('${p.name}', 'stop')">⏹</button>
+              <button class="btn btn-warning" title="Restart / Reload Plugin" style="padding:2px 6px; font-size:0.7rem;" onclick="unturnedPluginControl('${p.name}', 'restart')">🔄</button>
+              ${hasCfg ? `<button class="btn btn-purple" title="Edit Configuration" style="padding:2px 6px; font-size:0.7rem;" onclick="unturnedOpenPluginConfig('${p.name}', '${p.config_files[0]}')">⚙️</button>` : ''}
+              <button class="btn" title="Uninstall" style="padding:2px 6px; font-size:0.7rem; color:var(--red);" onclick="unturnedPluginUninstall('${p.plugin_id}')">🗑️</button>
+            </div>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    function filterUnturnedInstalledPlugins(query) {
+      query = (query || '').toLowerCase().trim();
+      const filtered = UNTURNED_INSTALLED_PLUGINS_CACHE.filter(p => {
+        return !query || (p.name && p.name.toLowerCase().includes(query)) || (p.filename && p.filename.toLowerCase().includes(query));
+      });
+      renderUnturnedInstalledTable(filtered);
+    }
 
     async function loadUnturnedPlugins() {
       try {
         const d = await api('/api/unturned/plugins');
         UNTURNED_INSTALLED_PLUGINS_CACHE = d.installed || [];
+        UNTURNED_CURATED_PLUGINS_CACHE = d.available || [];
 
-        // Curated catalog
-        const curatedTbody = document.getElementById('unturned-plugins-curated-tbody');
-        if (curatedTbody) {
-          curatedTbody.innerHTML = (d.available || []).map(p => `
-            <tr>
-              <td><strong>${p.name}</strong><br/><span style="font-size:0.75rem; color:var(--cyan);">${p.category || 'General'} • v${p.version}</span></td>
-              <td style="font-size:0.8rem; color:var(--muted);">${p.description}</td>
-              <td>
-                ${p.installed
-                  ? `<button class="btn btn-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="unturnedPluginUninstall('${p.id}')">Uninstall</button>`
-                  : `<button class="btn btn-success" style="padding:4px 8px; font-size:0.75rem; white-space:nowrap;" onclick="unturnedPluginInstall('${p.id}')">⚡ Install</button>`
-                }
-              </td>
-            </tr>
-          `).join('');
-        }
-
-        // Installed table with Start / Stop / Restart / Config / Remove
-        const instTbody = document.getElementById('unturned-plugins-installed-tbody');
-        if (instTbody) {
-          instTbody.innerHTML = UNTURNED_INSTALLED_PLUGINS_CACHE.map(p => {
-            const hasCfg = p.config_files && p.config_files.length > 0;
-            return `
-            <tr>
-              <td>
-                <strong>${p.name}</strong><br/>
-                <code style="font-size:0.72rem; color:var(--muted);">${p.filename}</code>
-              </td>
-              <td style="font-size:0.78rem;">${p.size}</td>
-              <td style="font-size:0.75rem; color:var(--muted);">${p.modified}</td>
-              <td>
-                <div style="display:flex; gap:4px; flex-wrap:wrap;">
-                  <button class="btn btn-success" title="Start / Load Plugin" style="padding:2px 6px; font-size:0.7rem;" onclick="unturnedPluginControl('${p.name}', 'start')">▶</button>
-                  <button class="btn btn-danger" title="Stop / Unload Plugin" style="padding:2px 6px; font-size:0.7rem;" onclick="unturnedPluginControl('${p.name}', 'stop')">⏹</button>
-                  <button class="btn btn-warning" title="Restart / Reload Plugin" style="padding:2px 6px; font-size:0.7rem;" onclick="unturnedPluginControl('${p.name}', 'restart')">🔄</button>
-                  ${hasCfg ? `<button class="btn btn-purple" title="Edit Configuration" style="padding:2px 6px; font-size:0.7rem;" onclick="unturnedOpenPluginConfig('${p.name}', '${p.config_files[0]}')">⚙️</button>` : ''}
-                  <button class="btn" title="Uninstall" style="padding:2px 6px; font-size:0.7rem; color:var(--red);" onclick="unturnedPluginUninstall('${p.plugin_id}')">🗑️</button>
-                </div>
-              </td>
-            </tr>
-          `}).join('') || '<tr><td colspan="4" style="color:var(--muted); text-align:center;">No custom plugins installed yet.</td></tr>';
-        }
+        // Apply filters to initial load
+        filterUnturnedCuratedPlugins(document.getElementById('unturned-curated-search')?.value || '');
+        filterUnturnedInstalledPlugins(document.getElementById('unturned-installed-search')?.value || '');
 
         // Populate Config editor plugin dropdown
         const pSel = document.getElementById('unturned-cfg-plugin-sel');
@@ -3957,20 +4502,53 @@
             <td><button class="btn btn-danger" style="padding:4px 10px; font-size:0.78rem;" onclick="radioAction('delete_streamer', {streamer_id: ${s.id}})">Delete</button></td>
           </tr>
         `).join('') || '<tr><td colspan="4" style="color:var(--muted);">No DJ accounts configured</td></tr>';
+        if (!document.getElementById('rad-requests-tbody').children.length) { searchRadioSongs(); }
       } catch (e) { toast('Radio Panel: ' + e.message); }
     }
 
+    function previewRadioTrack(requestId, title) {
+      const bar = document.getElementById('rad-preview-bar');
+      const audio = document.getElementById('rad-preview-audio');
+      const titleEl = document.getElementById('rad-preview-title');
+      if (!bar || !audio) return;
+      titleEl.textContent = title;
+      bar.style.display = 'flex';
+      audio.src = `/api/radio/stream/${requestId}`;
+      audio.play().catch(e => console.log('Audio preview autoplay prevented:', e));
+    }
+
+    function stopRadioPreview() {
+      const bar = document.getElementById('rad-preview-bar');
+      const audio = document.getElementById('rad-preview-audio');
+      if (audio) {
+        audio.pause();
+        audio.src = '';
+      }
+      if (bar) bar.style.display = 'none';
+    }
+
     async function searchRadioSongs() {
-      const q = document.getElementById('rad-search-q').value;
+      const q = (document.getElementById('rad-search-q') ? document.getElementById('rad-search-q').value : '');
+      const tbody = document.getElementById('rad-requests-tbody');
+      if (!tbody) return;
       try {
         const res = await api(`/api/radio/requests?q=${encodeURIComponent(q)}`);
-        document.getElementById('rad-requests-tbody').innerHTML = (res.items || []).map(it => `
-          <tr>
-            <td>${(it.song && it.song.text) || it.request_id}</td>
-            <td><button class="btn btn-primary" style="padding:4px 10px; font-size:0.78rem;" onclick="radioAction('queue_song', {request_id: '${it.request_id}'})">Queue Track</button></td>
-          </tr>
-        `).join('');
-      } catch (e) {}
+        tbody.innerHTML = (res.items || []).map(it => {
+          const title = (it.song && it.song.text) || it.request_id || 'Unknown';
+          const cleanTitle = title.replace(/'/g, "\'");
+          return `
+            <tr>
+              <td style="font-size:0.84rem; max-width:230px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeHtml(title)}">${escapeHtml(title)}</td>
+              <td style="white-space:nowrap; display:flex; gap:6px;">
+                <button class="btn" style="padding:3px 8px; font-size:0.75rem; background:rgba(88,101,242,0.2); border:1px solid rgba(88,101,242,0.4);" onclick="previewRadioTrack('${it.request_id}', '${escapeHtml(cleanTitle)}')">▶ Preview</button>
+                <button class="btn btn-primary" style="padding:3px 8px; font-size:0.75rem;" onclick="radioAction('queue_song', {request_id: '${it.request_id}'})">Queue</button>
+              </td>
+            </tr>
+          `;
+        }).join('') || '<tr><td colspan="2" style="color:var(--muted); text-align:center; padding:12px;">No tracks found</td></tr>';
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="2" style="color:var(--danger); text-align:center; padding:12px;">Error: ${escapeHtml(e.message)}</td></tr>`;
+      }
     }
 
     async function radioAction(action, extra = {}) {
@@ -4038,64 +4616,222 @@
     async function loadMasterInfra() {
       try {
         const d = await api('/api/master/overview');
-        document.getElementById('m-hetzner-grid').innerHTML = (d.hetzner_servers || []).map(s => `
-          <div class="stat-box">
-            <div style="display:flex; justify-content:space-between;">
-              <strong>☁️ ${s.name} (${s.type})</strong>
-              <span class="tier-pill tier-admin">${s.status}</span>
-            </div>
-            <div style="font-size:0.82rem; color:var(--muted); margin:6px 0;">IP: <code>${s.ip}</code> • ${s.cores} vCPU / ${s.memory_gb} GB RAM • ${s.datacenter}</div>
-            <div style="display:flex; gap:6px; margin-top:8px;">
-              <button class="btn btn-warning" style="padding:4px 10px; font-size:0.75rem;" onclick="hetznerPower(${s.id}, 'reboot')">🔄 Reboot</button>
-              <button class="btn btn-success" style="padding:4px 10px; font-size:0.75rem;" onclick="hetznerPower(${s.id}, 'poweron')">▶ Power On</button>
-              <button class="btn btn-danger" style="padding:4px 10px; font-size:0.75rem;" onclick="hetznerPower(${s.id}, 'poweroff')">⏹ Power Off</button>
-            </div>
-          </div>
-        `).join('');
+        const ex = d.ex63;
 
-        const nodeLabels = {
-          pz_node: '🧟 PZ & Command Center Node (2.31.52.69)',
-          mc_node: '⛏️ Minecraft Node (2.31.101.63)',
-          ns13_node: '🚀 Nova Station 13 Node (87.99.133.221)',
-          ns13_bot_radio_node: '🚀 Nova Station 13 Node (87.99.133.221)',
-          general_node: '🌐 Circuit-Verse-General Node (2.31.173.113)'
-        };
-        document.getElementById('m-nodes-grid').innerHTML = Object.entries(d.nodes || {}).map(([nodeKey, n]) => `
-          <div class="stat-box">
-            <div style="font-weight:800; margin-bottom:6px;">${nodeLabels[nodeKey] || nodeKey}</div>
-            <div style="font-size:0.78rem; color:var(--muted); margin-bottom:10px;">RAM: ${n.mem || '—'} MB • Disk: ${n.disk || '—'}</div>
-            ${Object.entries(n.services || {}).map(([svc, state]) => `
-              <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-top:1px solid rgba(255,255,255,0.06);">
+        // 1. Render Dedicated Hardware, Gauges, SSH Access & Task Manager
+        let exHtml = '';
+        if (ex) {
+          exHtml = `
+            <div class="stat-box" style="background: linear-gradient(135deg, rgba(20,25,35,0.95), rgba(15,20,28,0.95)); border: 1px solid rgba(0, 200, 255, 0.25); box-shadow: 0 8px 32px rgba(0,0,0,0.4); margin-bottom: 4px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
                 <div>
-                  <code style="font-size:0.8rem;">${svc}</code>
-                  <span style="color:${state === 'active' ? 'var(--green)' : 'var(--red)'}; font-size:0.75rem; font-weight:700; margin-left:6px;">● ${state}</span>
+                  <div style="font-size:1.15rem; font-weight:800; color:#fff; display:flex; align-items:center; gap:8px;">
+                    <span>🚀 ${ex.name}</span>
+                    <span class="tier-pill tier-admin" style="background:rgba(46, 204, 113, 0.2); color:#2ecc71; border:1px solid #2ecc71;">● ONLINE</span>
+                    <span class="tier-pill" style="background:rgba(56, 189, 248, 0.15); color:#38bdf8; border:1px solid rgba(56, 189, 248, 0.35);">HEADLESS SERVER</span>
+                  </div>
+                  <div style="font-size:0.84rem; color:var(--muted); margin-top:3px;">
+                    <code>${ex.ip}</code> • ${ex.model} • ${ex.datacenter} • Uptime: <strong>${ex.uptime}</strong>
+                  </div>
                 </div>
-                <div style="display:flex; gap:4px;">
-                  <button class="btn" style="padding:3px 7px; font-size:0.72rem;" onclick="nodeSvc('${nodeKey}','${svc}','restart')">↻</button>
-                  <button class="btn btn-success" style="padding:3px 7px; font-size:0.72rem;" onclick="nodeSvc('${nodeKey}','${svc}','start')">▶</button>
-                  <button class="btn btn-danger" style="padding:3px 7px; font-size:0.72rem;" onclick="nodeSvc('${nodeKey}','${svc}','stop')">⏹</button>
+                <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                  <button class="btn btn-success" style="padding:4px 12px; font-size:0.75rem; font-weight:700;" onclick="hetznerPower(1, 'poweron')">▶ Start</button>
+                  <button class="btn btn-warning" style="padding:4px 12px; font-size:0.75rem; font-weight:700;" onclick="hetznerPower(1, 'reboot')">🔄 Reboot</button>
+                  <button class="btn btn-danger" style="padding:4px 12px; font-size:0.75rem; font-weight:700;" onclick="hetznerPower(1, 'poweroff')">⏹ Shutdown</button>
+                  <span class="tier-pill" style="background:rgba(255,255,255,0.06);">Load Avg: ${(ex.cpu && ex.cpu.load_avg) ? ex.cpu.load_avg.join(', ') : '—'}</span>
+                  <span class="tier-pill" style="background:rgba(0,229,255,0.12); color:#00e5ff; border:1px solid rgba(0,229,255,0.3);">Kernel 7.0 • BBR Low-Latency</span>
                 </div>
               </div>
-            `).join('')}
-          </div>
-        `).join('');
-      } catch (e) { toast(e.message); }
+
+              <!-- Hardware Gauges -->
+              <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:14px; margin-bottom:16px;">
+                <!-- CPU Gauge -->
+                <div style="background:rgba(0,0,0,0.25); padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.05);">
+                  <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:6px;">
+                    <strong>⚡ CPU Utilization</strong>
+                    <span style="color:#00e5ff; font-weight:700;">${ex.cpu ? ex.cpu.percent : 0}%</span>
+                  </div>
+                  <div style="background:rgba(255,255,255,0.1); height:8px; border-radius:4px; overflow:hidden;">
+                    <div style="width:${Math.min(100, ex.cpu ? ex.cpu.percent : 0)}%; height:100%; background: linear-gradient(90deg, #00e5ff, #0077ff); border-radius:4px;"></div>
+                  </div>
+                  <div style="font-size:0.75rem; color:var(--muted); margin-top:6px;">20 Cores (Intel Turbo Boost up to 5.5 GHz)</div>
+                </div>
+
+                <!-- RAM Gauge -->
+                <div style="background:rgba(0,0,0,0.25); padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.05);">
+                  <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:6px;">
+                    <strong>🧠 Memory (DDR5)</strong>
+                    <span style="color:#2ecc71; font-weight:700;">${ex.ram ? ex.ram.percent : 0}%</span>
+                  </div>
+                  <div style="background:rgba(255,255,255,0.1); height:8px; border-radius:4px; overflow:hidden;">
+                    <div style="width:${Math.min(100, ex.ram ? ex.ram.percent : 0)}%; height:100%; background: linear-gradient(90deg, #2ecc71, #27ae60); border-radius:4px;"></div>
+                  </div>
+                  <div style="font-size:0.75rem; color:var(--muted); margin-top:6px;">${ex.ram ? ex.ram.used_gb : 0} GB used of ${ex.ram ? ex.ram.total_gb : 0} GB (${ex.ram ? ex.ram.free_gb : 0} GB free)</div>
+                </div>
+
+                <!-- Disk Gauge -->
+                <div style="background:rgba(0,0,0,0.25); padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.05);">
+                  <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:6px;">
+                    <strong>💾 NVMe Storage (RAID 1)</strong>
+                    <span style="color:#f39c12; font-weight:700;">${ex.disk ? ex.disk.percent : 0}%</span>
+                  </div>
+                  <div style="background:rgba(255,255,255,0.1); height:8px; border-radius:4px; overflow:hidden;">
+                    <div style="width:${Math.min(100, ex.disk ? ex.disk.percent : 0)}%; height:100%; background: linear-gradient(90deg, #f39c12, #e67e22); border-radius:4px;"></div>
+                  </div>
+                  <div style="font-size:0.75rem; color:var(--muted); margin-top:6px;">${ex.disk ? ex.disk.used_gb : 0} GB used of ${ex.disk ? ex.disk.total_gb : 0} GB (${ex.disk ? ex.disk.free_gb : 0} GB free)</div>
+                </div>
+              </div>
+
+              <!-- Dedicated SSH Access Box -->
+              <div style="background:rgba(15, 23, 42, 0.85); border:1px solid rgba(56, 189, 248, 0.35); border-radius:8px; padding:14px 16px; margin-bottom:16px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
+                  <div style="display:flex; align-items:center; gap:10px;">
+                    <span style="font-size:1.5rem;">🔒</span>
+                    <div>
+                      <div style="font-weight:700; font-size:0.95rem; color:#f0f9ff; display:flex; align-items:center; gap:8px;">
+                        <span>Headless SSH Terminal Access</span>
+                        <span class="tier-pill tier-admin" style="background:rgba(14, 165, 233, 0.2); color:#38bdf8; border:1px solid #38bdf8; font-size:0.7rem;">PORT 22 • OPENSSH READY</span>
+                      </div>
+                      <div style="font-size:0.78rem; color:#94a3b8; margin-top:2px;">
+                        Direct high-speed SSH connectivity for Ubuntu & Root users with Ed25519 key authentication
+                      </div>
+                    </div>
+                  </div>
+                  <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <button class="btn" style="background:rgba(14, 165, 233, 0.25); border:1px solid #38bdf8; color:#fff; font-size:0.75rem; padding:5px 12px;" onclick="navigator.clipboard.writeText('ssh ubuntu@62.238.81.224'); toast('Copied: ssh ubuntu@62.238.81.224')">📋 Copy Ubuntu SSH</button>
+                    <button class="btn" style="background:rgba(239, 68, 68, 0.25); border:1px solid #ef4444; color:#fff; font-size:0.75rem; padding:5px 12px;" onclick="navigator.clipboard.writeText('ssh root@62.238.81.224'); toast('Copied: ssh root@62.238.81.224')">📋 Copy Root SSH</button>
+                  </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap:10px; background:rgba(0,0,0,0.35); padding:10px 14px; border-radius:6px; border:1px solid rgba(255,255,255,0.06); font-size:0.8rem;">
+                  <div><span style="color:var(--muted);">Ubuntu User:</span> <code>ssh ubuntu@62.238.81.224</code></div>
+                  <div><span style="color:var(--muted);">Root User:</span> <code>ssh root@62.238.81.224</code></div>
+                  <div><span style="color:var(--muted);">Port:</span> <code>22</code> • <span style="color:var(--muted);">Status:</span> <span style="color:#2ecc71; font-weight:700;">● Active</span></div>
+                  <div><span style="color:var(--muted);">Host:</span> <code>62.238.81.224</code> (Hetzner FSN1)</div>
+                </div>
+              </div>
+
+              <!-- Server Task Manager -->
+              <div style="margin-top:12px; border-top:1px solid rgba(255,255,255,0.08); padding-top:14px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                  <strong style="font-size:0.95rem;">📊 Server Task Manager (Top Active Processes)</strong>
+                  <span style="font-size:0.75rem; color:var(--muted);">Live CPU & DDR5 RAM telemetry • Auto-refreshed</span>
+                </div>
+                <div style="overflow-x:auto;">
+                  <table style="width:100%; font-size:0.8rem; border-collapse:collapse; text-align:left;">
+                    <thead>
+                      <tr style="border-bottom:1px solid rgba(255,255,255,0.1); color:var(--muted);">
+                        <th style="padding:6px 8px;">PID</th>
+                        <th style="padding:6px 8px;">Process / Command</th>
+                        <th style="padding:6px 8px;">User</th>
+                        <th style="padding:6px 8px;">CPU %</th>
+                        <th style="padding:6px 8px;">RAM (MB)</th>
+                        <th style="padding:6px 8px;">RAM %</th>
+                        <th style="padding:6px 8px;">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${(ex.processes || []).map(p => `
+                        <tr style="border-bottom:1px solid rgba(255,255,255,0.03);">
+                          <td style="padding:6px 8px; font-family:monospace; color:var(--muted);">${p.pid}</td>
+                          <td style="padding:6px 8px; font-weight:600;"><code>${p.name}</code></td>
+                          <td style="padding:6px 8px; color:var(--muted);">${p.user}</td>
+                          <td style="padding:6px 8px; color:${p.cpu_percent > 10 ? '#e74c3c' : '#2ecc71'}; font-weight:700;">${p.cpu_percent}%</td>
+                          <td style="padding:6px 8px; font-weight:600;">${p.memory_mb.toLocaleString()} MB</td>
+                          <td style="padding:6px 8px; color:var(--muted);">${p.memory_percent}%</td>
+                          <td style="padding:6px 8px;"><span class="tier-pill" style="font-size:0.7rem; padding:2px 6px;">${p.status}</span></td>
+                        </tr>
+                      `).join('')}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+        const dedTarget = document.getElementById('m-dedicated-card');
+        if (dedTarget) dedTarget.innerHTML = exHtml;
+
+        // 2. Render Hetzner Servers Grid (EX63 Dedicated + Cloud Instances)
+        const hetznerGrid = document.getElementById('m-hetzner-grid');
+        if (hetznerGrid) {
+          hetznerGrid.innerHTML = (d.hetzner_servers || []).map(s => `
+            <div class="stat-box" style="display:flex; flex-direction:column; justify-content:space-between;">
+              <div>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <strong>${s.is_dedicated ? '🚀' : '☁️'} ${s.name}</strong>
+                  <span class="tier-pill ${s.status === 'running' || s.status === 'online' ? 'tier-admin' : 'tier-muted'}">${s.status.toUpperCase()}</span>
+                </div>
+                <div style="font-size:0.8rem; color:var(--muted); margin:8px 0 12px 0; line-height:1.4;">
+                  <div>IP: <code>${s.ip}</code></div>
+                  <div>Type: <strong>${s.type}</strong> (${s.cores} Cores • ${s.memory_gb} GB RAM • ${s.disk_gb} GB NVMe)</div>
+                  <div>Datacenter: <code>${s.datacenter}</code></div>
+                </div>
+              </div>
+              <div style="display:flex; gap:6px; flex-wrap:wrap; border-top:1px solid rgba(255,255,255,0.06); padding-top:10px; margin-top:6px;">
+                <button class="btn btn-success" style="padding:4px 10px; font-size:0.75rem;" onclick="hetznerPower(${s.id}, 'poweron')">▶ Start</button>
+                <button class="btn btn-warning" style="padding:4px 10px; font-size:0.75rem;" onclick="hetznerPower(${s.id}, 'reboot')">🔄 Reboot</button>
+                <button class="btn btn-danger" style="padding:4px 10px; font-size:0.75rem;" onclick="hetznerPower(${s.id}, 'poweroff')">⏹ Shutdown</button>
+              </div>
+            </div>
+          `).join('');
+        }
+
+        // 3. Render Consolidated Fleet Systemd Services
+        const nodesGrid = document.getElementById('m-nodes-grid');
+        const svcs = (ex && ex.services) ? ex.services : {};
+        if (nodesGrid) {
+          nodesGrid.innerHTML = `
+            <div class="stat-box">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <div>
+                  <div style="font-size:1.05rem; font-weight:800; color:#fff;">⚙️ Consolidated Fleet Systemd Services (12 Core Units)</div>
+                  <div style="font-size:0.8rem; color:var(--muted);">All game servers, SQL databases, Discord bots, and Cloudflare Argo tunnels running on EX63</div>
+                </div>
+              </div>
+              <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap:10px;">
+                ${Object.entries(svcs).map(([svc, info]) => `
+                  <div style="background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.06); border-radius:6px; padding:10px; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                      <div style="font-weight:700; font-size:0.84rem; color:#fff;">${info.label || svc}</div>
+                      <div style="font-size:0.75rem; color:var(--muted); margin-top:2px;">
+                        <code>${svc}</code>
+                        <span style="color:${info.state === 'active' ? '#2ecc71' : '#e74c3c'}; font-weight:700; margin-left:6px;">● ${info.state}</span>
+                      </div>
+                    </div>
+                    <div style="display:flex; gap:4px;">
+                      <button class="btn" title="Restart Service" style="padding:4px 8px; font-size:0.72rem;" onclick="nodeSvc('ex63','${svc}','restart')">↻</button>
+                      <button class="btn btn-success" title="Start Service" style="padding:4px 8px; font-size:0.72rem;" onclick="nodeSvc('ex63','${svc}','start')">▶</button>
+                      <button class="btn btn-danger" title="Stop Service" style="padding:4px 8px; font-size:0.72rem;" onclick="nodeSvc('ex63','${svc}','stop')">⏹</button>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        }
+      } catch (e) {
+        toast('Error loading infrastructure overview: ' + e.message, 'error');
+      }
     }
 
     async function nodeSvc(node, service, op) {
-      if (!confirm(`Confirm ${op} ${service} on ${node}?`)) return;
+      if (!confirm(`Confirm ${op} on ${service}?`)) return;
       try {
-        await api('/api/master/node-service', { method: 'POST', body: JSON.stringify({ node, service, op }) });
-        toast(`${service}: ${op} complete`);
-        loadMasterInfra();
+        await api('/api/master/node-service', { method: 'POST', body: JSON.stringify({ service, op }) });
+        toast(`${service}: ${op} command dispatched`);
+        setTimeout(loadMasterInfra, 1200);
       } catch (e) { toast(e.message); }
     }
 
     async function hetznerPower(server_id, action) {
-      if (!confirm(`Confirm Hetzner ${action.toUpperCase()} on server #${server_id}?`)) return;
+      const label = (action === 'poweroff' || action === 'shutdown') ? 'SHUTDOWN (Power Off)' : (action === 'poweron' || action === 'start' ? 'START (Power On)' : 'REBOOT');
+      if (!confirm(`⚠️ Confirm ${label} for server #${server_id}?\n\nThis will send a hardware lifecycle signal directly to the host.`)) return;
       try {
-        await api('/api/master/hetzner-power', { method: 'POST', body: JSON.stringify({ server_id, action }) });
-        toast(`Hetzner ${action} sent!`);
+        const res = await api('/api/master/hetzner-power', { method: 'POST', body: JSON.stringify({ server_id, action }) });
+        const msg = (res.data && res.data.message) || (res.data && res.data.error) || `Hetzner ${action} command dispatched!`;
+        toast(msg);
+        setTimeout(loadMasterInfra, 2000);
       } catch (e) { toast(e.message); }
     }
 
@@ -4113,6 +4849,14 @@
       } catch (e) { toast(e.message); }
     }
 
+    let staffPermData = {
+      staff_permissions: {},
+      roles: [],
+      categories: []
+    };
+    let currentDeptScope = 'mc';
+    let globalFilterMode = 'all';
+
     async function loadMasterBot() {
       try {
         const d = await api('/api/master/bot-config');
@@ -4120,7 +4864,341 @@
         const sel = document.getElementById('m-cog-select');
         sel.innerHTML = (d.cogs || []).map(c => `<option value="${c}">${c}</option>`).join('');
         if (d.cogs && d.cogs.length) loadBotCog(d.cogs[0]);
+        loadStaffPermissions();
       } catch (e) { toast(e.message); }
+    }
+
+    async function loadStaffPermissions() {
+      try {
+        const d = await api('/api/master/staff-permissions');
+        staffPermData = d;
+        if (!staffPermData.staff_permissions) staffPermData.staff_permissions = {};
+        if (!staffPermData.staff_permissions.global_staff_roles) staffPermData.staff_permissions.global_staff_roles = [];
+        if (!staffPermData.staff_permissions.category_scopes) staffPermData.staff_permissions.category_scopes = {};
+
+        renderGlobalRolesUI();
+        switchDeptScope(currentDeptScope);
+        const statusEl = document.getElementById('perm-save-status');
+        if (statusEl) {
+          statusEl.textContent = '✓ Synced with Live Helper Bot';
+          statusEl.style.color = '#10b981';
+        }
+      } catch (e) {
+        console.error('Failed to load staff permissions:', e);
+      }
+    }
+
+    function setGlobalFilterMode(mode) {
+      globalFilterMode = mode;
+      const btnAll = document.getElementById('btn-global-filter-all');
+      const btnSel = document.getElementById('btn-global-filter-selected');
+      if (btnAll && btnSel) {
+        if (mode === 'all') {
+          btnAll.style.background = 'rgba(0,240,255,0.2)';
+          btnAll.style.borderColor = '#00f0ff';
+          btnAll.style.color = '#00f0ff';
+          btnSel.style.background = 'rgba(255,255,255,0.05)';
+          btnSel.style.borderColor = 'rgba(255,255,255,0.1)';
+          btnSel.style.color = 'var(--text)';
+        } else {
+          btnSel.style.background = 'rgba(0,240,255,0.2)';
+          btnSel.style.borderColor = '#00f0ff';
+          btnSel.style.color = '#00f0ff';
+          btnAll.style.background = 'rgba(255,255,255,0.05)';
+          btnAll.style.borderColor = 'rgba(255,255,255,0.1)';
+          btnAll.style.color = 'var(--text)';
+        }
+      }
+      renderGlobalRolesUI();
+    }
+
+    function switchDeptScope(dept) {
+      currentDeptScope = dept;
+      document.querySelectorAll('.perm-dept-btn').forEach(btn => {
+        if (btn.dataset.dept === dept) {
+          btn.classList.add('active-dept-btn');
+        } else {
+          btn.classList.remove('active-dept-btn');
+        }
+      });
+      renderDeptScopeUI(dept);
+    }
+
+    function renderGlobalRolesUI() {
+      const container = document.getElementById('perm-global-roles-container');
+      const pillsContainer = document.getElementById('perm-global-selected-pills');
+      const countEl = document.getElementById('perm-global-count');
+      if (!container) return;
+
+      const selected = new Set((staffPermData.staff_permissions.global_staff_roles || []).map(String));
+      const roleMap = new Map((staffPermData.roles || []).map(r => [String(r.id), r]));
+      const searchVal = (document.getElementById('perm-global-search')?.value || '').toLowerCase().trim();
+
+      // Render Active Pills
+      if (pillsContainer) {
+        if (selected.size === 0) {
+          pillsContainer.innerHTML = '<span style="color:var(--muted); font-size:0.75rem;">No global staff roles selected</span>';
+        } else {
+          let pillsHtml = '';
+          selected.forEach(id => {
+            const role = roleMap.get(id);
+            const name = role ? role.name : `Role #${id}`;
+            const color = role && role.color ? '#' + role.color.toString(16).padStart(6, '0') : '#38bdf8';
+            pillsHtml += `
+              <span style="display:inline-flex; align-items:center; gap:5px; padding:2px 8px; background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.35); border-radius:12px; font-size:0.75rem; color:#e0f2fe;">
+                <span style="color:${color}; font-size:0.9rem;">●</span>
+                <span style="font-weight:600;">${name}</span>
+                <span onclick="removeGlobalRole('${id}')" title="Remove role" style="cursor:pointer; margin-left:3px; opacity:0.6; font-size:0.85rem;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6">✕</span>
+              </span>
+            `;
+          });
+          pillsContainer.innerHTML = pillsHtml;
+        }
+      }
+
+      if (countEl) {
+        countEl.textContent = `${selected.size} selected`;
+      }
+
+      // Filter and Render Checklist
+      let filteredRoles = (staffPermData.roles || []);
+      if (globalFilterMode === 'selected') {
+        filteredRoles = filteredRoles.filter(r => selected.has(String(r.id)));
+      }
+      if (searchVal) {
+        filteredRoles = filteredRoles.filter(r => r.name.toLowerCase().includes(searchVal) || String(r.id).includes(searchVal));
+      }
+
+      if (filteredRoles.length === 0) {
+        container.innerHTML = '<div style="color:var(--muted); font-size:0.8rem; padding:8px 0;">No matching roles found.</div>';
+        return;
+      }
+
+      let html = '';
+      filteredRoles.forEach(r => {
+        const isChecked = selected.has(String(r.id)) ? 'checked' : '';
+        const color = r.color ? '#' + r.color.toString(16).padStart(6, '0') : '#94a3b8';
+        html += `
+          <label style="display:flex; align-items:center; gap:8px; font-size:0.82rem; cursor:pointer; padding:4px 6px; border-radius:4px; background:rgba(255,255,255,0.02); transition:background 0.1s;" onmouseover="this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.background='rgba(255,255,255,0.02)'">
+            <input type="checkbox" value="${r.id}" ${isChecked} onchange="toggleGlobalRole('${r.id}', this.checked)" />
+            <span style="color:${color}; font-weight:bold;">●</span>
+            <span style="flex:1;">${r.name}</span>
+            <span style="font-size:0.7rem; color:var(--muted);">${r.id}</span>
+          </label>
+        `;
+      });
+      container.innerHTML = html;
+    }
+
+    function removeGlobalRole(roleId) {
+      toggleGlobalRole(roleId, false);
+      renderGlobalRolesUI();
+    }
+
+    function toggleGlobalRole(roleId, isChecked) {
+      const list = staffPermData.staff_permissions.global_staff_roles || [];
+      const strId = String(roleId);
+      const intId = parseInt(roleId, 10);
+      const filtered = list.filter(id => String(id) !== strId);
+      if (isChecked) filtered.push(intId);
+      staffPermData.staff_permissions.global_staff_roles = filtered;
+      renderGlobalRolesUI();
+      const statusEl = document.getElementById('perm-save-status');
+      if (statusEl) {
+        statusEl.textContent = '⚠️ Unsaved changes (Click Save to apply)';
+        statusEl.style.color = '#f59e0b';
+      }
+    }
+
+    function renderDeptScopeUI(dept) {
+      currentDeptScope = dept;
+      const scopes = staffPermData.staff_permissions.category_scopes || {};
+      const deptInfo = scopes[dept] || { name: dept.toUpperCase(), allowed_roles: [], category_ids: [] };
+      const selectedRoles = new Set((deptInfo.allowed_roles || []).map(String));
+      const selectedCats = new Set((deptInfo.category_ids || []).map(String));
+
+      const roleMap = new Map((staffPermData.roles || []).map(r => [String(r.id), r]));
+      const catMap = new Map((staffPermData.categories || []).map(c => [String(c.id), c]));
+
+      // 1. Roles Tag Pills
+      const rPills = document.getElementById('perm-dept-roles-pills');
+      const rCount = document.getElementById('perm-dept-roles-count');
+      if (rCount) rCount.textContent = `${selectedRoles.size} selected`;
+      if (rPills) {
+        if (selectedRoles.size === 0) {
+          rPills.innerHTML = '<span style="color:var(--muted); font-size:0.72rem;">No roles assigned</span>';
+        } else {
+          let html = '';
+          selectedRoles.forEach(id => {
+            const role = roleMap.get(id);
+            const name = role ? role.name : `Role #${id}`;
+            const color = role && role.color ? '#' + role.color.toString(16).padStart(6, '0') : '#a78bfa';
+            html += `
+              <span style="display:inline-flex; align-items:center; gap:4px; padding:1px 6px; background:rgba(167,139,250,0.15); border:1px solid rgba(167,139,250,0.35); border-radius:10px; font-size:0.72rem; color:#f3e8ff;">
+                <span style="color:${color};">●</span>
+                <span>${name}</span>
+                <span onclick="removeDeptRole('${dept}', '${id}')" title="Remove" style="cursor:pointer; opacity:0.6; font-size:0.8rem;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6">✕</span>
+              </span>
+            `;
+          });
+          rPills.innerHTML = html;
+        }
+      }
+
+      // 2. Roles Checklist (with search filter)
+      const rContainer = document.getElementById('perm-dept-roles-container');
+      const roleSearch = (document.getElementById('perm-dept-role-search')?.value || '').toLowerCase().trim();
+      if (rContainer) {
+        let filteredRoles = (staffPermData.roles || []);
+        if (roleSearch) {
+          filteredRoles = filteredRoles.filter(r => r.name.toLowerCase().includes(roleSearch) || String(r.id).includes(roleSearch));
+        }
+        if (filteredRoles.length === 0) {
+          rContainer.innerHTML = '<div style="color:var(--muted); font-size:0.75rem; padding:4px;">No matching roles</div>';
+        } else {
+          let rHtml = '';
+          filteredRoles.forEach(r => {
+            const isChecked = selectedRoles.has(String(r.id)) ? 'checked' : '';
+            const color = r.color ? '#' + r.color.toString(16).padStart(6, '0') : '#94a3b8';
+            rHtml += `
+              <label style="display:flex; align-items:center; gap:6px; font-size:0.78rem; cursor:pointer; padding:3px 4px; border-radius:4px; background:rgba(255,255,255,0.02);" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='rgba(255,255,255,0.02)'">
+                <input type="checkbox" value="${r.id}" ${isChecked} onchange="toggleDeptRole('${dept}', '${r.id}', this.checked)" />
+                <span style="color:${color}; font-size:0.75rem;">●</span>
+                <span style="flex:1;">${r.name}</span>
+              </label>
+            `;
+          });
+          rContainer.innerHTML = rHtml;
+        }
+      }
+
+      // 3. Categories Tag Pills
+      const cPills = document.getElementById('perm-dept-cats-pills');
+      const cCount = document.getElementById('perm-dept-cats-count');
+      if (cCount) cCount.textContent = `${selectedCats.size} selected`;
+      if (cPills) {
+        if (selectedCats.size === 0) {
+          cPills.innerHTML = '<span style="color:var(--muted); font-size:0.72rem;">No categories selected</span>';
+        } else {
+          let html = '';
+          selectedCats.forEach(id => {
+            const cat = catMap.get(id);
+            const name = cat ? cat.name : `Category #${id}`;
+            html += `
+              <span style="display:inline-flex; align-items:center; gap:4px; padding:1px 6px; background:rgba(244,114,182,0.15); border:1px solid rgba(244,114,182,0.35); border-radius:10px; font-size:0.72rem; color:#fce7f3;">
+                <span>📁</span>
+                <span>${name}</span>
+                <span onclick="removeDeptCategory('${dept}', '${id}')" title="Remove" style="cursor:pointer; opacity:0.6; font-size:0.8rem;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6">✕</span>
+              </span>
+            `;
+          });
+          cPills.innerHTML = html;
+        }
+      }
+
+      // 4. Categories Checklist (with search filter)
+      const cContainer = document.getElementById('perm-dept-cats-container');
+      const catSearch = (document.getElementById('perm-dept-cat-search')?.value || '').toLowerCase().trim();
+      if (cContainer) {
+        let filteredCats = (staffPermData.categories || []);
+        if (catSearch) {
+          filteredCats = filteredCats.filter(c => c.name.toLowerCase().includes(catSearch) || String(c.id).includes(catSearch));
+        }
+        if (filteredCats.length === 0) {
+          cContainer.innerHTML = '<div style="color:var(--muted); font-size:0.75rem; padding:4px;">No matching categories</div>';
+        } else {
+          let cHtml = '';
+          filteredCats.forEach(c => {
+            const isChecked = selectedCats.has(String(c.id)) ? 'checked' : '';
+            cHtml += `
+              <label style="display:flex; align-items:center; gap:6px; font-size:0.78rem; cursor:pointer; padding:3px 4px; border-radius:4px; background:rgba(255,255,255,0.02);" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='rgba(255,255,255,0.02)'">
+                <input type="checkbox" value="${c.id}" ${isChecked} onchange="toggleDeptCategory('${dept}', '${c.id}', this.checked)" />
+                <span>📁 ${c.name}</span>
+              </label>
+            `;
+          });
+          cContainer.innerHTML = cHtml;
+        }
+      }
+    }
+
+    function removeDeptRole(dept, roleId) {
+      toggleDeptRole(dept, roleId, false);
+      renderDeptScopeUI(dept);
+    }
+
+    function removeDeptCategory(dept, catId) {
+      toggleDeptCategory(dept, catId, false);
+      renderDeptScopeUI(dept);
+    }
+
+    function toggleDeptRole(dept, roleId, isChecked) {
+      if (!staffPermData.staff_permissions.category_scopes) staffPermData.staff_permissions.category_scopes = {};
+      if (!staffPermData.staff_permissions.category_scopes[dept]) {
+        staffPermData.staff_permissions.category_scopes[dept] = { name: dept.toUpperCase(), allowed_roles: [], category_ids: [] };
+      }
+      const list = staffPermData.staff_permissions.category_scopes[dept].allowed_roles || [];
+      const strId = String(roleId);
+      const intId = parseInt(roleId, 10);
+      const filtered = list.filter(id => String(id) !== strId);
+      if (isChecked) filtered.push(intId);
+      staffPermData.staff_permissions.category_scopes[dept].allowed_roles = filtered;
+      renderDeptScopeUI(dept);
+      const statusEl = document.getElementById('perm-save-status');
+      if (statusEl) {
+        statusEl.textContent = '⚠️ Unsaved changes (Click Save to apply)';
+        statusEl.style.color = '#f59e0b';
+      }
+    }
+
+    function toggleDeptCategory(dept, catId, isChecked) {
+      if (!staffPermData.staff_permissions.category_scopes) staffPermData.staff_permissions.category_scopes = {};
+      if (!staffPermData.staff_permissions.category_scopes[dept]) {
+        staffPermData.staff_permissions.category_scopes[dept] = { name: dept.toUpperCase(), allowed_roles: [], category_ids: [] };
+      }
+      const list = staffPermData.staff_permissions.category_scopes[dept].category_ids || [];
+      const strId = String(catId);
+      const intId = parseInt(catId, 10);
+      const filtered = list.filter(id => String(id) !== strId);
+      if (isChecked) filtered.push(intId);
+      staffPermData.staff_permissions.category_scopes[dept].category_ids = filtered;
+      renderDeptScopeUI(dept);
+      const statusEl = document.getElementById('perm-save-status');
+      if (statusEl) {
+        statusEl.textContent = '⚠️ Unsaved changes (Click Save to apply)';
+        statusEl.style.color = '#f59e0b';
+      }
+    }
+
+    async function saveStaffPermissions() {
+      try {
+        const btn = event?.target;
+        if (btn) btn.disabled = true;
+        const statusEl = document.getElementById('perm-save-status');
+        if (statusEl) {
+          statusEl.textContent = '⏳ Saving & reloading bot...';
+          statusEl.style.color = '#38bdf8';
+        }
+
+        const res = await api('/api/master/staff-permissions', {
+          method: 'POST',
+          body: JSON.stringify({ staff_permissions: staffPermData.staff_permissions })
+        });
+        toast(res.message);
+        if (statusEl) {
+          statusEl.textContent = '✓ Saved & Applied to Live Bot';
+          statusEl.style.color = '#10b981';
+        }
+        if (btn) btn.disabled = false;
+        loadMasterBot();
+      } catch (e) {
+        toast('Error saving staff permissions: ' + e.message);
+        const statusEl = document.getElementById('perm-save-status');
+        if (statusEl) {
+          statusEl.textContent = '❌ Save failed';
+          statusEl.style.color = '#ef4444';
+        }
+      }
     }
 
     async function saveBotConfig() {
@@ -4231,16 +5309,17 @@
         const tbody = document.getElementById('m-part-tbody');
         if (!tbody) return;
         if (!list.length) {
-          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--muted);">No Current Partnerships</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--muted);">No Current Partnerships</td></tr>';
           return;
         }
         tbody.innerHTML = list.map(p => `
           <tr>
-            <td><strong style="color:#f472b6;">${p.name}</strong></td>
-            <td><a href="${p.link}" target="_blank" style="color:var(--cyan);">${p.link}</a></td>
-            <td><code>${p.contact}</code></td>
+            <td><strong style="color:#f472b6;">${escapeHtml(p.name)}</strong></td>
+            <td><a href="${escapeHtml(p.link)}" target="_blank" style="color:var(--cyan);">${escapeHtml(p.link)}</a></td>
+            <td><code>${escapeHtml(p.contact)}</code></td>
+            <td><div style="max-height:65px; overflow-y:auto; font-size:0.78rem; color:#cbd5e1; white-space:pre-wrap; max-width:280px;">${escapeHtml(p.description || 'N/A')}</div></td>
             <td>${p.discord_message_id ? '<span style="color:#10b981;font-weight:700;">● Posted in #🤝・partnerships</span>' : '<span style="color:var(--muted);">Saved</span>'}</td>
-            <td><button class="btn btn-danger" style="padding:4px 8px; font-size:0.74rem;" onclick="removeMasterPartnership('${p.id}')">Remove</button></td>
+            <td><button class="btn btn-danger" style="padding:4px 8px; font-size:0.74rem;" onclick="removeMasterPartnership('${escapeHtml(p.id)}')">Remove</button></td>
           </tr>
         `).join('');
       } catch (e) { toast(e.message); }
@@ -4250,18 +5329,20 @@
       const name = document.getElementById('m-part-name').value.trim();
       const link = document.getElementById('m-part-link').value.trim();
       const contact = document.getElementById('m-part-contact').value.trim();
+      const description = document.getElementById('m-part-desc')?.value.trim() || '';
       if (!name || !link || !contact) {
         return toast('Please fill in Partnering Community Name, Discord/Website, and Contact');
       }
       try {
         const res = await api('/api/master/partnerships/add', {
           method: 'POST',
-          body: JSON.stringify({ name, link, contact })
+          body: JSON.stringify({ name, link, contact, description })
         });
         toast(`Added ${name} & posted to Discord #🤝・partnerships!`);
         document.getElementById('m-part-name').value = '';
         document.getElementById('m-part-link').value = '';
         document.getElementById('m-part-contact').value = '';
+        if (document.getElementById('m-part-desc')) document.getElementById('m-part-desc').value = '';
         loadMasterPartnerships();
       } catch (e) { toast(e.message); }
     }
@@ -4508,7 +5589,7 @@
                 <strong style="font-size:1.05rem; color:#f1f5f9;">🤖 ${escapeHtml(b.name)}</strong>
                 <span style="font-size:0.75rem; color:var(--muted);">ID: <code>${escapeHtml(b.id)}</code></span>
               </div>
-              <div style="font-size:0.8rem; color:var(--muted); margin-bottom:12px;">Service: <code>${escapeHtml(b.service)}</code> on <code>2.31.173.113</code></div>
+              <div style="font-size:0.8rem; color:var(--muted); margin-bottom:12px;">Service: <code>${escapeHtml(b.service)}</code> on <code>62.238.81.224</code></div>
               <div style="display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap;">
                 ${hostBadge}
                 ${discordBadge}
@@ -4529,7 +5610,7 @@
     async function executeBotKillswitch(botKey, action) {
       const confirmText = action === 'kill'
         ? (botKey === 'all'
-            ? '⚠️ CRITICAL ALERT: Are you sure you want to trigger DEFCON OMEGA on ALL Discord Bots?\n\nThis will instantly mask systemd services on 2.31.173.113, terminate processes, and evict all bots from Discord.'
+            ? '⚠️ CRITICAL ALERT: Are you sure you want to trigger DEFCON OMEGA on ALL Discord Bots?\n\nThis will instantly mask systemd services on Hetzner EX63 Dedicated (62.238.81.224), terminate processes, and evict all bots from Discord.'
             : `⚠️ EMERGENCY BOT KILLSWITCH: Are you sure you want to KILL & KICK ${botKey}?\n\nThis will mask the service, kill the local process, and kick the bot from Discord immediately.`)
         : `Unmask and restore service for ${botKey}?`;
 
@@ -4998,13 +6079,34 @@
     }
 
     async function hardenAllNodes() {
-      if (!confirm('Re-apply kernel sysctl anti-flood, SYN cookies, and anti-spoofing parameters across all 4 Hetzner nodes?')) return;
+      if (!confirm('Re-apply kernel sysctl anti-flood, SYN cookies, and anti-spoofing parameters on the Hetzner EX63 Dedicated Server?')) return;
       try {
         const res = await api('/api/master/ddos/harden-nodes', { method: 'POST' });
         toast(res.message);
         await loadMasterDdos();
       } catch (e) {
         toast('Hardening error: ' + e.message);
+      }
+    }
+
+    async function saveDiscordCredentials() {
+      const cid = document.getElementById('m-discord-client-id')?.value.trim();
+      const sec = document.getElementById('m-discord-client-secret')?.value.trim();
+      if (!cid && !sec) {
+        toast('Please enter a Client ID or Client Secret to update.');
+        return;
+      }
+      try {
+        const res = await api('/api/master/discord-credentials', {
+          method: 'POST',
+          body: JSON.stringify({ client_id: cid, client_secret: sec })
+        });
+        toast(res.message);
+        if (sec) {
+          document.getElementById('m-discord-client-secret').value = '';
+        }
+      } catch (e) {
+        toast('Error saving Discord credentials: ' + e.message);
       }
     }
 
@@ -5016,6 +6118,7 @@
       await loadPortalWebsiteStatus();
       await loadPortalWebsiteFile('index.html');
       await loadPortalPartnerships();
+      await loadPortalAffiliates();
     }
 
     async function loadPortalWebsiteStatus() {
@@ -5143,7 +6246,7 @@
 
         const list = d.partnerships || [];
         if (!list.length) {
-          tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--muted); padding:12px;">No active partnerships recorded yet.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--muted); padding:12px;">No active partnerships recorded yet.</td></tr>';
           return;
         }
 
@@ -5152,6 +6255,7 @@
             <td><strong>${escapeHtml(p.name)}</strong></td>
             <td><a href="${escapeHtml(p.link)}" target="_blank" style="color:var(--cyan);">${escapeHtml(p.link)}</a></td>
             <td style="font-size:0.82rem; color:var(--muted);">${escapeHtml(p.contact || 'None')}</td>
+            <td><div style="max-height:65px; overflow-y:auto; font-size:0.78rem; color:#cbd5e1; white-space:pre-wrap; max-width:280px;">${escapeHtml(p.description || 'N/A')}</div></td>
             <td>
               <button class="btn btn-danger" style="font-size:0.72rem; padding:2px 8px;" onclick="removePortalPartner('${escapeHtml(p.id)}')">Remove</button>
             </td>
@@ -5166,6 +6270,7 @@
       const name = document.getElementById('p-web-part-name')?.value.trim();
       const link = document.getElementById('p-web-part-link')?.value.trim();
       const contact = document.getElementById('p-web-part-contact')?.value.trim();
+      const description = document.getElementById('p-web-part-desc')?.value.trim() || '';
 
       if (!name || !link) {
         toast('Please enter Partner Name and Link.');
@@ -5175,12 +6280,13 @@
       try {
         const res = await api('/api/master/partnerships/add', {
           method: 'POST',
-          body: JSON.stringify({ name, link, contact })
+          body: JSON.stringify({ name, link, contact, description })
         });
         toast('Partner added successfully!');
         if (document.getElementById('p-web-part-name')) document.getElementById('p-web-part-name').value = '';
         if (document.getElementById('p-web-part-link')) document.getElementById('p-web-part-link').value = '';
         if (document.getElementById('p-web-part-contact')) document.getElementById('p-web-part-contact').value = '';
+        if (document.getElementById('p-web-part-desc')) document.getElementById('p-web-part-desc').value = '';
         await loadPortalPartnerships();
       } catch (e) {
         toast('Error adding partner: ' + e.message);
@@ -5195,6 +6301,74 @@
         await loadPortalPartnerships();
       } catch (e) {
         toast('Error removing partner: ' + e.message);
+      }
+    }
+
+    async function loadPortalAffiliates() {
+      try {
+        const d = await api('/api/public/affiliates');
+        const tbody = document.getElementById('p-web-aff-tbody');
+        if (!tbody) return;
+
+        const list = d.affiliates || [];
+        if (!list.length) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--muted); padding:12px;">No active affiliates recorded yet.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = list.map(a => `
+          <tr>
+            <td><strong>${escapeHtml(a.name)}</strong></td>
+            <td><a href="${escapeHtml(a.link)}" target="_blank" style="color:var(--cyan);">${escapeHtml(a.link)}</a></td>
+            <td><span class="tier-pill tier-mod" style="font-size:0.7rem; padding:2px 8px;">${escapeHtml(a.type || 'Creator')}</span></td>
+            <td style="font-size:0.82rem; color:var(--muted);">${escapeHtml(a.contact || 'None')}</td>
+            <td><div style="max-height:65px; overflow-y:auto; font-size:0.78rem; color:#cbd5e1; white-space:pre-wrap; max-width:280px;">${escapeHtml(a.description || 'N/A')}</div></td>
+            <td>
+              <button class="btn btn-danger" style="font-size:0.72rem; padding:2px 8px;" onclick="removePortalAffiliate('${escapeHtml(a.id)}')">Remove</button>
+            </td>
+          </tr>
+        `).join('');
+      } catch (e) {
+        console.error('Error loading affiliates:', e);
+      }
+    }
+
+    async function addPortalAffiliate() {
+      const name = document.getElementById('p-web-aff-name')?.value.trim();
+      const link = document.getElementById('p-web-aff-link')?.value.trim();
+      const type = document.getElementById('p-web-aff-type')?.value;
+      const contact = document.getElementById('p-web-aff-contact')?.value.trim();
+      const description = document.getElementById('p-web-aff-desc')?.value.trim() || '';
+
+      if (!name || !link) {
+        toast('Please enter Affiliate / Creator Name and Link.');
+        return;
+      }
+
+      try {
+        await api('/api/master/affiliates/add', {
+          method: 'POST',
+          body: JSON.stringify({ name, link, type, contact, description })
+        });
+        toast('Affiliate added successfully and posted to Discord!');
+        if (document.getElementById('p-web-aff-name')) document.getElementById('p-web-aff-name').value = '';
+        if (document.getElementById('p-web-aff-link')) document.getElementById('p-web-aff-link').value = '';
+        if (document.getElementById('p-web-aff-contact')) document.getElementById('p-web-aff-contact').value = '';
+        if (document.getElementById('p-web-aff-desc')) document.getElementById('p-web-aff-desc').value = '';
+        await loadPortalAffiliates();
+      } catch (e) {
+        toast('Error adding affiliate: ' + e.message);
+      }
+    }
+
+    async function removePortalAffiliate(id) {
+      if (!confirm('Remove this affiliate?')) return;
+      try {
+        await api('/api/master/affiliates/remove', { method: 'POST', body: JSON.stringify({ id }) });
+        toast('Affiliate removed.');
+        await loadPortalAffiliates();
+      } catch (e) {
+        toast('Error removing affiliate: ' + e.message);
       }
     }
 

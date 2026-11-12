@@ -1,0 +1,45 @@
+{
+  "dedicated_server": {
+    "ip": "62.238.81.224",
+    "model": "Hetzner EX63",
+    "cpu": "Intel Core Ultra 7 265 (20 Cores, up to 5.5 GHz)",
+    "ram": "64 GB DDR5",
+    "storage": "2x 1 TB NVMe SSD (Datacenter RAID1)",
+    "monthly_cost_eur": 149.0,
+    "status": "active_all_services_migrated",
+    "hosted_services": [
+      "Nova Station 13 (BYOND DreamDaemon Port 7777 + MariaDB + CV-Nova-Helper)",
+      "Minecraft Purpur 1.21.x (Port 25565 + Java 25 + MC Staff Logger)",
+      "Project Zomboid Build 42 (Port 16261 UDP + Zomboid Control Panel Ports 3001/3443)",
+      "Unturned Dedicated (Ports 27015/27016/27115)",
+      "AzuraCast Radio (Docker Stations + Cloudflare HTTPS Tunnel + CV-Radio-Helper)"
+    ]
+  },
+  "old_cloud_servers": {
+    "nova-station-13": {
+      "id": 174034628,
+      "ip": "87.99.133.221",
+      "status": "powered_off"
+    },
+    "circuit-verse-mc": {
+      "id": 174435350,
+      "ip": "2.31.101.63",
+      "status": "powered_off"
+    },
+    "circuit-verse-pz": {
+      "id": 174538528,
+      "ip": "2.31.52.69",
+      "status": "terminated"
+    },
+    "circuit-verse-unturned": {
+      "id": 175069487,
+      "ip": "91.107.198.243",
+      "status": "terminated"
+    },
+    "circuit-verse-general": {
+      "id": 174966750,
+      "ip": "2.31.173.113",
+      "status": "terminated"
+    }
+  }
+}

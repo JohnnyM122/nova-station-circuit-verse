@@ -3,6 +3,7 @@ from discord.ext import commands
 from discord import app_commands
 import logging
 import asyncio
+import re
 
 logger = logging.getLogger("CVNovaHelper.department_roles")
 
@@ -521,6 +522,361 @@ class DepartmentRoles(commands.Cog):
             if reason:
                 log_embed.add_field(name="Reason", value=reason, inline=False)
             await log_ch.send(embed=log_embed)
+
+    # ==========================================
+    # COMMUNITY EXECUTIVE: GIVEROLE COMMAND
+    # ==========================================
+    def is_community_executive(self, member: discord.Member) -> bool:
+        """
+        Verify if member holds the Community Executive role, higher executive leadership,
+        or server administrator permissions.
+        """
+        if member.guild_permissions.administrator or member.guild.owner_id == member.id:
+            return True
+
+        comm_exec_cfg_id = self.bot.config.get("roles", {}).get("comm_executive")
+        if comm_exec_cfg_id and any(r.id == comm_exec_cfg_id for r in member.roles):
+            return True
+
+        exec_ids = {
+            1567495181794807838,  # Community Executive
+            1567477045964054598,  # Executive Director
+            1567482219495301191,  # Community Director
+            1566625061467717752,  # Chief Community Officer
+            1567474473404338216,  # Community Management
+            1564610713216098394,  # Founder
+            1567449658639384678,  # Founder
+        }
+        founder_cfg = self.bot.config.get("roles", {}).get("founder", [])
+        if isinstance(founder_cfg, list):
+            exec_ids.update(founder_cfg)
+
+        member_role_ids = {r.id for r in member.roles}
+        if member_role_ids & exec_ids:
+            return True
+
+        allowed_names = {
+            "community executive",
+            "executive director",
+            "community director",
+            "chief community officer",
+            "community management",
+            "founder",
+        }
+        member_role_names = {r.name.lower().strip() for r in member.roles}
+        if member_role_names & allowed_names:
+            return True
+
+        return False
+
+    async def execute_giverole(
+        self,
+        guild: discord.Guild,
+        issuer: discord.Member,
+        role: discord.Role,
+        targets_str: str,
+        reason: str | None = None,
+        interaction: discord.Interaction | None = None,
+        ctx: commands.Context | None = None,
+    ):
+        # 1. Authorization check
+        if not self.is_community_executive(issuer):
+            err_msg = "❌ Access Denied: This command is restricted to Community Executives."
+            if interaction:
+                return await interaction.followup.send(err_msg, ephemeral=True)
+            elif ctx:
+                return await ctx.send(err_msg)
+
+        # 2. Hierarchy and safety checks
+        if role == guild.default_role:
+            err_msg = "❌ Error: Cannot assign the `@everyone` default role."
+            if interaction:
+                return await interaction.followup.send(err_msg, ephemeral=True)
+            elif ctx:
+                return await ctx.send(err_msg)
+
+        if role.managed:
+            err_msg = f"❌ Error: Role **{role.name}** is managed by an external integration/bot and cannot be manually assigned."
+            if interaction:
+                return await interaction.followup.send(err_msg, ephemeral=True)
+            elif ctx:
+                return await ctx.send(err_msg)
+
+        if role >= guild.me.top_role:
+            err_msg = f"❌ Hierarchy Error: The bot cannot assign **{role.name}** because it is equal to or higher than the bot's highest role ({guild.me.top_role.name})."
+            if interaction:
+                return await interaction.followup.send(err_msg, ephemeral=True)
+            elif ctx:
+                return await ctx.send(err_msg)
+
+        if issuer != guild.owner and role >= issuer.top_role:
+            err_msg = f"❌ Hierarchy Error: You cannot assign **{role.name}** because it is equal to or higher than your highest role ({issuer.top_role.name})."
+            if interaction:
+                return await interaction.followup.send(err_msg, ephemeral=True)
+            elif ctx:
+                return await ctx.send(err_msg)
+
+        # 3. Target parsing: "everyone" vs multiple members
+        clean_targets = targets_str.strip()
+        is_everyone = bool(re.search(r"\b(everyone|@everyone|all)\b", clean_targets, re.IGNORECASE))
+
+        target_members: list[discord.Member] = []
+
+        if is_everyone:
+            if not guild.chunked:
+                await guild.chunk()
+            # Target all non-bot members
+            target_members = [m for m in guild.members if not m.bot]
+        else:
+            seen_ids = set()
+
+            # Mentions from context if prefix command
+            if ctx and ctx.message.mentions:
+                for m in ctx.message.mentions:
+                    if m.id not in seen_ids:
+                        seen_ids.add(m.id)
+                        target_members.append(m)
+
+            # Mentions matching <@!12345> or <@12345>
+            for mid in re.findall(r"<@!?(\d{17,20})>", clean_targets):
+                uid = int(mid)
+                if uid not in seen_ids:
+                    mem = guild.get_member(uid)
+                    if mem:
+                        seen_ids.add(uid)
+                        target_members.append(mem)
+
+            # Raw snowflake IDs
+            for mid in re.findall(r"\b\d{17,20}\b", clean_targets):
+                uid = int(mid)
+                if uid not in seen_ids and uid != role.id:
+                    mem = guild.get_member(uid)
+                    if mem:
+                        seen_ids.add(uid)
+                        target_members.append(mem)
+
+            # Usernames / Nicknames if no members matched yet
+            if not target_members:
+                tokens = [t.strip().strip(",;\"'") for t in clean_targets.split() if t.strip()]
+                for tok in tokens:
+                    if not tok or tok.startswith("@&"):
+                        continue
+                    mem = guild.get_member_named(tok) or discord.utils.find(
+                        lambda m: m.name.lower() == tok.lower() or (m.nick and m.nick.lower() == tok.lower()),
+                        guild.members,
+                    )
+                    if mem and mem.id not in seen_ids:
+                        seen_ids.add(mem.id)
+                        target_members.append(mem)
+
+        if not target_members:
+            err_msg = "❌ Target Error: No valid members found. Specify target members via mention (`@user`), user IDs, or use `'everyone'`."
+            if interaction:
+                return await interaction.followup.send(err_msg, ephemeral=True)
+            elif ctx:
+                return await ctx.send(err_msg)
+
+        to_add = [m for m in target_members if role not in m.roles]
+        already_have = [m for m in target_members if role in m.roles]
+
+        if not to_add:
+            msg = f"ℹ️ All {len(target_members)} target member(s) already possess the **{role.name}** role."
+            if interaction:
+                return await interaction.followup.send(msg, ephemeral=False)
+            elif ctx:
+                return await ctx.send(msg)
+
+        # 4. Status update
+        scope_desc = "`@everyone` (Server-Wide)" if is_everyone else f"{len(target_members)} member(s)"
+        status_text = f"⏳ **Assigning role {role.mention} to {len(to_add)} member(s)...** (Scope: {scope_desc})"
+        progress_msg = None
+        if interaction:
+            progress_msg = await interaction.followup.send(status_text)
+        elif ctx:
+            progress_msg = await ctx.send(status_text)
+
+        # 5. Process role assignments with rate-limit handling
+        success_count = 0
+        failed_count = 0
+        audit_reason = f"Executive bulk role grant by {issuer.name} ({issuer.id}) via giverole"
+        if reason:
+            audit_reason += f": {reason}"
+
+        for i, member in enumerate(to_add, 1):
+            try:
+                await member.add_roles(role, reason=audit_reason)
+                success_count += 1
+            except discord.Forbidden:
+                failed_count += 1
+            except discord.HTTPException as e:
+                failed_count += 1
+                logger.error(f"Failed to add role {role.name} to {member.name}: {e}")
+
+            if len(to_add) > 10 and (i % 10 == 0 or i == len(to_add)):
+                if progress_msg:
+                    try:
+                        await progress_msg.edit(content=f"⏳ **Assigning role {role.mention}...** ({i}/{len(to_add)} processed)")
+                    except Exception:
+                        pass
+
+            if len(to_add) > 1:
+                await asyncio.sleep(0.4)
+
+        # 6. Final Summary Embed
+        embed = discord.Embed(
+            title="✅ Role Distribution Completed",
+            description=f"Successfully distributed **{role.mention}**.",
+            color=role.color if role.color.value != 0 else discord.Color.green(),
+            timestamp=discord.utils.utcnow(),
+        )
+        embed.add_field(name="🏷️ Role", value=f"{role.mention} (`{role.name}`)", inline=True)
+        embed.add_field(name="🎯 Scope", value=scope_desc, inline=True)
+        embed.add_field(name="👑 Authorized By", value=f"{issuer.mention} (`{issuer.name}`)", inline=True)
+        embed.add_field(name="➕ Granted", value=f"**{success_count}** member(s)", inline=True)
+        embed.add_field(name="⏩ Already Had Role", value=f"{len(already_have)} member(s)", inline=True)
+        if failed_count > 0:
+            embed.add_field(name="⚠️ Failed / Skipped", value=f"{failed_count} member(s)", inline=True)
+        if reason:
+            embed.add_field(name="📝 Reason", value=reason, inline=False)
+        embed.set_footer(text="Circuit Verse • Executive Role Distribution")
+
+        if progress_msg:
+            try:
+                await progress_msg.edit(content=None, embed=embed)
+            except Exception:
+                if interaction:
+                    await interaction.followup.send(embed=embed)
+                elif ctx:
+                    await ctx.send(embed=embed)
+        else:
+            if interaction:
+                await interaction.followup.send(embed=embed)
+            elif ctx:
+                await ctx.send(embed=embed)
+
+        # 7. Audit Log Channel
+        log_ch = self.get_log_channel(guild)
+        if log_ch:
+            log_embed = discord.Embed(
+                title="🛡️ Executive Role Distribution Log",
+                color=discord.Color.green(),
+                timestamp=discord.utils.utcnow(),
+            )
+            log_embed.add_field(name="Role Granted", value=f"{role.name} (`{role.id}`)", inline=True)
+            log_embed.add_field(name="Scope", value=scope_desc, inline=True)
+            log_embed.add_field(name="Authorized By", value=f"{issuer.mention} (`{issuer.id}`)", inline=True)
+            log_embed.add_field(name="Granted Count", value=str(success_count), inline=True)
+            log_embed.add_field(name="Skipped (Already Held)", value=str(len(already_have)), inline=True)
+            log_embed.add_field(name="Failed", value=str(failed_count), inline=True)
+            if reason:
+                log_embed.add_field(name="Reason", value=reason, inline=False)
+            try:
+                await log_ch.send(embed=log_embed)
+            except Exception as e:
+                logger.error(f"Failed to post to audit log channel: {e}")
+
+    @app_commands.command(
+        name="giverole",
+        description="Assign a role to multiple members or everyone (Restricted to Community Executives)",
+    )
+    @app_commands.describe(
+        role="The Discord role to grant",
+        targets="Target members (@user1 @user2, user IDs, or 'everyone')",
+        reason="Optional reason for the audit log",
+    )
+    async def slash_giverole(
+        self,
+        interaction: discord.Interaction,
+        role: discord.Role,
+        targets: str,
+        reason: str | None = None,
+    ):
+        await interaction.response.defer(ephemeral=False)
+        if not isinstance(interaction.user, discord.Member):
+            return await interaction.followup.send("❌ Error: Could not verify server member.", ephemeral=True)
+
+        await self.execute_giverole(
+            guild=interaction.guild,
+            issuer=interaction.user,
+            role=role,
+            targets_str=targets,
+            reason=reason,
+            interaction=interaction,
+        )
+
+    @commands.command(name="giverole", aliases=["addrole", "grole"])
+    async def prefix_giverole(self, ctx: commands.Context, *, args: str):
+        """
+        Assign a role to multiple members or everyone. Restricted to Community Executives.
+        Usage:
+          !giverole @Role @user1 @user2
+          !giverole @Role everyone
+          !giverole "Role Name" 123456789012345678, 234567890123456789
+          !giverole @Role everyone reason: Event Participation
+        """
+        if not isinstance(ctx.author, discord.Member):
+            return
+
+        target_role: discord.Role | None = None
+        remaining_args = args
+        reason: str | None = None
+
+        # Check for optional reason:
+        if "reason:" in remaining_args.lower():
+            parts = re.split(r"reason:", remaining_args, flags=re.IGNORECASE, maxsplit=1)
+            remaining_args = parts[0].strip()
+            reason = parts[1].strip()
+
+        # 1. Check if role was mentioned
+        if ctx.message.role_mentions:
+            target_role = ctx.message.role_mentions[0]
+            remaining_args = re.sub(rf"<@&{target_role.id}>", "", remaining_args).strip()
+        else:
+            # 2. Check for role name match
+            matched_role = None
+            for r in sorted(ctx.guild.roles, key=lambda x: len(x.name), reverse=True):
+                if r == ctx.guild.default_role:
+                    continue
+                pattern = rf'(?:^|\s)[\"\']?{re.escape(r.name)}[\"\']?(?:\s|$)'
+                match = re.search(pattern, remaining_args, re.IGNORECASE)
+                if match:
+                    matched_role = r
+                    remaining_args = remaining_args[: match.start()] + " " + remaining_args[match.end() :]
+                    remaining_args = remaining_args.strip()
+                    break
+
+            if not matched_role:
+                # 3. Check for numeric role ID
+                for token in remaining_args.split():
+                    if token.isdigit():
+                        r = ctx.guild.get_role(int(token))
+                        if r:
+                            matched_role = r
+                            remaining_args = remaining_args.replace(token, "", 1).strip()
+                            break
+
+            target_role = matched_role
+
+        if not target_role:
+            return await ctx.send(
+                "❌ Could not determine target role.\n"
+                "**Usage:** `!giverole <@Role or \"Role Name\"> <@user1 @user2 ... or 'everyone'> [reason: ...]`"
+            )
+
+        if not remaining_args:
+            return await ctx.send(
+                f"❌ Please specify target members or `everyone`.\n"
+                f"**Example:** `!giverole {target_role.mention} @User1 @User2` or `!giverole {target_role.mention} everyone`"
+            )
+
+        await self.execute_giverole(
+            guild=ctx.guild,
+            issuer=ctx.author,
+            role=target_role,
+            targets_str=remaining_args,
+            reason=reason,
+            ctx=ctx,
+        )
 
     # ==========================================
     # 2. DEPARTMENT CHANNEL MANAGEMENT COMMANDS

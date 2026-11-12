@@ -70,10 +70,10 @@ async def execute_bot_quarantine(cfg: Dict[str, Any], bot_key: str, action: str,
     results = []
 
     if action == "kill":
-        # 1. SSH to 2.31.173.113 and mask/kill systemd service immediately
+        # 1. SSH to 127.0.0.1 and mask/kill systemd service immediately
         try:
             cmd = f"sudo systemctl mask --now {service} && sudo pkill -9 -f '{proc}' || true"
-            await run_ssh_fn("2.31.173.113", "root", cmd, timeout=15)
+            await run_ssh_fn("127.0.0.1", "ubuntu", cmd, timeout=15)
             results.append(f"Host service {service} masked and process terminated.")
         except Exception as e:
             results.append(f"Host SSH action error: {e}")
@@ -137,7 +137,7 @@ async def execute_bot_quarantine(cfg: Dict[str, Any], bot_key: str, action: str,
         # Unmask and restart service
         try:
             cmd = f"sudo systemctl unmask {service} && sudo systemctl restart {service}"
-            await run_ssh_fn("2.31.173.113", "root", cmd, timeout=15)
+            await run_ssh_fn("127.0.0.1", "ubuntu", cmd, timeout=15)
             results.append(f"Service {service} unmasked and restarted.")
         except Exception as e:
             results.append(f"Host SSH action error: {e}")
@@ -384,7 +384,9 @@ def setup_security_failsafe(app: FastAPI, helpers: Dict[str, Any]):
     run_rcon = helpers["run_rcon"]
     run_ssh = helpers["run_ssh"]
     record_audit = helpers["record_audit"]
-    asyncio.create_task(bot_sentinel_watchdog_loop(app, load_config, run_ssh))
+    @app.on_event("startup")
+    async def _start_sentinel():
+        asyncio.create_task(bot_sentinel_watchdog_loop(app, load_config, run_ssh))
 
     async def require_master(request: Request) -> Dict[str, Any]:
         cfg = load_config()
@@ -584,8 +586,51 @@ def setup_security_failsafe(app: FastAPI, helpers: Dict[str, Any]):
         return {
             "bots": bots_data,
             "events": events,
-            "sentinel_active": True
+            "sentinel_active": True,
+            "sentinel_mode": SENTINEL_STATE.get("mode", "NORMAL"),
+            "attack_expiry": SENTINEL_STATE.get("attack_expiry", 0),
+            "attack_reason": SENTINEL_STATE.get("attack_reason", "")
         }
+
+    @app.post("/api/master/security/sentinel/mode")
+    async def api_security_sentinel_mode(request: Request):
+        user = await require_master(request)
+        body = await request.json()
+        new_mode = body.get("mode", "NORMAL").upper()
+        reason = body.get("reason", "Manual Staff Override").strip()
+        cfg = load_config()
+
+        if new_mode == "ATTACK":
+            SENTINEL_STATE["mode"] = "ATTACK"
+            SENTINEL_STATE["attack_detected_at"] = time.time()
+            SENTINEL_STATE["attack_expiry"] = time.time() + 1200
+            SENTINEL_STATE["attack_reason"] = f"Manual override by {user.get('username')}: {reason}"
+            with open("/tmp/server_under_attack", "w") as f:
+                f.write(reason)
+            await broadcast_discord_security_alert(
+                cfg,
+                "🚨 SENTINEL: ATTACK MODE MANUALLY ENGAGED",
+                f"**Staff member <@{user.get('discord_id')}> engaged ATTACK mode.**\n**Reason:** {reason}\nStrict anti-nuke restrictions active for 20 minutes.",
+                color=0x991b1b
+            )
+            record_audit(user, "security", "sentinel_attack_mode", f"Engaged ATTACK mode: {reason}")
+            return {"success": True, "mode": "ATTACK", "message": "Sentinel ATTACK mode engaged."}
+        else:
+            SENTINEL_STATE["mode"] = "NORMAL"
+            SENTINEL_STATE["attack_reason"] = ""
+            if os.path.exists("/tmp/server_under_attack"):
+                try:
+                    os.remove("/tmp/server_under_attack")
+                except Exception:
+                    pass
+            await broadcast_discord_security_alert(
+                cfg,
+                "🟢 SENTINEL: NORMAL MODE RESTORED",
+                f"**Staff member <@{user.get('discord_id')}> set Sentinel to NORMAL mode.**\nRestrictions loosened for administrative maintenance.",
+                color=0x10b981
+            )
+            record_audit(user, "security", "sentinel_normal_mode", f"Restored NORMAL mode: {reason}")
+            return {"success": True, "mode": "NORMAL", "message": "Sentinel NORMAL mode restored."}
 
     @app.post("/api/master/security/bot-killswitch")
     async def api_security_bot_killswitch(request: Request):
@@ -653,15 +698,23 @@ def setup_security_failsafe(app: FastAPI, helpers: Dict[str, Any]):
 # Background Sentinel Watchdog
 SENTINEL_RUNNING = False
 
+# Adaptive Sentinel Defense State
+SENTINEL_STATE = {
+    "mode": "NORMAL", # "NORMAL" (relaxed maintenance mode) or "ATTACK" (tightened anti-nuke mode)
+    "attack_detected_at": 0,
+    "attack_expiry": 0,
+    "attack_reason": "",
+}
+
 async def bot_sentinel_watchdog_loop(app_instance, cfg_loader, run_ssh_fn):
-    global SENTINEL_RUNNING
+    global SENTINEL_RUNNING, SENTINEL_STATE
     if SENTINEL_RUNNING:
         return
     SENTINEL_RUNNING = True
-    logger.info("🛡️ Bot Intrusion Detection Sentinel Watchdog started (15s poll).")
+    logger.info("🛡️ Bot Intrusion Detection Sentinel Watchdog started with Adaptive Attack Detection.")
 
     last_checked_id = None
-    recent_strikes = {} # bot_id -> list of (timestamp, action_type, entry_id)
+    recent_strikes = {} # bot_id -> list of (timestamp, action_type)
     seen_entry_ids = set()
 
     while True:
@@ -673,7 +726,47 @@ async def bot_sentinel_watchdog_loop(app_instance, cfg_loader, run_ssh_fn):
             if not token:
                 continue
 
-            # Fetch last 20 audit log entries
+            now = time.time()
+
+            # 1. Check maintenance flag
+            if os.path.exists("/tmp/sentinel_maintenance"):
+                await asyncio.sleep(60)
+                continue
+
+            # 2. Check external attack flag
+            if os.path.exists("/tmp/server_under_attack"):
+                if SENTINEL_STATE["mode"] != "ATTACK":
+                    SENTINEL_STATE["mode"] = "ATTACK"
+                    SENTINEL_STATE["attack_detected_at"] = now
+                    SENTINEL_STATE["attack_expiry"] = now + 1200 # 20 minutes
+                    SENTINEL_STATE["attack_reason"] = "External attack indicator (/tmp/server_under_attack)"
+                    logger.warning("🚨 ATTACK FLAG DETECTED: Sentinel switched to ATTACK mode!")
+                    await broadcast_discord_security_alert(
+                        cfg,
+                        "🚨 DEFENSE SYSTEM: SERVER UNDER ATTACK DETECTED",
+                        "**External attack indicator detected.**\nSentinel strict anti-nuke & anti-raid defense has been **AUTOMATICALLY ENGAGED** (20m window).\nAny rogue bot or rapid destructive behavior will be immediately neutralized.",
+                        color=0x991b1b
+                    )
+
+            # 3. Check attack mode auto-expiry (auto-relax restrictions once threat is over)
+            if SENTINEL_STATE["mode"] == "ATTACK" and now >= SENTINEL_STATE.get("attack_expiry", 0):
+                SENTINEL_STATE["mode"] = "NORMAL"
+                SENTINEL_STATE["attack_reason"] = ""
+                recent_strikes.clear()
+                if os.path.exists("/tmp/server_under_attack"):
+                    try:
+                        os.remove("/tmp/server_under_attack")
+                    except Exception:
+                        pass
+                logger.info("🟢 Attack threat window expired. Sentinel automatically returned to NORMAL mode.")
+                await broadcast_discord_security_alert(
+                    cfg,
+                    "🟢 DEFENSE SYSTEM: ATTACK WINDOW EXPIRED",
+                    "**Threat subsided.** Sentinel has automatically de-escalated and **loosened restrictions** back to Normal Mode.\nChannel & role administrative maintenance operations are fully permitted.",
+                    color=0x10b981
+                )
+
+            # 4. Fetch last 20 audit log entries
             async with httpx.AsyncClient(timeout=8) as client:
                 url = f"https://discord.com/api/v10/guilds/{guild_id}/audit-logs?limit=20"
                 resp = await client.get(url, headers={"Authorization": f"Bot {token}"})
@@ -681,13 +774,6 @@ async def bot_sentinel_watchdog_loop(app_instance, cfg_loader, run_ssh_fn):
                     continue
                 data = resp.json()
                 entries = data.get("audit_log_entries", [])
-
-            now = time.time()
-            # Check maintenance flag
-            import os
-            if os.path.exists("/tmp/sentinel_maintenance"):
-                await asyncio.sleep(60)
-                continue
 
             bot_ids = {b["id"]: bkey for bkey, b in BOT_REGISTRY.items()}
 
@@ -705,29 +791,62 @@ async def bot_sentinel_watchdog_loop(app_instance, cfg_loader, run_ssh_fn):
 
                 if user_id in bot_ids and action_type in (12, 20, 22, 32):
                     strikes = recent_strikes.setdefault(user_id, [])
-                    # Record strike if within 60s
+                    # Record strike
                     strikes.append((now, action_type))
                     # Purge strikes older than 60s
                     recent_strikes[user_id] = [s for s in strikes if now - s[0] < 60]
 
-                    # Anomaly thresholds (significantly adjusted for realistic administration):
-                    # - Mass kicks/bans (20, 22): >= 10 in 60s
-                    # - Total destructive actions (including channel/role maintenance): >= 15 in 60s
                     kicks_bans = [s for s in recent_strikes[user_id] if s[1] in (20, 22)]
-                    total_actions = len(recent_strikes[user_id])
+                    destructive_all = len(recent_strikes[user_id])
 
-                    if len(kicks_bans) >= 10 or total_actions >= 15:
-                        bot_key = bot_ids[user_id]
-                        logger.critical(f"🚨 SENTINEL ANOMALY TRIGGERED: Bot {bot_key} exceeded destructive action threshold ({total_actions} actions, {len(kicks_bans)} kicks/bans)! Engaging automatic killswitch!")
-                        recent_strikes[user_id] = [] # reset strikes
-                        asyncio.create_task(execute_bot_quarantine(
+                    # 5. AUTO ATTACK DETECTION:
+                    # If any bot executes >= 6 kicks or bans in under 15 seconds, deem the server under attack!
+                    very_recent_kicks = [s for s in kicks_bans if now - s[0] < 15]
+                    if len(very_recent_kicks) >= 6 and SENTINEL_STATE["mode"] != "ATTACK":
+                        SENTINEL_STATE["mode"] = "ATTACK"
+                        SENTINEL_STATE["attack_detected_at"] = now
+                        SENTINEL_STATE["attack_expiry"] = now + 1200 # 20 minutes
+                        SENTINEL_STATE["attack_reason"] = f"Hostile kick/ban burst detected ({len(very_recent_kicks)} in 15s)"
+                        logger.critical("🚨 HOSTILE BURST DETECTED! Engaging ATTACK mode defense!")
+                        await broadcast_discord_security_alert(
                             cfg,
-                            bot_key,
-                            "kill",
-                            f"AUTOMATIC DEFENSE: Detected {total_actions} mass destructive actions ({len(kicks_bans)} kicks/bans) in 60 seconds. Rogue activity contained.",
-                            "Autonomous Sentinel Daemon",
-                            run_ssh_fn
-                        ))
+                            "🚨 DEFENSE SYSTEM: ATTACK DETECTED ON DISCORD",
+                            f"**Hostile anomaly detected:** A burst of `{len(very_recent_kicks)}` kicks/bans occurred in under 15 seconds.\n"
+                            "Sentinel strict defense is now **ACTIVATED** for 20 minutes. All destructive actions are strictly throttled.",
+                            color=0x991b1b
+                        )
+
+                    # 6. EVALUATE THRESHOLDS BASED ON MODE:
+                    if SENTINEL_STATE["mode"] == "ATTACK":
+                        # ATTACK MODE (Strict): 5 kicks/bans OR 5 destructive channel deletions triggers immediate quarantine
+                        if len(kicks_bans) >= 5 or destructive_all >= 5:
+                            bot_key = bot_ids[user_id]
+                            logger.critical(f"🚨 SENTINEL ANOMALY TRIGGERED [ATTACK MODE]: Bot {bot_key} exceeded strict defense limit ({destructive_all} actions, {len(kicks_bans)} kicks/bans)! Engaging automatic killswitch!")
+                            recent_strikes[user_id] = []
+                            asyncio.create_task(execute_bot_quarantine(
+                                cfg,
+                                bot_key,
+                                "kill",
+                                f"ATTACK MODE DEFENSE: Detected {destructive_all} destructive actions ({len(kicks_bans)} kicks/bans) during active attack state.",
+                                "Autonomous Sentinel Daemon",
+                                run_ssh_fn
+                            ))
+                    else:
+                        # NORMAL MODE (Loosened/Relaxed for maintenance):
+                        # - Channel deletions & role updates are administrative maintenance (NEVER killswitch on channels in normal mode)
+                        # - Member kicks/bans have a relaxed threshold of >= 30 in 60s (for mass spam cleanup)
+                        if len(kicks_bans) >= 30:
+                            bot_key = bot_ids[user_id]
+                            logger.critical(f"🚨 SENTINEL ANOMALY TRIGGERED [NORMAL MODE]: Bot {bot_key} exceeded relaxed kick/ban threshold ({len(kicks_bans)} in 60s)! Engaging killswitch!")
+                            recent_strikes[user_id] = []
+                            asyncio.create_task(execute_bot_quarantine(
+                                cfg,
+                                bot_key,
+                                "kill",
+                                f"AUTOMATIC DEFENSE: Detected {len(kicks_bans)} mass kicks/bans in 60 seconds. Rogue activity contained.",
+                                "Autonomous Sentinel Daemon",
+                                run_ssh_fn
+                            ))
 
         except Exception as err:
             logger.error(f"Sentinel watchdog loop error: {err}")

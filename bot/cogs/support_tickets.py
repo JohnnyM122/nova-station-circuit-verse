@@ -7,6 +7,81 @@ import io
 
 logger = logging.getLogger("CVNovaHelper.support_tickets")
 
+# Dedicated Ticket Log Channels for each Staff Category & Global Audit Log
+DEPT_TICKET_LOG_CHANNELS = {
+    "community": 1570007836912648212, # 📑・community-ticket-logs
+    "ns13": 1570007838238187653,      # 📑・ns13-ticket-logs
+    "mc": 1570007839672500249,        # 📑・mc-ticket-logs
+    "pz": 1570007841434112013,        # 📑・pz-ticket-logs
+    "unturned": 1570007842910507028,  # 📑・unturned-ticket-logs
+}
+GLOBAL_LOG_CHANNEL_ID = 1566986370910654517 # 📜・discord-logs
+
+def get_dept_and_log_channels(guild, channel: discord.TextChannel = None, dept_key: str = None, prefix: str = None, category_key: str = None):
+    """Retrieve the department ticket log channel and global discord-logs channel."""
+    if not dept_key:
+        if category_key:
+            ck = category_key.lower()
+            if ck.startswith("mc_"):
+                dept_key = "mc"
+            elif ck.startswith("ns13_"):
+                dept_key = "ns13"
+            elif ck.startswith("pz_"):
+                dept_key = "pz"
+            elif ck.startswith("unturned_"):
+                dept_key = "unturned"
+            else:
+                dept_key = "community"
+        elif prefix:
+            pref = prefix.lower()
+            if any(k in pref for k in ["mc-", "mc_"]):
+                dept_key = "mc"
+            elif any(k in pref for k in ["ns13-", "ns13_"]):
+                dept_key = "ns13"
+            elif any(k in pref for k in ["pz-", "pz_"]):
+                dept_key = "pz"
+            elif any(k in pref for k in ["unt-", "unt_"]):
+                dept_key = "unturned"
+            else:
+                dept_key = "community"
+        elif channel:
+            name = (channel.name or "").lower()
+            topic = (channel.topic or "").lower()
+            cat_name = (channel.category.name or "").lower() if channel.category else ""
+            if any(k in name or k in topic or k in cat_name for k in ["mc-", "minecraft"]):
+                dept_key = "mc"
+            elif any(k in name or k in topic or k in cat_name for k in ["ns13", "space", "ss13"]):
+                dept_key = "ns13"
+            elif any(k in name or k in topic or k in cat_name for k in ["pz-", "zomboid"]):
+                dept_key = "pz"
+            elif any(k in name or k in topic or k in cat_name for k in ["unt-", "unturned"]):
+                dept_key = "unturned"
+            else:
+                dept_key = "community"
+        else:
+            dept_key = "community"
+
+    dept_log_ch = None
+    if dept_key and dept_key in DEPT_TICKET_LOG_CHANNELS:
+        dept_log_ch = guild.get_channel(DEPT_TICKET_LOG_CHANNELS[dept_key])
+
+    # Fallback search by name if not in cache
+    if not dept_log_ch and dept_key:
+        target_name = f"📑・{dept_key}-ticket-logs"
+        for ch in guild.text_channels:
+            if ch.name == target_name or ch.name.endswith(f"{dept_key}-ticket-logs"):
+                dept_log_ch = ch
+                break
+
+    global_log_ch = guild.get_channel(GLOBAL_LOG_CHANNEL_ID)
+    if not global_log_ch:
+        for ch in guild.text_channels:
+            if "discord-logs" in ch.name:
+                global_log_ch = ch
+                break
+
+    return dept_key or "community", dept_log_ch, global_log_ch
+
 CATEGORY_CONFIG = {
     "comm_support": {
         "name": "Community Support",
@@ -19,6 +94,19 @@ CATEGORY_CONFIG = {
         "identity_placeholder": "Your username or registered account name",
         "details_placeholder": "Please explain your question or issue in detail...",
         "staff_roles": [1567491705266245713, 1567491704544698428, 1567474473404338216, 1567475021906186270], # Comm Ticket Support, Comm Ticket Admin, Comm Management, Dept.Director GC
+        "relay_channel_id": None,
+    },
+    "comm_partnership_app": {
+        "name": "Partnership / Affiliates App",
+        "emoji": "🤝",
+        "prefix": "partner",
+        "color": "#ec4899",
+        "target_category_name": "Community Tickets",
+        "subject_placeholder": "e.g. Community Partnership Application / Creator Affiliate Proposal",
+        "identity_label": "Organization / Channel Name & Link",
+        "identity_placeholder": "e.g. MyServer Network (discord.gg/example) or twitch.tv/creator",
+        "details_placeholder": "1. Community Size / Viewership:\n2. Brief Description of Community/Content:\n3. Partnership/Affiliate Proposal:\n4. Contact Representative:\n...",
+        "staff_roles": [1567491704544698428, 1567474473404338216, 1567475021906186270, 1567477045964054598], # Comm Ticket Admin, Comm Management, Dept.Director GC, Executive Director
         "relay_channel_id": None,
     },
     "mc_support": {
@@ -163,6 +251,84 @@ CATEGORY_CONFIG = {
         "details_placeholder": "Date & Time:\nLocation/Coords:\nRule Violated:\nWitnesses & Evidence (Video/Screenshots):\nFull Description:\n...",
         "staff_roles": [1568805607836745910, 1568805606192848993, 1568805604447752263, 1567477045964054598], # Admin, Manager, Host, Executive Director
         "relay_channel_id": None,
+    },
+    "unturned_staff_app": {
+        "name": "Unturned Staff Application",
+        "emoji": "📋",
+        "prefix": "unt-app",
+        "color": "#f1c40f",
+        "target_category_name": "Unturned Staff Tickets",
+        "subject_placeholder": "e.g. Server Moderator Application / Builder Application",
+        "identity_label": "Unturned In-Game Name & Steam64 ID",
+        "identity_placeholder": "e.g. IGN: Survivor, SteamID: 76561198000000000",
+        "details_placeholder": "Position applied for (Mod/Admin/Builder):\nAge & Timezone:\nPrevious staffing / moderation experience:\nWhy do you want to join Circuit Verse Unturned Staff?:\nHours active per week:\n...",
+        "staff_roles": [1568805606192848993, 1568805604447752263, 1567477045964054598], # Manager, Host, Executive Director
+        "relay_channel_id": None,
+    },
+    "unturned_bug": {
+        "name": "Unturned Bug Report",
+        "emoji": "🐛",
+        "prefix": "unt-bug",
+        "color": "#e67e22",
+        "target_category_name": "Unturned Staff Tickets",
+        "subject_placeholder": "e.g. Item duplication glitch, vehicle sink, plugin error",
+        "identity_label": "Unturned IGN & Coordinates/Map Location",
+        "identity_placeholder": "e.g. IGN: Alex, PEI Military Base",
+        "details_placeholder": "Steps to reproduce:\n1. ...\n2. ...\nExpected behavior vs actual bug:\nLogs/Screenshots:\n...",
+        "staff_roles": [1568805610219372690, 1568805609158082641, 1568805607836745910, 1568805606192848993, 1568805604447752263],
+        "relay_channel_id": None,
+    },
+    "verified_app": {
+        "name": "Verified Application",
+        "emoji": "✅",
+        "prefix": "verify",
+        "color": "#00f0ff",
+        "target_category_name": "Community Tickets",
+        "subject_placeholder": "e.g. Requesting Verified Member access",
+        "identity_label": "Discord Username & Account Details",
+        "identity_placeholder": "e.g. username (Account age / time in server)",
+        "details_placeholder": "Please explain why you want to be verified and confirm you follow all community rules:",
+        "staff_roles": [1567491705266245713, 1567491704544698428, 1567474473404338216, 1567475021906186270],
+        "relay_channel_id": None,
+    },
+    "comm_staff_app": {
+        "name": "Community Staff Application",
+        "emoji": "🛡️",
+        "prefix": "comm-app",
+        "color": "#3498db",
+        "target_category_name": "Community Tickets",
+        "subject_placeholder": "e.g. Community Moderator / Support Application",
+        "identity_label": "Discord Username & Age (13+)",
+        "identity_placeholder": "e.g. username (Age: 16, Timezone: EST)",
+        "details_placeholder": "Please detail your previous moderation experience, weekly availability, and reasons for applying:",
+        "staff_roles": [1567491704544698428, 1567474473404338216, 1567475021906186270],
+        "relay_channel_id": None,
+    },
+    "mc_staff_app": {
+        "name": "MC Staff Application",
+        "emoji": "⛏️",
+        "prefix": "mc-app",
+        "color": "#2ecc71",
+        "target_category_name": "MC Staff Tickets",
+        "subject_placeholder": "e.g. MC Helper / Moderator / Builder Application",
+        "identity_label": "Minecraft Username (IGN) & Age",
+        "identity_placeholder": "e.g. Steve123 (Age: 15, Timezone: UTC)",
+        "details_placeholder": "Please detail your Minecraft experience, playtime on CV, building/modding skills, and reasons for applying:",
+        "staff_roles": [1567491706935447562, 1567491706335789056, 1567474481180446761, 1567475022405173320],
+        "relay_channel_id": None,
+    },
+    "pz_staff_app": {
+        "name": "PZ Staff Application",
+        "emoji": "🧟",
+        "prefix": "pz-app",
+        "color": "#c0392b",
+        "target_category_name": "PZ Staff Tickets",
+        "subject_placeholder": "e.g. PZ Moderator / Support Application",
+        "identity_label": "Steam Profile Name / URL & Age",
+        "identity_placeholder": "e.g. SurvivorJohn (Steam Profile URL, Age: 17)",
+        "details_placeholder": "Please detail your Project Zomboid experience, server familiarity, weekly availability, and reasons for applying:",
+        "staff_roles": [1567692607054942318, 1567692604340969713, 1567692601291702432, 1567475022724079637],
+        "relay_channel_id": None,
     }
 }
 
@@ -288,6 +454,37 @@ class TicketCreateModal(ui.Modal):
 
         await ticket_channel.send(content=" ".join(mention_pings), embed=embed, view=view)
 
+        # Dispatch Ticket Open Log to Department Ticket Logs & Global Discord Logs
+        dept_key, dept_log_ch, global_log_ch = get_dept_and_log_channels(
+            guild,
+            channel=ticket_channel,
+            prefix=category_info.get("prefix"),
+            category_key=self.category_key
+        )
+        open_log_embed = discord.Embed(
+            title=f"🎫 Ticket Opened: #{expected_channel_name}",
+            description=f"A new ticket was opened in **{category_info['name']}** by {interaction.user.mention}.",
+            color=discord.Color.from_str(category_info["color"]),
+            timestamp=discord.utils.utcnow()
+        )
+        open_log_embed.set_author(name=f"{interaction.user} ({interaction.user.id})", icon_url=interaction.user.display_avatar.url if interaction.user.display_avatar else None)
+        open_log_embed.add_field(name="Ticket Creator", value=f"{interaction.user.mention} (`{interaction.user.name}`)", inline=True)
+        open_log_embed.add_field(name="Department", value=dept_key.upper(), inline=True)
+        open_log_embed.add_field(name="Category", value=category_info["name"], inline=True)
+        open_log_embed.add_field(name="Channel", value=ticket_channel.mention, inline=True)
+        open_log_embed.add_field(name="Subject / Topic", value=self.subject.value[:250], inline=False)
+        if self.identity.value:
+            open_log_embed.add_field(name="Identifier / Reference", value=self.identity.value[:250], inline=False)
+        open_log_embed.add_field(name="Initial Details", value=f"```\n{self.details.value[:500]}\n```", inline=False)
+        open_log_embed.set_footer(text=f"Ticket Channel ID: {ticket_channel.id}")
+
+        for target_log in (dept_log_ch, global_log_ch):
+            if target_log:
+                try:
+                    await target_log.send(embed=open_log_embed)
+                except Exception as e:
+                    logger.error(f"Failed to post ticket open log to {target_log.name}: {e}")
+
         await interaction.response.send_message(
             f"✅ Your ticket has been opened successfully: {ticket_channel.mention}", ephemeral=True
         )
@@ -296,15 +493,39 @@ class TicketCategorySelect(ui.Select):
     def __init__(self):
         options = [
             discord.SelectOption(
+                label="Verified Application",
+                value="verified_app",
+                description="Apply for Verified Member role to share media, GIFs, links, and files",
+                emoji="✅"
+            ),
+            discord.SelectOption(
                 label="Community Support",
                 value="comm_support",
                 description="General help, Discord roles, website support, account inquiries",
                 emoji="🤝"
             ),
             discord.SelectOption(
+                label="Partnership / Affiliate App",
+                value="comm_partnership_app",
+                description="Apply for an official Community Partnership or Content Creator Affiliation",
+                emoji="🤝"
+            ),
+            discord.SelectOption(
+                label="Community Staff Application",
+                value="comm_staff_app",
+                description="Apply for Community Staff (Moderator, Support, Events)",
+                emoji="🛡️"
+            ),
+            discord.SelectOption(
                 label="MC Staff Support",
                 value="mc_support",
                 description="Minecraft gameplay help, voice chat, claims, land issues",
+                emoji="⛏️"
+            ),
+            discord.SelectOption(
+                label="MC Staff Application",
+                value="mc_staff_app",
+                description="Apply for Minecraft Server Staff (Helper, Moderator, Builder)",
                 emoji="⛏️"
             ),
             discord.SelectOption(
@@ -350,6 +571,12 @@ class TicketCategorySelect(ui.Select):
                 emoji="🧟"
             ),
             discord.SelectOption(
+                label="PZ Staff Application",
+                value="pz_staff_app",
+                description="Apply for Project Zomboid Staff (Moderator, Support)",
+                emoji="🧟"
+            ),
+            discord.SelectOption(
                 label="PZ Player/Staff Report",
                 value="pz_report",
                 description="Confidential report on PZ safehouse griefing, theft, or misconduct",
@@ -362,10 +589,22 @@ class TicketCategorySelect(ui.Select):
                 emoji="🌲"
             ),
             discord.SelectOption(
+                label="Unturned Staff Application",
+                value="unturned_staff_app",
+                description="Apply for Unturned Server Staff (Mod, Admin, Builder)",
+                emoji="📋"
+            ),
+            discord.SelectOption(
                 label="Unturned Player/Staff Report",
                 value="unturned_report",
                 description="Confidential report on Unturned cheats, exploits, or misconduct",
                 emoji="⚖️"
+            ),
+            discord.SelectOption(
+                label="Unturned Bug Report",
+                value="unturned_bug",
+                description="Unturned glitches, item dupes, plugin errors, or server issues",
+                emoji="🐛"
             ),
         ]
         super().__init__(
@@ -414,6 +653,27 @@ class PersistentCloseView(ui.View):
         await interaction.message.edit(view=self)
         await interaction.response.send_message(f"🙋 **{interaction.user.display_name}** has claimed this ticket and will be assisting you.")
 
+        # Log Ticket Claim to Department Logs and Global Audit Logs
+        dept_key, dept_log_ch, global_log_ch = get_dept_and_log_channels(guild, channel=interaction.channel)
+        claim_embed = discord.Embed(
+            title=f"🙋 Ticket Claimed: {interaction.channel.name}",
+            description=f"Ticket has been claimed by staff member {interaction.user.mention}.",
+            color=discord.Color.blue(),
+            timestamp=discord.utils.utcnow()
+        )
+        claim_embed.set_author(name=f"{interaction.user} ({interaction.user.id})", icon_url=interaction.user.display_avatar.url if interaction.user.display_avatar else None)
+        claim_embed.add_field(name="Staff Member", value=f"{interaction.user.mention} (`{interaction.user.name}`)", inline=True)
+        claim_embed.add_field(name="Department", value=dept_key.upper(), inline=True)
+        claim_embed.add_field(name="Channel", value=interaction.channel.mention, inline=True)
+        claim_embed.set_footer(text=f"Channel ID: {interaction.channel.id}")
+
+        for target_log in (dept_log_ch, global_log_ch):
+            if target_log:
+                try:
+                    await target_log.send(embed=claim_embed)
+                except Exception as e:
+                    logger.error(f"Failed to post claim log to {target_log.name}: {e}")
+
     @ui.button(label="Close Ticket", style=discord.ButtonStyle.danger, emoji="🔒", custom_id="close_ticket_btn")
     async def close_ticket(self, interaction: discord.Interaction, button: ui.Button):
         channel = interaction.channel
@@ -439,26 +699,29 @@ class PersistentCloseView(ui.View):
             transcript_lines.append(f"{author_str}: {content_str}")
 
         transcript_data = "\n".join(transcript_lines)
-        file_obj = discord.File(io.BytesIO(transcript_data.encode("utf-8")), filename=f"{channel.name}-transcript.txt")
 
-        # Send to discord-logs channel if available
-        log_channel = None
-        for ch in guild.text_channels:
-            if "discord-logs" in ch.name:
-                log_channel = ch
-                break
+        # Route transcript and close log to Department Ticket Logs and Global Discord Logs
+        dept_key, dept_log_ch, global_log_ch = get_dept_and_log_channels(guild, channel=channel)
 
-        if log_channel:
-            log_embed = discord.Embed(
-                title=f"📁 Ticket Closed: {channel.name}",
-                description=f"Ticket closed by {interaction.user.mention}.",
-                color=discord.Color.dark_gray(),
-                timestamp=discord.utils.utcnow()
-            )
-            try:
-                await log_channel.send(embed=log_embed, file=file_obj)
-            except Exception as e:
-                logger.error(f"Failed to post transcript: {e}")
+        log_embed = discord.Embed(
+            title=f"📁 Ticket Closed: {channel.name}",
+            description=f"Ticket was resolved and closed by {interaction.user.mention}.",
+            color=discord.Color.dark_gray(),
+            timestamp=discord.utils.utcnow()
+        )
+        log_embed.set_author(name=f"{interaction.user} ({interaction.user.id})", icon_url=interaction.user.display_avatar.url if interaction.user.display_avatar else None)
+        log_embed.add_field(name="Closed By", value=f"{interaction.user.mention} (`{interaction.user.name}`)", inline=True)
+        log_embed.add_field(name="Department", value=dept_key.upper(), inline=True)
+        log_embed.add_field(name="Messages Archived", value=str(max(0, len(transcript_lines) - 5)), inline=True)
+        log_embed.set_footer(text=f"Channel: {channel.name} • Closed at {discord.utils.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}")
+
+        for target_log in (dept_log_ch, global_log_ch):
+            if target_log:
+                try:
+                    file_obj = discord.File(io.BytesIO(transcript_data.encode("utf-8")), filename=f"{channel.name}-transcript.txt")
+                    await target_log.send(embed=log_embed, file=file_obj)
+                except Exception as e:
+                    logger.error(f"Failed to post transcript to {target_log.name}: {e}")
 
         await asyncio.sleep(5)
         try:
@@ -488,11 +751,56 @@ class SupportTicketsCog(commands.Cog):
         )
 
         guide_embed.add_field(
-            name="🐛 Bug Report Templates (MC / NS13 / PZ / Unturned)",
+            name="✅ Verified Member Role Application Template",
             value=(
                 "```markdown\n"
-                "• Service / Server: (Minecraft / Nova Station 13 / Project Zomboid / Unturned)\n"
-                "• IGN / Ckey / Steam ID: (e.g. Ckey: SpaceGuy, IGN: Player1)\n"
+                "• Discord Username: (e.g. your_username)\n"
+                "• Time in Circuit Verse: (e.g. 2 weeks / 1 month)\n"
+                "• Primary Games Played: (Minecraft / NS13 / Project Zomboid / Unturned / Community)\n"
+                "• Verification Purpose: (e.g. Sharing screenshots, clips, guides, and links)\n"
+                "• Safety Agreement: (Confirm you agree to abide by #discord-rules and understand that posting phishing/scams leads to immediate permanent removal)\n"
+                "```"
+            ),
+            inline=False
+        )
+
+        guide_embed.add_field(
+            name="🤝 Community Partnership & Creator Affiliate Application Template",
+            value=(
+                "```markdown\n"
+                "• Community / Creator Name: (e.g. MyServer Network or Creator Channel)\n"
+                "• Category / Type: (Community Partnership / Streaming Affiliate / Content Creator / Sponsor)\n"
+                "• Platform Link / Invite: (e.g. https://discord.gg/example or https://twitch.tv/example)\n"
+                "• Active Members / Audience Size: (e.g. 500 members / 150 avg viewers)\n"
+                "• Primary Games / Focus: (Space Station 13 / Minecraft / Project Zomboid / Unturned / Variety)\n"
+                "• Collaboration Proposal: (What kind of cross-promotion, events, or collaboration are you proposing?)\n"
+                "• Contact Representative(s): (Discord username and role in your organization)\n"
+                "```"
+            ),
+            inline=False
+        )
+
+        guide_embed.add_field(
+            name="🛡️ Staff Application Template (Community / MC / PZ / Unturned)",
+            value=(
+                "```markdown\n"
+                "• Position Applied For: (Community Staff / MC Staff / PZ Staff / Unturned Staff)\n"
+                "• Age (13+) & Timezone: (e.g. Age: 17, Timezone: EST / UTC)\n"
+                "• Weekly Availability: (e.g. 15-20 hours / weekdays & weekends)\n"
+                "• Past Moderation Experience: (List servers or communities previously staffed)\n"
+                "• Server Activity & Familiarity: (Playtime, in-game name/Ckey/Steam ID)\n"
+                "• Why Circuit Verse?: (Why do you want to join our staff team and what makes you a great fit?)\n"
+                "```"
+            ),
+            inline=False
+        )
+
+        guide_embed.add_field(
+            name="🐛 Bug Report Templates (MC / NS13 / PZ / Unturned / Web)",
+            value=(
+                "```markdown\n"
+                "• Service / Server: (Minecraft / Nova Station 13 / Project Zomboid / Unturned / Web)\n"
+                "• IGN / Ckey / Steam ID / Round ID: (e.g. Ckey: SpaceGuy, IGN: Player1)\n"
                 "• Coordinates / Location: (e.g. X: 120, Y: 65, Z: -300 or Station Medbay)\n"
                 "• Description of Bug: (What happened?)\n"
                 "• Steps to Reproduce:\n"
@@ -506,17 +814,29 @@ class SupportTicketsCog(commands.Cog):
         )
 
         guide_embed.add_field(
-            name="⚖️ Player & Staff Misconduct Report Template",
+            name="⚖️ Player & Staff Misconduct Report Template (Confidential)",
             value=(
                 "```markdown\n"
                 "• Server / Platform: (Minecraft / NS13 / PZ / Unturned / Discord)\n"
                 "• Accused Player / Staff: (IGN, Ckey, Steam ID, or Discord User)\n"
-                "• Date, Time & Timezone: (e.g. Nov 7, 09:30 PM EST)\n"
+                "• Date, Time & Timezone: (e.g. Nov 11, 09:30 PM EST)\n"
                 "• Rule Broken: (Griefing, Cheating, Harassment, Self-Antagging, Abuse)\n"
                 "• Witnesses / Evidence: (Video, screenshots, logs)\n"
                 "• Detailed Narrative: (Objective account of the incident)\n"
                 "```\n"
                 "*Note: Player and staff misconduct reports are strictly confidential and visible only to Executive Management.*"
+            ),
+            inline=False
+        )
+
+        guide_embed.add_field(
+            name="🩺 Gameplay & In-Game Claim / Mentor Assistance Template",
+            value=(
+                "```markdown\n"
+                "• Game & Department: (NS13 Job / MC Land Claim / PZ Safehouse / Unturned Base)\n"
+                "• Identifier & Coords: (IGN/Ckey/Steam ID and World Coordinates)\n"
+                "• Assistance Needed: (Safehouse dispute, claim expansion, job/mechanics tutorial)\n"
+                "```"
             ),
             inline=False
         )
@@ -528,11 +848,13 @@ class SupportTicketsCog(commands.Cog):
             title="📬 Open a Support Ticket",
             description=(
                 "Select the appropriate department from the dropdown menu below to begin:\n\n"
-                "🤝 **Community Support** — General inquiries, Discord roles, website help.\n"
-                "⛏️ **MC Staff Support & Reports** — Minecraft gameplay, claims, bug & player reports.\n"
-                "🚀 **NS13 Staff Support & Mentors** — Nova Station 13 disputes, mentor tutorials, bugs.\n"
-                "🧟 **Project Zomboid Support** — PZ gameplay, safehouse claims, player reports.\n"
-                "🌲 **Unturned Support** — Unturned gameplay, base claims, reports & technical help."
+                "✅ **Verified Application** — Unlock media, image, GIF, link, & file sharing.\n"
+                "🤝 **Community Support & Applications** — General inquiries, roles, staff applications.\n"
+                "💼 **Partnerships & Affiliates** — Community alliances & content creator affiliations.\n"
+                "⛏️ **MC Support, Reports & Applications** — Minecraft gameplay, claims, bugs, staff app.\n"
+                "🚀 **NS13 Staff Support & Mentors** — Nova Station 13 disputes, mentor guides, bugs.\n"
+                "🧟 **Project Zomboid Support & Staff App** — PZ gameplay, claims, bugs, staff application.\n"
+                "🌲 **Unturned Support & Staff App** — Unturned gameplay, base claims, staff application."
             ),
             color=discord.Color.from_str("#00f0ff")
         )

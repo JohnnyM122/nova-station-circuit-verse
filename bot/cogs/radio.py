@@ -26,60 +26,6 @@ def clean_song_title(text: str) -> str:
     text = re.sub(r"\s+", " ", text)
     return text.strip()
 
-# --- Discord DAVE E2EE protocol compatibility layer ---
-from discord.voice_state import VoiceConnectionState
-from discord.gateway import DiscordVoiceWebSocket
-import struct
-
-# 1. Allow encryption when either can_encrypt or ready is True on dave_session
-def _patched_can_encrypt(self):
-    if not getattr(self, "dave_session", None):
-        return False
-    return (
-        getattr(self, "dave_protocol_version", 0) != 0
-        and (getattr(self.dave_session, "can_encrypt", False) or getattr(self.dave_session, "ready", False))
-    )
-
-VoiceConnectionState.can_encrypt = property(_patched_can_encrypt)
-
-# 2. Patch received_binary_message to handle transition_id == 0 properly
-orig_received_binary_message = DiscordVoiceWebSocket.received_binary_message
-
-async def _patched_received_binary_message(self, msg: bytes) -> None:
-    op = msg[2]
-    await orig_received_binary_message(self, msg)
-    if op in (DiscordVoiceWebSocket.MLS_ANNOUNCE_COMMIT_TRANSITION, DiscordVoiceWebSocket.MLS_WELCOME):
-        transition_id = struct.unpack_from('>H', msg, 3)[0]
-        if transition_id == 0:
-            state = self._connection
-            if state and getattr(state, "dave_session", None):
-                try:
-                    state.dave_session.execute_transition(0)
-                    logger.info("Executed DAVE transition 0 on dave_session")
-                except Exception as e:
-                    logger.debug(f"execute_transition(0) notice: {e}")
-                try:
-                    await self.send_transition_ready(0)
-                    logger.info("Sent DAVE transition ready for id 0")
-                except Exception as e:
-                    logger.debug(f"send_transition_ready(0) notice: {e}")
-
-DiscordVoiceWebSocket.received_binary_message = _patched_received_binary_message
-
-# 3. Patch _execute_transition so dave_session executes transitions
-orig_execute_transition = VoiceConnectionState._execute_transition
-
-async def _patched_execute_transition(self, transition_id: int) -> None:
-    if getattr(self, "dave_session", None):
-        try:
-            self.dave_session.execute_transition(transition_id)
-            logger.info(f"Executed DAVE transition {transition_id} on dave_session")
-        except Exception as e:
-            logger.debug(f"dave_session.execute_transition({transition_id}) notice: {e}")
-    await orig_execute_transition(self, transition_id)
-
-VoiceConnectionState._execute_transition = _patched_execute_transition
-# --- End of DAVE compatibility layer ---
 
 class SongSelectMenu(discord.ui.Select):
     def __init__(self, cog, songs: list, user: discord.Member, note: str = ""):
@@ -415,7 +361,7 @@ class RadioCog(commands.Cog, name="Radio"):
                 discord.FFmpegPCMAudio(
                     stream_url,
                     before_options='-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
-                    options='-vn'
+                    options='-vn -ar 48000 -ac 2 -f s16le'
                 ),
                 volume=0.8
             )

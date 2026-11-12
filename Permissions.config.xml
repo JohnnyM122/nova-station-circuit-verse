@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RocketPermissions xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <DefaultGroup>default</DefaultGroup>
+  <Groups>
+    <Group>
+      <Id>host</Id>
+      <DisplayName>Unturned Server Host</DisplayName>
+      <Prefix>[Host] </Prefix>
+      <Suffix />
+      <Color>e74c3c</Color>
+      <Members />
+      <ParentGroup>manager</ParentGroup>
+      <Priority>10</Priority>
+      <Permissions>
+        <Permission Cooldown="0">*</Permission>
+      </Permissions>
+    </Group>
+    <Group>
+      <Id>manager</Id>
+      <DisplayName>Unturned Server Manager</DisplayName>
+      <Prefix>[Manager] </Prefix>
+      <Suffix />
+      <Color>f39c12</Color>
+      <Members />
+      <ParentGroup>admin</ParentGroup>
+      <Priority>20</Priority>
+      <Permissions>
+        <Permission Cooldown="0">*</Permission>
+      </Permissions>
+    </Group>
+    <Group>
+      <Id>admin</Id>
+      <DisplayName>Unturned Server Admin</DisplayName>
+      <Prefix>[Admin] </Prefix>
+      <Suffix />
+      <Color>e67e22</Color>
+      <Members />
+      <ParentGroup>mod</ParentGroup>
+      <Priority>30</Priority>
+      <Permissions>
+        <Permission Cooldown="0">god</Permission>
+        <Permission Cooldown="0">vanish</Permission>
+        <Permission Cooldown="0">i</Permission>
+        <Permission Cooldown="0">v</Permission>
+        <Permission Cooldown="0">slay</Permission>
+        <Permission Cooldown="0">heal</Permission>
+        <Permission Cooldown="0">admin</Permission>
+        <Permission Cooldown="0">unadmin</Permission>
+        <Permission Cooldown="0">airdrop</Permission>
+        <Permission Cooldown="0">blacklisteditems.bypass</Permission>
+        <Permission Cooldown="0">buildingrestrictions.bypass</Permission>
+        <Permission Cooldown="0">vehicle</Permission>
+        <Permission Cooldown="0">repair</Permission>
+        <Permission Cooldown="0">refuel</Permission>
+        <Permission Cooldown="0">spawns</Permission>
+        <Permission Cooldown="0">sb</Permission>
+      </Permissions>
+    </Group>
+    <Group>
+      <Id>mod</Id>
+      <DisplayName>Unturned Server Mod</DisplayName>
+      <Prefix>[Mod] </Prefix>
+      <Suffix />
+      <Color>2ecc71</Color>
+      <Members />
+      <ParentGroup>staff</ParentGroup>
+      <Priority>40</Priority>
+      <Permissions>
+        <Permission Cooldown="0">tp</Permission>
+        <Permission Cooldown="0">tphere</Permission>
+        <Permission Cooldown="0">kick</Permission>
+        <Permission Cooldown="0">ban</Permission>
+        <Permission Cooldown="0">unban</Permission>
+        <Permission Cooldown="0">broadcast</Permission>
+        <Permission Cooldown="0">duty</Permission>
+        <Permission Cooldown="0">freeze</Permission>
+        <Permission Cooldown="0">unfreeze</Permission>
+        <Permission Cooldown="0">warn</Permission>
+        <Permission Cooldown="0">warnings</Permission>
+        <Permission Cooldown="0">mute</Permission>
+        <Permission Cooldown="0">unmute</Permission>
+        <Permission Cooldown="0">investigate</Permission>
+        <Permission Cooldown="0">spy</Permission>
+        <Permission Cooldown="0">isabusing</Permission>
+        <Permission Cooldown="0">playerinfo</Permission>
+      </Permissions>
+    </Group>
+    <Group>
+      <Id>staff</Id>
+      <DisplayName>Unturned Server Staff</DisplayName>
+      <Prefix>[Staff] </Prefix>
+      <Suffix />
+      <Color>3498db</Color>
+      <Members />
+      <ParentGroup>default</ParentGroup>
+      <Priority>50</Priority>
+      <Permissions>
+        <Permission Cooldown="0">p</Permission>
+        <Permission Cooldown="0">duty</Permission>
+      </Permissions>
+    </Group>
+    <Group>
+      <Id>vip</Id>
+      <DisplayName>Unturned VIP</DisplayName>
+      <Prefix>[VIP] </Prefix>
+      <Suffix />
+      <Color>9b59b6</Color>
+      <Members />
+      <ParentGroup>default</ParentGroup>
+      <Priority>80</Priority>
+      <Permissions>
+        <Permission Cooldown="30">heal</Permission>
+        <Permission Cooldown="60">v</Permission>
+      </Permissions>
+    </Group>
+    <Group>
+      <Id>default</Id>
+      <DisplayName>Player</DisplayName>
+      <Prefix />
+      <Suffix />
+      <Color>white</Color>
+      <Members />
+      <Priority>100</Priority>
+      <Permissions>
+        <Permission Cooldown="0">p</Permission>
+        <Permission Cooldown="0">compass</Permission>
+        <Permission Cooldown="0">rocket</Permission>
+        <Permission Cooldown="0">home</Permission>
+        <Permission Cooldown="0">homes</Permission>
+        <Permission Cooldown="0">sethome</Permission>
+        <Permission Cooldown="0">destroyhome</Permission>
+        <Permission Cooldown="0">tpa</Permission>
+        <Permission Cooldown="0">tpa.send</Permission>
+        <Permission Cooldown="0">tpa.accept</Permission>
+        <Permission Cooldown="0">tpa.deny</Permission>
+        <Permission Cooldown="0">tpa.cancel</Permission>
+        <Permission Cooldown="0">kit</Permission>
+        <Permission Cooldown="0">kits</Permission>
+        <Permission Cooldown="0">pet</Permission>
+        <Permission Cooldown="0">buy</Permission>
+        <Permission Cooldown="0">sell</Permission>
+        <Permission Cooldown="0">cost</Permission>
+        <Permission Cooldown="0">balance</Permission>
+        <Permission Cooldown="0">pay</Permission>
+        <Permission Cooldown="0">pvp</Permission>
+        <Permission Cooldown="0">color</Permission>
+        <Permission Cooldown="0">stats</Permission>
+        <Permission Cooldown="0">top</Permission>
+        <Permission Cooldown="0">steamgroup</Permission>
+        <Permission Cooldown="0">reward</Permission>
+      </Permissions>
+    </Group>
+  </Groups>
+</RocketPermissions>

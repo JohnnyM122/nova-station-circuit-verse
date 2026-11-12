@@ -1,5 +1,8 @@
+import subprocess
+import psutil
 from security_failsafe import get_client_ip, get_ua_hash, is_account_locked, verify_session_security, setup_security_failsafe
 import datetime
+import glob
 import logging
 logger = logging.getLogger('cv-panel')
 import asyncio
@@ -18,7 +21,7 @@ import httpx
 import paramiko
 import pymysql
 from fastapi import FastAPI, HTTPException, Request, Response
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 
 CONFIG_PATH = "/etc/cv-panel/config.json"
@@ -188,6 +191,19 @@ def init_db():
             locked_until REAL DEFAULT 0
         )
     """)
+    # Auto-migrate sessions table columns
+    c.execute("PRAGMA table_info(sessions)")
+    existing_cols = [row[1] for row in c.fetchall()]
+    cols_to_add = [
+        ("ip_address", "TEXT"),
+        ("user_agent_hash", "TEXT"),
+        ("mfa_enabled", "INTEGER DEFAULT 0"),
+        ("last_active_at", "REAL"),
+        ("discord_access_token", "TEXT")
+    ]
+    for cname, ctype in cols_to_add:
+        if cname not in existing_cols:
+            c.execute(f"ALTER TABLE sessions ADD COLUMN {cname} {ctype}")
     conn.commit()
     conn.close()
 
@@ -403,6 +419,8 @@ MC_RANK_WEIGHTS = {
     "mcservermod": 65,
     "mcserverstaff": 55,
     "communitypartner": 45,
+    "affiliatepartner": 45,
+    "affiliate": 45,
     "mcvipmember": 30,
     "mcplayer": 20,
     "default": 10,
@@ -427,6 +445,7 @@ ROLE_ID_TO_WEIGHT = {
     "1567449681070399518": 65,   # MC Server Mod
     "1567474481180446761": 55,   # MC Server Staff
     "1567730989969440848": 45,   # Community Partner
+    "1570071718037553336": 45,   # Affiliate Partner
     "1567449678746882068": 30,   # MC VIP Member
     "1567449675949150268": 20,   # MC Player
     "1568805604447752263": 130,  # Unturned Server Host
@@ -479,6 +498,8 @@ ROLE_NAME_TO_WEIGHT = {
     "mc server staff": 55,
     "server staff": 55,
     "community partner": 45,
+    "affiliate partner": 45,
+    "affiliate": 45,
     "mc vip member": 30,
     "vip member": 30,
     "vip": 30,
@@ -770,7 +791,12 @@ async def get_current_user(request: Request, refresh_roles: bool = False) -> Opt
         return None
     user = dict(row)
     now = time.time()
-    if refresh_roles or (now - user["updated_at"] > 20):
+    is_master_session = (
+        user.get("discord_id") == "1564610713216098394"
+        or user.get("username") == "Community Founder"
+        or (user.get("master_unlocked_until", 0) > now and user.get("discord_id") == "1564610713216098394")
+    )
+    if not is_master_session and (refresh_roles or (now - user["updated_at"] > 20)):
         role_ids, role_names = await fetch_member_roles(user["discord_id"])
         if role_ids is None:
             # User was kicked or banned from Discord server! Terminate session immediately.
@@ -787,6 +813,10 @@ async def get_current_user(request: Request, refresh_roles: bool = False) -> Opt
         conn.commit()
         user["roles_json"] = json.dumps(role_ids)
         user["role_names_json"] = json.dumps(role_names)
+    elif is_master_session:
+        # Keep updated_at fresh for master emergency session
+        c.execute("UPDATE sessions SET updated_at = ? WHERE session_id = ?", (now, sid))
+        conn.commit()
     conn.close()
     role_ids = json.loads(user["roles_json"] or "[]")
     role_names = json.loads(user["role_names_json"] or "[]")
@@ -852,6 +882,74 @@ def check_auth_rate_limit(request: Request, limit: int = 15, window_sec: int = 6
     _auth_rate_limit[ip].append(now)
     return True
 
+@app.post("/api/auth/master-login")
+async def api_auth_master_login(request: Request):
+    if not check_auth_rate_limit(request, limit=10, window_sec=60):
+        raise HTTPException(429, "Too many login attempts. Please wait 60 seconds.")
+
+    body = await request.json()
+    pw = body.get("password", "").strip()
+    if not pw:
+        raise HTTPException(400, "Password required")
+
+    cfg = load_config()
+    salt = cfg.get("master_password_salt", "").encode("utf-8")
+    target_hash = cfg.get("master_password_hash", "")
+
+    candidate = hashlib.pbkdf2_hmac("sha256", pw.encode("utf-8"), salt, 200000).hex()
+    if not hmac.compare_digest(candidate, target_hash):
+        logger.warning(f"Failed Master Password login attempt from {get_client_ip(request)}")
+        raise HTTPException(401, "Invalid Master Password")
+
+    # Generate full master executive session
+    sid = secrets.token_urlsafe(32)
+    now = time.time()
+    client_ip = get_client_ip(request)
+    ua_hash = get_ua_hash(request)
+
+    # Founder & Executive master roles
+    founder_role_id = "1564610713216098394"
+    role_ids = [founder_role_id, "1566625061467717752", "1567482219495301191"]
+    role_names = ["Community Founder & Executive", "Chief Community Officer", "Community Director"]
+    avatar_url = "https://cdn.discordapp.com/embed/avatars/0.png"
+    discord_id = "1564610713216098394"
+    username = "Community Founder"
+    global_name = "Community Founder"
+    master_unlocked_until = now + 86400  # 24 hours unlocked
+
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute(
+        """
+        INSERT INTO sessions (session_id, discord_id, username, global_name, avatar, roles_json, role_names_json, master_unlocked_until, created_at, updated_at, ip_address, user_agent_hash, mfa_enabled, last_active_at, discord_access_token)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, '')
+        """,
+        (sid, discord_id, username, global_name, avatar_url, json.dumps(role_ids), json.dumps(role_names), master_unlocked_until, now, now, client_ip, ua_hash, now)
+    )
+    conn.commit()
+    conn.close()
+
+    record_audit(
+        {"discord_id": discord_id, "username": username},
+        "auth",
+        "master_password_login",
+        "Logged in via Executive Master Password",
+        client_ip
+    )
+
+    clean_target = body.get("next") or "/?panel=master"
+    resp = JSONResponse({"success": True, "message": "Master Passkey verified! Session created.", "redirect": clean_target})
+    resp.set_cookie(
+        key="cv_session",
+        value=sid,
+        domain=".circuitverse.online",
+        max_age=86400,
+        httponly=True,
+        secure=True,
+        samesite="lax",
+    )
+    return resp
+
 @app.get("/auth/login")
 async def auth_login(request: Request, next: str = "/"):
     if not check_auth_rate_limit(request, limit=15, window_sec=60):
@@ -892,6 +990,7 @@ async def auth_login(request: Request, next: str = "/"):
 _recent_oauth_cache = {}  # code -> (sid, timestamp)
 
 @app.get("/auth/callback")
+@app.get("/callback")
 async def auth_callback(request: Request, code: Optional[str] = None, state: Optional[str] = None):
     if not check_auth_rate_limit(request, limit=15, window_sec=60):
         return HTMLResponse("<h3>429 Too Many Requests</h3><p>Rate limit reached on OAuth callback. Please wait 60 seconds.</p>", status_code=429)
@@ -972,7 +1071,8 @@ async def auth_callback(request: Request, code: Optional[str] = None, state: Opt
         )
         if token_resp.status_code != 200:
             logger.error(f"Discord token exchange failed: status={token_resp.status_code} body={token_resp.text}")
-            return RedirectResponse("/?error=token_exchange_failed")
+            err_code = "invalid_client_secret" if "invalid_client" in token_resp.text else "token_exchange_failed"
+            return RedirectResponse(f"/?error={err_code}")
         token_data = token_resp.json()
         access_token = token_data["access_token"]
 
@@ -1191,12 +1291,22 @@ async def api_pz_status(request: Request):
             players_out = await run_rcon("127.0.0.1", int(pz["rcon_port"]), pz["rcon_password"], "players")
         except Exception as e:
             players_out = f"RCON error: {e}"
+    tier = user["access"]["pz"]
+    zcp_account_map = {
+        "admin": "cv_admin",
+        "technician": "cv_tech",
+        "moderator": "cv_mod",
+    }
+    zcp_username = zcp_account_map.get(tier, "cv_mod")
+    zcp_password = cfg.get("zcp_accounts", {}).get(zcp_username, "")
     return {
         "running": pz_active,
         "zcp_running": zcp_active,
         "players_raw": players_out,
         "zcp_url": cfg["zcp_public_url"],
-        "tier": user["access"]["pz"],
+        "zcp_username": zcp_username,
+        "zcp_password": zcp_password,
+        "tier": tier,
     }
 
 @app.post("/api/pz/action")
@@ -1218,6 +1328,7 @@ async def api_pz_action(request: Request):
                 await run_rcon("127.0.0.1", int(pz["rcon_port"]), pz["rcon_password"], "save")
             except Exception:
                 pass
+        await send_discord_game_lifecycle_alert("pz", action, user.get("username", "Staff"))
         res = await run_ssh("127.0.0.1", "root", f"systemctl {action} project-zomboid.service")
         record_audit(user, "pz", f"service_{action}", f"systemctl {action} project-zomboid.service")
         return {"success": res["code"] == 0, "output": res["stdout"] + res["stderr"]}
@@ -1232,6 +1343,316 @@ async def api_pz_action(request: Request):
         return {"success": True, "output": out}
 
     raise HTTPException(400, "Unknown action")
+
+# ==========================================
+# Project Zomboid Mod Configurator & Manager
+# ==========================================
+PZ_INI_PATH = "/home/pz/Zomboid/Server/CircuitVersePZ.ini"
+PZ_SANDBOX_PATH = "/home/pz/Zomboid/Server/CircuitVersePZ_SandboxVars.lua"
+PZ_SPAWN_PATH = "/home/pz/Zomboid/Server/CircuitVersePZ_spawnregions.lua"
+
+PZ_CURATED_MODS = [
+    {"title": "Common Sense", "workshop_id": "2875848298", "mod_id": "commonSense", "desc": "Prying doors with crowbars, opening cans with knives, and intuitive mechanics."},
+    {"title": "Filibuster Rhymes' Used Cars! (B41/B42)", "workshop_id": "1510950729", "mod_id": "FRUsedCars;FRUsedCarsFT;FRUsedCarsNLREC", "desc": "Huge pack of lore-friendly American vehicles from the 80s and 90s."},
+    {"title": "Arsenal(26) GunFighter Mod [2.0]", "workshop_id": "2297098490", "mod_id": "Arsenal(26)GunFighter", "desc": "Framework for realistic firearms, attachments, optics, and ammo mechanics."},
+    {"title": "Brita's Weapon Pack", "workshop_id": "2200148440", "mod_id": "Brita", "desc": "Massive collection of real-world firearms, melee weapons, and silencers."},
+    {"title": "Brita's Armor Pack", "workshop_id": "2460154811", "mod_id": "Brita_2", "desc": "Extensive military gear, tactical vests, helmets, backpacks, and clothing."},
+    {"title": "Mod Options (Server Config Framework)", "workshop_id": "2169435997", "mod_id": "modoptions", "desc": "Server-side and client configuration framework for customizable mods."},
+    {"title": "Vehicle Recycling", "workshop_id": "2289992503", "mod_id": "VehicleRecycling", "desc": "Dismantle vehicle wrecks and scrap metal with a blowtorch."},
+    {"title": "Has Been Read", "workshop_id": "2544353492", "mod_id": "HasBeenRead", "desc": "Visual indicators showing if skill books, recipes, and VHS tapes have been used."},
+    {"title": "Minimal Display Bars", "workshop_id": "2792644998", "mod_id": "minimalDisplayBars", "desc": "Clean, customizable HUD bars for health, hunger, thirst, and stamina."},
+    {"title": "True Actions (Dancing & Sitting)", "workshop_id": "2487024847", "mod_id": "TrueActionsDancing", "desc": "Allows player characters to sit on chairs, lie down on beds, and dance."},
+    {"title": "Rain Cleans Blood", "workshop_id": "2956146279", "mod_id": "RainCleansBlood", "desc": "Outdoor blood and grime gradually wash away during rainstorms."},
+    {"title": "Auto Reload", "workshop_id": "2756689874", "mod_id": "AutoReload", "desc": "Automatically loads ammunition into magazines and chambers when empty."},
+    {"title": "Tsar's Common Library 2.0", "workshop_id": "2392709985", "mod_id": "tsarslib", "desc": "Core requirement for trailers, boats, and advanced vehicle physics."},
+    {"title": "Autotsar Trailers", "workshop_id": "2282429356", "mod_id": "autotsartrailers", "desc": "Adds functional towable trailers, generators, and storage campers."}
+]
+
+def _pz_write_with_backup(filepath: str, content: str):
+    if os.path.exists(filepath):
+        bak_dir = os.path.join(os.path.dirname(filepath), "backups")
+        os.makedirs(bak_dir, exist_ok=True)
+        fname = os.path.basename(filepath)
+        ts = int(time.time())
+        try:
+            shutil.copy2(filepath, os.path.join(bak_dir, f"{fname}.{ts}.bak"))
+        except Exception as e:
+            logger.warning(f"Backup failed for {filepath}: {e}")
+    with open(filepath, "w", encoding="utf-8") as f:
+        f.write(content)
+    try:
+        os.chown(filepath, 1000, 1000)
+    except Exception:
+        pass
+
+@app.get("/api/pz/mods")
+async def api_pz_mods(request: Request):
+    user = await get_current_user(request)
+    if not user or not user["access"]["pz"]:
+        raise HTTPException(403, "Requires Project Zomboid Staff role")
+    
+    raw_ini = ""
+    if os.path.exists(PZ_INI_PATH):
+        try:
+            with open(PZ_INI_PATH, "r", encoding="utf-8", errors="replace") as f:
+                raw_ini = f.read()
+        except Exception as e:
+            logger.error(f"Error reading PZ INI: {e}")
+    
+    workshop_ids = []
+    mod_ids = []
+    for line in raw_ini.splitlines():
+        line_clean = line.strip()
+        if line_clean.startswith("WorkshopItems="):
+            w_str = line_clean.split("=", 1)[1].strip()
+            workshop_ids = [w.strip() for w in w_str.split(";") if w.strip()]
+        elif line_clean.startswith("Mods="):
+            m_str = line_clean.split("=", 1)[1].strip()
+            mod_ids = [m.strip() for m in m_str.split(";") if m.strip()]
+
+    raw_sandbox = ""
+    if os.path.exists(PZ_SANDBOX_PATH):
+        try:
+            with open(PZ_SANDBOX_PATH, "r", encoding="utf-8", errors="replace") as f:
+                raw_sandbox = f.read()
+        except Exception as e:
+            logger.error(f"Error reading PZ Sandbox: {e}")
+
+    ws_base = "/home/pz/pz-server/steamapps/workshop/content/108600"
+    workshop_meta = {}
+    if os.path.exists(ws_base):
+        for wid_dir in os.listdir(ws_base):
+            wdir = os.path.join(ws_base, wid_dir)
+            if not os.path.isdir(wdir):
+                continue
+            infos = glob.glob(os.path.join(wdir, "mods", "*", "mod.info"))
+            if not infos:
+                infos = glob.glob(os.path.join(wdir, "**", "mod.info"), recursive=True)
+            mod_names = []
+            m_ids = []
+            for info in infos:
+                try:
+                    with open(info, "r", encoding="utf-8", errors="replace") as f:
+                        cur_name = None
+                        cur_id = None
+                        for l in f:
+                            if "=" in l:
+                                k, v = l.strip().split("=", 1)
+                                if k.lower() == "name":
+                                    cur_name = v.strip()
+                                elif k.lower() == "id":
+                                    cur_id = v.strip()
+                        if cur_name and cur_name not in mod_names:
+                            mod_names.append(cur_name)
+                        if cur_id and cur_id not in m_ids:
+                            m_ids.append(cur_id)
+                except Exception:
+                    pass
+            workshop_meta[wid_dir] = {
+                "title": mod_names[0] if mod_names else f"Workshop #{wid_dir}",
+                "mod_names": mod_names,
+                "mod_ids": m_ids,
+                "downloaded": True
+            }
+
+    installed_items = []
+    for wid in workshop_ids:
+        meta = workshop_meta.get(wid)
+        if meta:
+            installed_items.append({
+                "workshop_id": wid,
+                "title": meta["title"],
+                "mod_ids": meta["mod_ids"],
+                "downloaded": True
+            })
+        else:
+            curated_match = next((c for c in PZ_CURATED_MODS if c["workshop_id"] == wid), None)
+            title = curated_match["title"] if curated_match else f"Workshop #{wid}"
+            known_mids = [m for m in curated_match["mod_id"].split(";") if m] if curated_match else []
+            downloaded = os.path.exists(os.path.join(ws_base, wid))
+            installed_items.append({
+                "workshop_id": wid,
+                "title": title,
+                "mod_ids": known_mids,
+                "downloaded": downloaded
+            })
+
+    return {
+        "workshop_ids": workshop_ids,
+        "mod_ids": mod_ids,
+        "installed_items": installed_items,
+        "raw_ini": raw_ini,
+        "raw_sandbox": raw_sandbox,
+        "curated_catalog": PZ_CURATED_MODS,
+        "tier": user["access"]["pz"],
+    }
+
+@app.get("/api/pz/mods/lookup")
+async def api_pz_mods_lookup(request: Request, q: str = ""):
+    user = await get_current_user(request)
+    if not user or not user["access"]["pz"]:
+        raise HTTPException(403, "Requires Project Zomboid Staff role")
+    query = q.strip().lower()
+    matches = []
+    for m in PZ_CURATED_MODS:
+        if not query or query in m["title"].lower() or query in m["workshop_id"] or query in m["mod_id"].lower() or query in m["desc"].lower():
+            matches.append(m)
+    return {"items": matches}
+
+@app.post("/api/pz/mods/install")
+async def api_pz_mods_install(request: Request):
+    user = await get_current_user(request)
+    if not user or user["access"]["pz"] not in ("admin", "technician"):
+        raise HTTPException(403, "Requires PZ Admin or Technician tier")
+    body = await request.json()
+    wid = str(body.get("workshop_id", "")).strip()
+    mid = str(body.get("mod_id", "")).strip()
+    if not wid or not mid:
+        raise HTTPException(400, "Workshop ID and Mod ID are required")
+
+    if not os.path.exists(PZ_INI_PATH):
+        raise HTTPException(404, "CircuitVersePZ.ini not found")
+
+    with open(PZ_INI_PATH, "r", encoding="utf-8", errors="replace") as f:
+        lines = f.readlines()
+
+    w_found = False
+    m_found = False
+    new_lines = []
+
+    for line in lines:
+        if line.strip().startswith("WorkshopItems="):
+            w_found = True
+            cur = line.strip().split("=", 1)[1]
+            items = [x.strip() for x in cur.split(";") if x.strip()]
+            if wid not in items:
+                items.append(wid)
+            new_lines.append(f"WorkshopItems={';'.join(items)}\n")
+        elif line.strip().startswith("Mods="):
+            m_found = True
+            cur = line.strip().split("=", 1)[1]
+            items = [x.strip() for x in cur.split(";") if x.strip()]
+            for sub_m in mid.split(";"):
+                sub_clean = sub_m.strip()
+                if sub_clean and sub_clean not in items:
+                    items.append(sub_clean)
+            new_lines.append(f"Mods={';'.join(items)}\n")
+        else:
+            new_lines.append(line)
+
+    if not w_found:
+        new_lines.append(f"WorkshopItems={wid}\n")
+    if not m_found:
+        new_lines.append(f"Mods={mid}\n")
+
+    _pz_write_with_backup(PZ_INI_PATH, "".join(new_lines))
+    record_audit(user, "pz", "mod_install", f"Installed mod {mid} (Workshop {wid})")
+
+    # Pre-download workshop item via steamcmd in background
+    try:
+        subprocess.Popen([
+            "sudo", "-u", "pz", "/home/pz/steamcmd/steamcmd.sh",
+            "+force_install_dir", "/home/pz/pz-server",
+            "+login", "anonymous",
+            "+workshop_download_item", "108600", str(wid), "validate",
+            "+quit"
+        ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception as e:
+        logger.warning(f"Background steamcmd download trigger error: {e}")
+
+    return {"success": True, "message": f"Mod {mid} ({wid}) saved to CircuitVersePZ.ini and background Steam download queued! Remember to Save & Restart PZ to load it."}
+
+@app.post("/api/pz/mods/remove")
+async def api_pz_mods_remove(request: Request):
+    user = await get_current_user(request)
+    if not user or user["access"]["pz"] not in ("admin", "technician"):
+        raise HTTPException(403, "Requires PZ Admin or Technician tier")
+    body = await request.json()
+    wid = str(body.get("workshop_id", "")).strip()
+    mid = str(body.get("mod_id", "")).strip()
+
+    if not os.path.exists(PZ_INI_PATH):
+        raise HTTPException(404, "CircuitVersePZ.ini not found")
+
+    with open(PZ_INI_PATH, "r", encoding="utf-8", errors="replace") as f:
+        lines = f.readlines()
+
+    new_lines = []
+    for line in lines:
+        if wid and line.strip().startswith("WorkshopItems="):
+            cur = line.strip().split("=", 1)[1]
+            items = [x.strip() for x in cur.split(";") if x.strip() and x.strip() != wid]
+            new_lines.append(f"WorkshopItems={';'.join(items)}\n")
+        elif mid and line.strip().startswith("Mods="):
+            cur = line.strip().split("=", 1)[1]
+            targets = set([x.strip() for x in mid.split(";") if x.strip()])
+            items = [x.strip() for x in cur.split(";") if x.strip() and x.strip() not in targets]
+            new_lines.append(f"Mods={';'.join(items)}\n")
+        else:
+            new_lines.append(line)
+
+    _pz_write_with_backup(PZ_INI_PATH, "".join(new_lines))
+    record_audit(user, "pz", "mod_remove", f"Removed mod {mid or wid}")
+    return {"success": True, "message": f"Mod {mid or wid} removed from CircuitVersePZ.ini."}
+
+@app.post("/api/pz/mods/reorder")
+async def api_pz_mods_reorder(request: Request):
+    user = await get_current_user(request)
+    if not user or user["access"]["pz"] not in ("admin", "technician"):
+        raise HTTPException(403, "Requires PZ Admin or Technician tier")
+    body = await request.json()
+    wids = body.get("workshop_ids", [])
+    mids = body.get("mod_ids", [])
+
+    if not os.path.exists(PZ_INI_PATH):
+        raise HTTPException(404, "CircuitVersePZ.ini not found")
+
+    with open(PZ_INI_PATH, "r", encoding="utf-8", errors="replace") as f:
+        lines = f.readlines()
+
+    w_str = ";".join([str(x).strip() for x in wids if str(x).strip()])
+    m_str = ";".join([str(x).strip() for x in mids if str(x).strip()])
+
+    new_lines = []
+    for line in lines:
+        if line.strip().startswith("WorkshopItems="):
+            new_lines.append(f"WorkshopItems={w_str}\n")
+        elif line.strip().startswith("Mods="):
+            new_lines.append(f"Mods={m_str}\n")
+        else:
+            new_lines.append(line)
+
+    _pz_write_with_backup(PZ_INI_PATH, "".join(new_lines))
+    record_audit(user, "pz", "mod_reorder", "Reordered PZ mods load order")
+    return {"success": True, "message": "Updated PZ mod load order successfully!"}
+
+@app.post("/api/pz/mods/save-ini")
+async def api_pz_mods_save_ini(request: Request):
+    user = await get_current_user(request)
+    if not user or user["access"]["pz"] not in ("admin", "technician"):
+        raise HTTPException(403, "Requires PZ Admin or Technician tier")
+    body = await request.json()
+    content = body.get("content", "")
+    if not content.strip():
+        raise HTTPException(400, "Content cannot be empty")
+    
+    _pz_write_with_backup(PZ_INI_PATH, content)
+    record_audit(user, "pz", "save_ini", "Saved CircuitVersePZ.ini")
+    return {"success": True, "message": "CircuitVersePZ.ini saved successfully!"}
+
+@app.post("/api/pz/mods/save-sandbox")
+async def api_pz_mods_save_sandbox(request: Request):
+    user = await get_current_user(request)
+    if not user or user["access"]["pz"] not in ("admin", "technician"):
+        raise HTTPException(403, "Requires PZ Admin or Technician tier")
+    body = await request.json()
+    content = body.get("content", "")
+    if not content.strip():
+        raise HTTPException(400, "Content cannot be empty")
+    
+    _pz_write_with_backup(PZ_SANDBOX_PATH, content)
+    record_audit(user, "pz", "save_sandbox", "Saved CircuitVersePZ_SandboxVars.lua")
+    return {"success": True, "message": "Sandbox & Mod Options saved successfully!"}
 
 # ==========================================
 # Minecraft Control Panel (/api/mc/*)
@@ -1273,7 +1694,7 @@ async def api_mc_status(request: Request):
         "bedrock_online": bedrock_online,
         "bedrock_state": bedrock_state,
         "bedrock_port": 19132,
-        "host": "play.circuitverse.online (2.31.101.63)",
+        "host": "play.circuitverse.online (Hetzner EX63 Dedicated)",
         "mem": mem_info,
         "disk": disk_info,
         "uptime": uptime_info,
@@ -1303,11 +1724,13 @@ async def api_mc_action(request: Request):
                 await run_rcon(mc["host"], int(mc["rcon_port"]), mc["rcon_password"], "save-all flush")
             except Exception:
                 pass
+            await send_discord_game_lifecycle_alert("mc", "stop", user.get("username", "Staff"))
             res = await run_ssh(mc["ssh_host"], mc["ssh_user"], "systemctl stop minecraft.service")
             record_audit(user, "mc", "service_stop", "systemctl stop minecraft.service")
             return {"success": res["code"] == 0, "output": res["stdout"] + res["stderr"]}
 
         if action == "start":
+            await send_discord_game_lifecycle_alert("mc", "start", user.get("username", "Staff"))
             res = await run_ssh(mc["ssh_host"], mc["ssh_user"], "systemctl start minecraft.service")
             record_audit(user, "mc", "service_start", "systemctl start minecraft.service")
             return {"success": res["code"] == 0, "output": res["stdout"] + res["stderr"]}
@@ -1591,7 +2014,7 @@ async def api_mc_save_file(request: Request):
             except Exception as e:
                 reload_msg = f" | Reload error: {e}"
 
-    return {"success": True, "message": f"Saved {name} on 2.31.101.63{reload_msg}"}
+    return {"success": True, "message": f"Saved {name} on Hetzner EX63 Dedicated{reload_msg}"}
 
 @app.get("/api/mc/logs")
 async def api_mc_logs(request: Request, lines: int = 120):
@@ -1644,7 +2067,7 @@ async def api_mc_bedrock_status(request: Request):
         "floodgate_enabled": fg_enabled,
         "port": 19132,
         "webrtc_port": 19133,
-        "host": "play.circuitverse.online (2.31.101.63)",
+        "host": "play.circuitverse.online (Hetzner EX63 Dedicated)",
         "version_raw": version_str,
         "connections_raw": connections_str,
         "tier": user["access"]["mc"]
@@ -1879,248 +2302,404 @@ UNTURNED_CORE_FILES = {
     "WorkshopDownloadConfig.json (Mods)": "/home/unturned/unturned-server/Servers/CircuitVerse/WorkshopDownloadConfig.json",
 }
 
-UNTURNED_CURATED_PLUGINS = [
-    {
-        "id": "duty",
-        "name": "Duty (Staff Duty Mode)",
-        "category": "Staff Management",
-        "version": "1.0.4",
-        "author": "RestoreMonarchy",
-        "description": "Toggles staff on/off duty mode with inventory switching, invulnerability, and staff chat.",
-        "dll_name": "Duty.dll",
-        "download_url": "https://github.com/RestoreMonarchyPlugins/Duty/releases/download/v1.0.4/Duty-v1.0.4.zip"
-    },
-    {
-        "id": "appleadmincontrol",
-        "name": "AppleAdminControl",
-        "category": "Staff Management",
-        "version": "1.1.2",
-        "author": "XanderCodes",
-        "description": "Anti-admin abuse system preventing unauthorized item spawning and elevated command abuse.",
-        "dll_name": "AppleAdminControl.dll",
-        "download_url": "https://github.com/XanderCodes/AppleAdminControl/releases/download/1.1.2/AppleAdminControl-1.1.2.zip"
-    },
-    {
-        "id": "playerinfolib",
-        "name": "PlayerInfoLib",
-        "category": "Security & Moderation",
-        "version": "1.3.1",
-        "author": "RocketMod",
-        "description": "Player forensic tracking, SteamID database, IP address logging, and alt-account detection.",
-        "dll_name": "PlayerInfoLib.dll",
-        "download_url": "https://github.com/RocketModPlugins/PlayerInfoLib/releases/download/d-r-1/PlayerInfoLib.zip"
-    },
-    {
-        "id": "isabusing",
-        "name": "IsAbusing (Admin Audit)",
-        "category": "Security & Moderation",
-        "version": "1.0.0",
-        "author": "RocketMod",
-        "description": "Audits administrative actions, detects suspicious vanish/godmode usage, and logs to Admin-Abuse.txt.",
-        "dll_name": "IsAbusing.dll",
-        "download_url": "https://github.com/RocketModPlugins/IsAbusing/releases/download/d-r-1/IsAbusing.zip"
-    },
-    {
-        "id": "uessentials",
-        "name": "uEssentials Suite",
-        "category": "Administration",
-        "version": "1.0.40",
-        "author": "TH3AL3X",
-        "description": "Essential administration utility commands, automated broadcasts, warps, and moderation tools.",
-        "dll_name": "uEssentials.dll",
-        "download_url": "https://github.com/TH3AL3X/uEssentials/releases/download/v1.0.40/uEssentials.zip"
-    },
-    {
-        "id": "morehomes",
-        "name": "MoreHomes",
-        "category": "Quality of Life",
-        "version": "1.10.3",
-        "author": "RestoreMonarchy",
-        "description": "Allows players to establish and teleport between multiple custom home points (/sethome, /home).",
-        "dll_name": "MoreHomes.dll",
-        "download_url": "https://github.com/RestoreMonarchyPlugins/MoreHomes/releases/download/v1.10.3/MoreHomes-v1.10.3.zip"
-    },
-    {
-        "id": "teleportation",
-        "name": "Teleportation (TPA)",
-        "category": "Quality of Life",
-        "version": "1.8.3",
-        "author": "RestoreMonarchy",
-        "description": "Complete player-to-player teleportation request system (/tpa, /tpaccept, /tpdeny) with cooldowns.",
-        "dll_name": "Teleportation.dll",
-        "download_url": "https://github.com/RestoreMonarchyPlugins/Teleportation/releases/download/v1.8.3/Teleportation-v1.8.3.zip"
-    },
-    {
-        "id": "kits",
-        "name": "Kits (Starter & VIP)",
-        "category": "Gameplay & Progression",
-        "version": "1.1.2",
-        "author": "RestoreMonarchy",
-        "description": "Customizable player loadouts and claimable kit packages with role permission cooldowns.",
-        "dll_name": "Kits.dll",
-        "download_url": "https://github.com/RestoreMonarchyPlugins/Kits/releases/download/v1.1.2/Kits-v1.1.2.zip"
-    },
-    {
-        "id": "respawnprotection",
-        "name": "RespawnProtection",
-        "category": "Quality of Life",
-        "version": "1.3.1",
-        "author": "RestoreMonarchy",
-        "description": "Prevents spawn-camping by granting newly spawned or revived players temporary invulnerability.",
-        "dll_name": "RespawnProtection.dll",
-        "download_url": "https://github.com/RestoreMonarchyPlugins/RespawnProtection/releases/download/v1.3.1/RespawnProtection-v1.3.1.zip"
-    },
-    {
-        "id": "richmessageannouncer",
-        "name": "RichMessageAnnouncer",
-        "category": "Announcements",
-        "version": "1.3.2",
-        "author": "RestoreMonarchy",
-        "description": "Periodic automated rich chat notices with customized colors, links, and Discord announcements.",
-        "dll_name": "RichMessageAnnouncer.dll",
-        "download_url": "https://github.com/RestoreMonarchyPlugins/RichMessageAnnouncer/releases/download/v1.3.2/RichMessageAnnouncer-v1.3.2.zip"
-    },
-    {
-        "id": "upets",
-        "name": "UPets (Companion Pets)",
-        "category": "Quality of Life",
-        "version": "3.0.4",
-        "author": "RestoreMonarchy",
-        "description": "Allows players to spawn, ride, and tame custom animal companions and pets with persistence.",
-        "dll_name": "UPets.dll",
-        "download_url": "https://github.com/RestoreMonarchyPlugins/AdamPlugins/releases/download/v3.0/UPets.zip"
-    },
-    {
-        "id": "blacklisteditems",
-        "name": "BlacklistedItems",
-        "category": "Security & Moderation",
-        "version": "1.0.1",
-        "author": "RestoreMonarchy",
-        "description": "Restricts prohibited items, rocket launchers, or destructive explosives from being equipped.",
-        "dll_name": "BlacklistedItems.dll",
-        "download_url": "https://github.com/RestoreMonarchyPlugins/BlacklistedItems/releases/download/v1.0.1/BlacklistedItems-v1.0.1.zip"
-    },
-    {
-        "id": "buildingrestrictions",
-        "name": "BuildingRestrictions",
-        "category": "Anti-Griefing",
-        "version": "1.3.0",
-        "author": "RestoreMonarchy",
-        "description": "Limits excessive building spam, base height, and barricade density to maintain high tickrates.",
-        "dll_name": "BuildingRestrictions.dll",
-        "download_url": "https://github.com/RestoreMonarchyPlugins/BuildingRestrictions/releases/download/v1.3.0/BuildingRestrictions-v1.3.0.zip"
-    },
-    {
-        "id": "airdropmanager3",
-        "name": "AirdropManager 3",
-        "category": "Gameplay & Progression",
-        "version": "3.1.3",
-        "author": "RestoreMonarchy",
-        "description": "Automated custom supply drops with custom loot tables, map drop zones, and flare mechanics.",
-        "dll_name": "AirdropManager3.dll",
-        "download_url": "https://github.com/RestoreMonarchyPlugins/AirdropManager3/releases/download/v3.1.3/AirdropManager3-v3.1.3.zip"
-    },
-    {
-        "id": "playerstats",
-        "name": "PlayerStats & Leaderboards",
-        "category": "Gameplay & Progression",
-        "version": "1.2.0",
-        "author": "RestoreMonarchy",
-        "description": "Tracks player kills, deaths, headshots, and KD ratio with in-game /stats and /top rankings.",
-        "dll_name": "PlayerStats.dll",
-        "download_url": "https://github.com/RestoreMonarchyPlugins/PlayerStats/releases/download/v1.2.0/PlayerStats-v1.2.0.zip"
-    },
-    {
-        "id": "vehicleessentials",
-        "name": "VehicleEssentials",
-        "category": "Gameplay & Progression",
-        "version": "1.0.1",
-        "author": "IcePlugins",
-        "description": "Vehicle locking, remote refueling, vehicle health repair commands, and auto-despawn safety.",
-        "dll_name": "VehicleEssentials.dll",
-        "download_url": "https://github.com/IcePlugins/VehicleEssentials/releases/download/1.0.1/VehicleEssentials.dll"
-    },
-    {
-        "id": "spawnsmanager",
-        "name": "SpawnsManager",
-        "category": "Gameplay & Progression",
-        "version": "1.0.3",
-        "author": "RestoreMonarchy",
-        "description": "Deep customization for zombie spawns, vehicle spawn points, and item drop rates per map.",
-        "dll_name": "SpawnsManager.dll",
-        "download_url": "https://github.com/RestoreMonarchyPlugins/SpawnsManager/releases/download/v1.0.3/SpawnsManager-v1.0.3.zip"
-    },
-    {
-        "id": "pvptoggle",
-        "name": "PVPToggle",
-        "category": "Gameplay & Progression",
-        "version": "1.0.0",
-        "author": "IcePlugins",
-        "description": "Permits players to flag themselves peaceful or hostile with configurable combat timers.",
-        "dll_name": "PVPToggle.dll",
-        "download_url": "https://github.com/IcePlugins/PVPToggle/releases/download/1.0.0/PVPToggle.dll"
-    },
-    {
-        "id": "killstreaks",
-        "name": "KillStreaks",
-        "category": "Combat & Rewards",
-        "version": "1.0.0",
-        "author": "IcePlugins",
-        "description": "Rewards consecutive player kills with custom items, cash, and server-wide killstreak alerts.",
-        "dll_name": "KillStreaks.dll",
-        "download_url": "https://github.com/IcePlugins/Killstreaks/releases/download/1.0.0/KillStreaks.dll"
-    },
-    {
-        "id": "steamgrouprewards",
-        "name": "SteamGroupRewards",
-        "category": "Community Engagement",
-        "version": "1.0.1",
-        "author": "RestoreMonarchy",
-        "description": "Validates Steam group membership and delivers recurring player currency or kit perks.",
-        "dll_name": "SteamGroupRewards.dll",
-        "download_url": "https://github.com/RestoreMonarchyPlugins/SteamGroupRewards/releases/download/v1.0.1/SteamGroupRewards-v1.0.1.zip"
-    },
-    {
-        "id": "uconomy",
-        "name": "Uconomy (Economy Engine)",
-        "category": "Economy & Shop",
-        "version": "2.1.4",
-        "author": "RestoreMonarchy",
-        "description": "High performance MySQL economy engine with player balances, payments, salaries, and bank accounts.",
-        "dll_name": "Uconomy.dll",
-        "download_url": "https://github.com/RestoreMonarchyPlugins/Uconomy/releases/download/v2.1.4/Uconomy-v2.1.4.zip"
-    },
-    {
-        "id": "zaupshop",
-        "name": "ZaupShop (Marketplace)",
-        "category": "Economy & Shop",
-        "version": "2.1.2",
-        "author": "RestoreMonarchy",
-        "description": "In-game item and vehicle shop with dynamic pricing, /buy, /sell, and player transaction history.",
-        "dll_name": "ZaupShop.dll",
-        "download_url": "https://github.com/RestoreMonarchyPlugins/ZaupShop/releases/download/v2.1.2/ZaupShop-v2.1.2.zip"
-    },
-    {
-        "id": "colorize",
-        "name": "Colorize (Chat Formatting)",
-        "category": "Quality of Life",
-        "version": "1.0.1",
-        "author": "IcePlugins",
-        "description": "Enables colored player names and styled text in global and group chat channels.",
-        "dll_name": "Colorize.dll",
-        "download_url": "https://github.com/IcePlugins/Colorize/releases/download/1.0.1/Colorize.dll"
-    },
-    {
-        "id": "superbroadcaster",
-        "name": "SuperBroadcaster",
-        "category": "Announcements",
-        "version": "1.1.0",
-        "author": "IcePlugins",
-        "description": "Broadcasts server-wide UI announcements, event alerts, and important notifications.",
-        "dll_name": "SuperBroadcaster.dll",
-        "download_url": "https://github.com/IcePlugins/SuperBroadcaster/releases/download/1.1/SuperBroadcaster.dll"
-    }
-]
+UNTURNED_CURATED_PLUGINS = [   {   'author': 'RestoreMonarchy',
+        'category': 'Staff Management',
+        'description': 'Toggles staff on/off duty mode with inventory switching, invulnerability, and staff chat.',
+        'dll_name': 'Duty.dll',
+        'download_url': 'https://github.com/RestoreMonarchyPlugins/Duty/releases/download/v1.0.4/Duty-v1.0.4.zip',
+        'id': 'duty',
+        'name': 'Duty (Staff Duty Mode)',
+        'version': '1.0.4'},
+    {   'author': 'XanderCodes',
+        'category': 'Staff Management',
+        'description': 'Anti-admin abuse system preventing unauthorized item spawning and elevated command abuse.',
+        'dll_name': 'AppleAdminControl.dll',
+        'download_url': 'https://github.com/XanderCodes/AppleAdminControl/releases/download/1.1.2/AppleAdminControl-1.1.2.zip',
+        'id': 'appleadmincontrol',
+        'name': 'AppleAdminControl',
+        'version': '1.1.2'},
+    {   'author': 'RocketMod',
+        'category': 'Staff Management',
+        'description': 'Player forensic tracking, SteamID database, IP address logging, and alt-account detection.',
+        'dll_name': 'PlayerInfoLib.dll',
+        'download_url': 'https://github.com/RocketModPlugins/PlayerInfoLib/releases/download/d-r-1/PlayerInfoLib.zip',
+        'id': 'playerinfolib',
+        'name': 'PlayerInfoLib',
+        'version': '1.3.1'},
+    {   'author': 'RocketMod',
+        'category': 'Staff Management',
+        'description': 'Audits administrative actions, detects suspicious vanish/godmode usage, and logs to '
+                       'Admin-Abuse.txt.',
+        'dll_name': 'IsAbusing.dll',
+        'download_url': 'https://github.com/RocketModPlugins/IsAbusing/releases/download/d-r-1/IsAbusing.zip',
+        'id': 'isabusing',
+        'name': 'IsAbusing (Admin Audit)',
+        'version': '1.0.0'},
+    {   'author': 'TH3AL3X',
+        'category': 'Staff Management',
+        'description': 'Essential administration utility commands, automated broadcasts, warps, and moderation tools.',
+        'dll_name': 'uEssentials.dll',
+        'download_url': 'https://github.com/TH3AL3X/uEssentials/releases/download/v1.0.40/uEssentials.zip',
+        'id': 'uessentials',
+        'name': 'uEssentials Suite',
+        'version': '1.0.40'},
+    {   'author': 'RocketMod',
+        'category': 'Staff Management',
+        'description': 'Configures granular staff ranks, command permissions, parent inheritances, and prefix colors.',
+        'dll_name': 'Rocket.Core.dll',
+        'download_url': None,
+        'id': 'permissionmanagement',
+        'name': 'Permission Management (Rocket Ranks)',
+        'version': '4.9.3'},
+    {   'author': 'RocketMod',
+        'category': 'Staff Management',
+        'description': 'Streams real-time server kills, admin commands, and staff alerts directly into private Discord '
+                       'channels.',
+        'dll_name': 'DiscordWebhooks.dll',
+        'download_url': None,
+        'id': 'discordwebhooks',
+        'name': 'Discord Webhooks Logger',
+        'version': '1.0.2'},
+    {   'author': 'Circuit Verse',
+        'category': 'Staff Management',
+        'description': 'Bridges in-game player support requests directly into Discord ticket channels for rapid staff '
+                       'resolution.',
+        'dll_name': 'TicketSync.dll',
+        'download_url': None,
+        'id': 'discordticketbot',
+        'name': 'Discord Ticket Bot Bridge',
+        'version': '1.0.0'},
+    {   'author': 'RocketMod',
+        'category': 'Staff Management',
+        'description': 'Real-time bidirectional chat logger forwarding global/area Unturned chat to Discord staff '
+                       'channels.',
+        'dll_name': 'DiscordChatLogging.dll',
+        'download_url': None,
+        'id': 'discordchatlogging',
+        'name': 'DiscordChatLogging',
+        'version': '1.0.1'},
+    {   'author': 'RestoreMonarchy',
+        'category': 'Staff Management',
+        'description': 'Allows staff to issue warnings (/warn), track player disciplinary history, and auto-kick upon '
+                       'strike limits.',
+        'dll_name': 'WarnSystem.dll',
+        'download_url': None,
+        'id': 'warnsystem',
+        'name': 'WarnSystem (Disciplinary Tracking)',
+        'version': '1.0.1'},
+    {   'author': 'RestoreMonarchy',
+        'category': 'Staff Management',
+        'description': 'Freezes suspected cheaters or rule-breakers in place during active staff inquiries (/freeze, '
+                       '/unfreeze).',
+        'dll_name': 'FreezePlugin.dll',
+        'download_url': None,
+        'id': 'freezeplugin',
+        'name': 'FreezePlugin (Investigation Freeze)',
+        'version': '1.0.0'},
+    {   'author': 'RocketMod',
+        'category': 'Staff Management',
+        'description': 'Centralized ban synchronization across multiple Unturned game servers with ban appeals '
+                       'support.',
+        'dll_name': 'GlobalBan.dll',
+        'download_url': None,
+        'id': 'globalban',
+        'name': 'GlobalBan (Central Ban Management)',
+        'version': '1.0.0'},
+    {   'author': 'RocketMod',
+        'category': 'Security & Moderation',
+        'description': 'Comprehensive player moderation suite providing temporary or permanent bans, kicks, mutes, and '
+                       'warnings.',
+        'dll_name': 'ModerationSuite.dll',
+        'download_url': None,
+        'id': 'moderation',
+        'name': 'Moderation Suite (Ban, Kick, Mute, Warn)',
+        'version': '1.2.0'},
+    {   'author': 'RestoreMonarchy',
+        'category': 'Security & Moderation',
+        'description': 'In-game reporting command allowing players to flag rule violations directly to online staff or '
+                       'webhooks.',
+        'dll_name': 'PlayerReports.dll',
+        'download_url': None,
+        'id': 'playerreports',
+        'name': 'Player Reports (/report)',
+        'version': '1.0.0'},
+    {   'author': 'RocketMod',
+        'category': 'Security & Moderation',
+        'description': 'Logs administrative actions, hours on duty, and command executions for performance auditing.',
+        'dll_name': 'StaffTracker.dll',
+        'download_url': None,
+        'id': 'staffactivitytracking',
+        'name': 'Staff Activity Tracking',
+        'version': '1.0.0'},
+    {   'author': 'Community',
+        'category': 'Security & Moderation',
+        'description': 'Monitors abnormal item spawning, unauthorized teleports, and excessive godmode toggles.',
+        'dll_name': 'AdminAbuseDetector.dll',
+        'download_url': None,
+        'id': 'adminabusedetection',
+        'name': 'Admin Abuse Detection',
+        'version': '1.0.0'},
+    {   'author': 'RestoreMonarchy',
+        'category': 'Security & Moderation',
+        'description': 'Advanced staff investigation suite including silent spectate, screen-spy (/spy), and inventory '
+                       'inspect.',
+        'dll_name': 'BetterVanish.dll',
+        'download_url': None,
+        'id': 'playerinvestigationtools',
+        'name': 'Player Investigation Tools (Vanish & Spy)',
+        'version': '1.1.0'},
+    {   'author': 'RocketMod',
+        'category': 'Security & Moderation',
+        'description': 'Real-time chat filter that blocks offensive slurs, excessive capital letters, and unauthorized '
+                       'Discord invites.',
+        'dll_name': 'ChatFilter.dll',
+        'download_url': None,
+        'id': 'chatfiltering',
+        'name': 'Chat Filtering & Anti-Spam',
+        'version': '1.0.1'},
+    {   'author': 'RestoreMonarchy',
+        'category': 'Security & Moderation',
+        'description': 'Restricts prohibited items, rocket launchers, or destructive explosives from being equipped.',
+        'dll_name': 'BlacklistedItems.dll',
+        'download_url': 'https://github.com/RestoreMonarchyPlugins/BlacklistedItems/releases/download/v1.0.1/BlacklistedItems-v1.0.1.zip',
+        'id': 'blacklisteditems',
+        'name': 'BlacklistedItems',
+        'version': '1.0.1'},
+    {   'author': 'RestoreMonarchy',
+        'category': 'Security & Moderation',
+        'description': 'Limits excessive building spam, base height, and barricade density to maintain high tickrates.',
+        'dll_name': 'BuildingRestrictions.dll',
+        'download_url': 'https://github.com/RestoreMonarchyPlugins/BuildingRestrictions/releases/download/v1.3.0/BuildingRestrictions-v1.3.0.zip',
+        'id': 'buildingrestrictions',
+        'name': 'BuildingRestrictions',
+        'version': '1.3.0'},
+    {   'author': 'RestoreMonarchy',
+        'category': 'Quality of Life',
+        'description': 'Allows players to establish and teleport between multiple custom home points (/sethome, '
+                       '/home).',
+        'dll_name': 'MoreHomes.dll',
+        'download_url': 'https://github.com/RestoreMonarchyPlugins/MoreHomes/releases/download/v1.10.3/MoreHomes-v1.10.3.zip',
+        'id': 'morehomes',
+        'name': 'MoreHomes',
+        'version': '1.10.3'},
+    {   'author': 'RestoreMonarchy',
+        'category': 'Quality of Life',
+        'description': 'Complete player-to-player teleportation request system (/tpa, /tpaccept, /tpdeny) with '
+                       'cooldowns.',
+        'dll_name': 'Teleportation.dll',
+        'download_url': 'https://github.com/RestoreMonarchyPlugins/Teleportation/releases/download/v1.8.3/Teleportation-v1.8.3.zip',
+        'id': 'teleportation',
+        'name': 'Teleportation (TPA Requests)',
+        'version': '1.8.3'},
+    {   'author': 'RestoreMonarchy',
+        'category': 'Quality of Life',
+        'description': 'Allows players to spawn, ride, and tame custom animal companions and pets with persistence.',
+        'dll_name': 'UPets.dll',
+        'download_url': 'https://github.com/RestoreMonarchyPlugins/AdamPlugins/releases/download/v3.0/UPets.zip',
+        'id': 'upets',
+        'name': 'UPets (Companion Pets)',
+        'version': '3.0.4'},
+    {   'author': 'RestoreMonarchy',
+        'category': 'Quality of Life',
+        'description': 'Prevents spawn-camping by granting newly spawned or revived players temporary invulnerability.',
+        'dll_name': 'RespawnProtection.dll',
+        'download_url': 'https://github.com/RestoreMonarchyPlugins/RespawnProtection/releases/download/v1.3.1/RespawnProtection-v1.3.1.zip',
+        'id': 'respawnprotection',
+        'name': 'RespawnProtection',
+        'version': '1.3.1'},
+    {   'author': 'RestoreMonarchy',
+        'category': 'Quality of Life',
+        'description': 'Periodic automated rich chat notices with customized colors, links, and Discord announcements.',
+        'dll_name': 'RichMessageAnnouncer.dll',
+        'download_url': 'https://github.com/RestoreMonarchyPlugins/RichMessageAnnouncer/releases/download/v1.3.2/RichMessageAnnouncer-v1.3.2.zip',
+        'id': 'richmessageannouncer',
+        'name': 'RichMessageAnnouncer',
+        'version': '1.3.2'},
+    {   'author': 'IcePlugins',
+        'category': 'Quality of Life',
+        'description': 'Broadcasts server-wide UI announcements, event alerts, and important notifications.',
+        'dll_name': 'SuperBroadcaster.dll',
+        'download_url': 'https://github.com/IcePlugins/SuperBroadcaster/releases/download/1.1/SuperBroadcaster.dll',
+        'id': 'superbroadcaster',
+        'name': 'SuperBroadcaster',
+        'version': '1.1.0'},
+    {   'author': 'IcePlugins',
+        'category': 'Quality of Life',
+        'description': 'Enables colored player names and styled text in global and group chat channels.',
+        'dll_name': 'Colorize.dll',
+        'download_url': 'https://github.com/IcePlugins/Colorize/releases/download/1.0.1/Colorize.dll',
+        'id': 'colorize',
+        'name': 'Colorize (Chat Customization)',
+        'version': '1.0.1'},
+    {   'author': 'RestoreMonarchy',
+        'category': 'Quality of Life',
+        'description': 'Customizable player loadouts and claimable kit packages with role permission cooldowns.',
+        'dll_name': 'Kits.dll',
+        'download_url': 'https://github.com/RestoreMonarchyPlugins/Kits/releases/download/v1.1.2/Kits-v1.1.2.zip',
+        'id': 'kits',
+        'name': 'Kits (Custom Player Loadouts)',
+        'version': '1.1.2'},
+    {   'author': 'RestoreMonarchy',
+        'category': 'Gameplay & Progression',
+        'description': 'Automated custom supply drops with custom loot tables, map drop zones, and flare mechanics.',
+        'dll_name': 'AirdropManager3.dll',
+        'download_url': 'https://github.com/RestoreMonarchyPlugins/AirdropManager3/releases/download/v3.1.3/AirdropManager3-v3.1.3.zip',
+        'id': 'airdropmanager3',
+        'name': 'Airdrop Manager 3',
+        'version': '3.1.3'},
+    {   'author': 'RestoreMonarchy',
+        'category': 'Gameplay & Progression',
+        'description': 'Tracks player kills, deaths, headshots, and KD ratio with in-game /stats and /top rankings.',
+        'dll_name': 'PlayerStats.dll',
+        'download_url': 'https://github.com/RestoreMonarchyPlugins/PlayerStats/releases/download/v1.2.0/PlayerStats-v1.2.0.zip',
+        'id': 'playerstats',
+        'name': 'Player Stats (Stats & Leaderboards)',
+        'version': '1.2.0'},
+    {   'author': 'IcePlugins',
+        'category': 'Gameplay & Progression',
+        'description': 'Rewards consecutive player kills with custom items, cash, and server-wide killstreak alerts.',
+        'dll_name': 'KillStreaks.dll',
+        'download_url': 'https://github.com/IcePlugins/Killstreaks/releases/download/1.0.0/KillStreaks.dll',
+        'id': 'killstreaks',
+        'name': 'Killstreaks (Kill Rewards)',
+        'version': '1.0.0'},
+    {   'author': 'IcePlugins',
+        'category': 'Gameplay & Progression',
+        'description': 'Vehicle locking, remote refueling, vehicle health repair commands, and auto-despawn safety.',
+        'dll_name': 'VehicleEssentials.dll',
+        'download_url': 'https://github.com/IcePlugins/VehicleEssentials/releases/download/1.0.1/VehicleEssentials.dll',
+        'id': 'vehicleessentials',
+        'name': 'VehicleEssentials',
+        'version': '1.0.1'},
+    {   'author': 'RestoreMonarchy',
+        'category': 'Gameplay & Progression',
+        'description': 'Deep customization for zombie spawns, vehicle spawn points, and item drop rates per map.',
+        'dll_name': 'SpawnsManager.dll',
+        'download_url': 'https://github.com/RestoreMonarchyPlugins/SpawnsManager/releases/download/v1.0.3/SpawnsManager-v1.0.3.zip',
+        'id': 'spawnsmanager',
+        'name': 'Spawns Manager',
+        'version': '1.0.3'},
+    {   'author': 'IcePlugins',
+        'category': 'Gameplay & Progression',
+        'description': 'Permits players to flag themselves peaceful or hostile with configurable combat timers.',
+        'dll_name': 'PVPToggle.dll',
+        'download_url': 'https://github.com/IcePlugins/PVPToggle/releases/download/1.0.0/PVPToggle.dll',
+        'id': 'pvptoggle',
+        'name': 'PVPToggle (Player PvP Settings)',
+        'version': '1.0.0'},
+    {   'author': 'RestoreMonarchy',
+        'category': 'Gameplay & Progression',
+        'description': 'Validates Steam group membership and delivers recurring player currency or kit perks.',
+        'dll_name': 'SteamGroupRewards.dll',
+        'download_url': 'https://github.com/RestoreMonarchyPlugins/SteamGroupRewards/releases/download/v1.0.1/SteamGroupRewards-v1.0.1.zip',
+        'id': 'steamgrouprewards',
+        'name': 'Steam Group Rewards',
+        'version': '1.0.1'},
+    {   'author': 'RestoreMonarchy',
+        'category': 'Economy & Shops',
+        'description': 'High performance MySQL economy engine with player balances, payments, salaries, and bank '
+                       'accounts.',
+        'dll_name': 'Uconomy.dll',
+        'download_url': 'https://github.com/RestoreMonarchyPlugins/Uconomy/releases/download/v2.1.4/Uconomy-v2.1.4.zip',
+        'id': 'uconomy',
+        'name': 'Uconomy (Player Currency)',
+        'version': '2.1.4'},
+    {   'author': 'RestoreMonarchy',
+        'category': 'Economy & Shops',
+        'description': 'In-game item and vehicle shop with dynamic pricing, /buy, /sell, and player transaction '
+                       'history.',
+        'dll_name': 'ZaupShop.dll',
+        'download_url': 'https://github.com/RestoreMonarchyPlugins/ZaupShop/releases/download/v2.1.2/ZaupShop-v2.1.2.zip',
+        'id': 'zaupshop',
+        'name': 'ZaupShop (In-Game Shop)',
+        'version': '2.1.2'},
+    {   'author': 'RestoreMonarchy',
+        'category': 'Economy & Shops',
+        'description': 'Integrated Uconomy kit marketplace allowing players to purchase loadouts with in-game '
+                       'currency.',
+        'dll_name': 'KitShop.dll',
+        'download_url': None,
+        'id': 'kitshop',
+        'name': 'Kits Shop (Paid or Free Loadouts)',
+        'version': '1.0.0'},
+    {   'author': 'RestoreMonarchy',
+        'category': 'Economy & Shops',
+        'description': 'Periodically distributes automatic currency paychecks to online survivors based on permissions '
+                       'and ranks.',
+        'dll_name': 'SalarySystem.dll',
+        'download_url': None,
+        'id': 'salarysystem',
+        'name': 'Salary System (Automatic Payments)',
+        'version': '1.0.0'},
+    {   'author': 'Community',
+        'category': 'Economy & Shops',
+        'description': 'Secure dual-acceptance window for player-to-player item and balance exchanges without '
+                       'scamming.',
+        'dll_name': 'PlayerTrading.dll',
+        'download_url': None,
+        'id': 'playertrading',
+        'name': 'Player Trading (/trade System)',
+        'version': '1.0.0'},
+    {   'author': 'SmartlyDressedGames',
+        'category': 'Infrastructure',
+        'description': 'Next-generation Rocket-compatible plugin framework engineered for extreme stability and '
+                       'Unturned 3.x.',
+        'dll_name': 'LDMFramework.dll',
+        'download_url': None,
+        'id': 'ldm',
+        'name': 'LDM (Legally Distinct Missile Framework)',
+        'version': '1.0.0'},
+    {   'author': 'OpenMod Foundation',
+        'category': 'Infrastructure',
+        'description': 'Modern modular C# plugin engine for Unturned featuring NuGet dependency injection and async '
+                       'APIs.',
+        'dll_name': 'OpenMod.Unturned.dll',
+        'download_url': None,
+        'id': 'openmod',
+        'name': 'OpenMod (Alternative Plugin Framework)',
+        'version': '3.0.0'},
+    {   'author': 'RocketMod',
+        'category': 'Infrastructure',
+        'description': 'Full server-to-Discord integration including live role synchronization, player counts, and '
+                       'console commands.',
+        'dll_name': 'DiscordIntegration.dll',
+        'download_url': None,
+        'id': 'discordintegration',
+        'name': 'Discord Integration (Two-Way Sync)',
+        'version': '1.0.0'},
+    {   'author': 'RestoreMonarchy',
+        'category': 'Infrastructure',
+        'description': 'Automated server reboot manager with custom countdown warnings and automated state saving.',
+        'dll_name': 'AutoShutdown.dll',
+        'download_url': None,
+        'id': 'autoshutdown',
+        'name': 'AutoShutdown (Scheduled Restarts)',
+        'version': '1.0.2'},
+    {   'author': 'RocketMod',
+        'category': 'Infrastructure',
+        'description': 'Maintains persistent rotating on-disk text archives of all player communication and commands.',
+        'dll_name': 'ChatLogs.dll',
+        'download_url': None,
+        'id': 'chatlogs',
+        'name': 'Chat Logs (Communication Records)',
+        'version': '1.0.0'},
+    {   'author': 'RocketMod',
+        'category': 'Infrastructure',
+        'description': 'Scheduled maintenance reminders, restart notifications, and persistent headline broadcasts.',
+        'dll_name': 'ServerAnnouncer.dll',
+        'download_url': None,
+        'id': 'serverannouncements',
+        'name': 'Server Announcements (Maintenance Notices)',
+        'version': '1.0.0'},
+    {   'author': 'RocketMod',
+        'category': 'Infrastructure',
+        'description': 'Real-time tickrate, CPU usage, RAM allocation, and player connection latency telemetry '
+                       'watchdog.',
+        'dll_name': 'ServerMonitoring.dll',
+        'download_url': None,
+        'id': 'servermonitoring',
+        'name': 'Server Monitoring (Performance & Uptime)',
+        'version': '1.0.0'}]
 
 @app.get("/api/unturned/status")
 async def api_unturned_status(request: Request):
@@ -2129,7 +2708,7 @@ async def api_unturned_status(request: Request):
         raise HTTPException(403, "Requires Unturned Staff role")
     cfg = load_config()
     u = cfg.get("unturned_server", {})
-    host = u.get("host", "2.31.169.227")
+    host = u.get("host", "127.0.0.1")
     ssh_host = u.get("ssh_host", host)
     ssh_user = u.get("ssh_user", "root")
 
@@ -2198,7 +2777,7 @@ async def api_unturned_action(request: Request):
     action = body.get("action", "")
     cfg = load_config()
     u = cfg.get("unturned_server", {})
-    host = u.get("host", "2.31.169.227")
+    host = u.get("host", "127.0.0.1")
     rcon_port = int(u.get("rcon_port", 27115))
     rcon_pwd = u.get("rcon_password", "")
 
@@ -2206,14 +2785,17 @@ async def api_unturned_action(request: Request):
         if tier not in ("admin", "technician"):
             raise HTTPException(403, "Only Unturned Host, Director, or Admin can control server state")
         if action == "restart":
+            await send_discord_game_lifecycle_alert("unturned", "restart", user.get("username", "Staff"))
             await run_ssh(u["ssh_host"], u["ssh_user"], "systemctl restart unturned.service")
             record_audit(user, "unturned", "restart", "Restarted unturned.service")
             return {"success": True, "output": "Unturned server restarted successfully."}
         elif action == "stop":
+            await send_discord_game_lifecycle_alert("unturned", "stop", user.get("username", "Staff"))
             await run_ssh(u["ssh_host"], u["ssh_user"], "systemctl stop unturned.service")
             record_audit(user, "unturned", "stop", "Stopped unturned.service")
             return {"success": True, "output": "Unturned server stopped successfully."}
         elif action == "start":
+            await send_discord_game_lifecycle_alert("unturned", "start", user.get("username", "Staff"))
             await run_ssh(u["ssh_host"], u["ssh_user"], "systemctl start unturned.service")
             record_audit(user, "unturned", "start", "Started unturned.service")
             return {"success": True, "output": "Unturned server started successfully."}
@@ -2448,9 +3030,9 @@ async def api_unturned_plugins(request: Request):
     plugins_dir = "/home/unturned/unturned-server/Servers/CircuitVerse/Rocket/Plugins"
     
     # Query installed DLLs and their metadata plus configs
-    scan_script = f"""python3 -c "
+    scan_script = """python3 -c "
 import os, json, time
-pdir = '{plugins_dir}'
+pdir = '/home/unturned/unturned-server/Servers/CircuitVerse/Rocket/Plugins'
 res = []
 if os.path.exists(pdir):
     for f in sorted(os.listdir(pdir)):
@@ -2466,12 +3048,13 @@ if os.path.exists(pdir):
                 'filename': f,
                 'name': cname,
                 'plugin_id': cname.lower(),
-                'size': f'{st.st_size/1024:.1f} KB',
+                'size': str(round(st.st_size / 1024, 1)) + ' KB',
                 'bytes': st.st_size,
                 'modified': time.strftime('%Y-%m-%d %H:%M', time.localtime(st.st_mtime)),
                 'config_files': cfgs
             })
 print(json.dumps(res))
+"
 """
     res = await run_ssh(u["ssh_host"], u["ssh_user"], scan_script)
     installed_records = []
@@ -2545,23 +3128,26 @@ async def api_unturned_plugin_install(request: Request):
     plugins_dir = "/home/unturned/unturned-server/Servers/CircuitVerse/Rocket/Plugins"
     download_url = target.get("download_url")
     if download_url:
-        dl_script = f"""python3 -c "
-import urllib.request, zipfile, io, os
-url = '{download_url}'
-req = urllib.request.Request(url, headers={{'User-Agent': 'Mozilla/5.0'}})
-data = urllib.request.urlopen(req).read()
-if url.endswith('.zip'):
-    zf = zipfile.ZipFile(io.BytesIO(data))
-    for item in zf.namelist():
-        fname = os.path.basename(item)
-        if fname.endswith('.dll') and not item.lower().startswith('libraries'):
-            with open(os.path.join('{plugins_dir}', fname), 'wb') as f:
-                f.write(zf.read(item))
-else:
-    with open(os.path.join('{plugins_dir}', '{target['dll_name']}'), 'wb') as f:
-        f.write(data)
-os.system('chown -R unturned:unturned {plugins_dir}')
-"""
+        dl_script = (
+            "python3 -c \""
+            "import urllib.request, zipfile, io, os; "
+            f"url = '{download_url}'; "
+            "try: "
+            "    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'}); "
+            "    data = urllib.request.urlopen(req, timeout=15).read(); "
+            "    if url.endswith('.zip'): "
+            "        zf = zipfile.ZipFile(io.BytesIO(data)); "
+            "        for item in zf.namelist(): "
+            "            fname = os.path.basename(item); "
+            "            if fname.endswith('.dll') and not item.lower().startswith('libraries'): "
+            f"                with open(os.path.join('{plugins_dir}', fname), 'wb') as f: f.write(zf.read(item)); "
+            "    else: "
+            f"        with open(os.path.join('{plugins_dir}', '{target['dll_name']}'), 'wb') as f: f.write(data); "
+            "except Exception: "
+            f"    with open(os.path.join('{plugins_dir}', '{target['dll_name']}'), 'wb') as f: f.write(b''); "
+            f"os.system('chown -R unturned:unturned {plugins_dir}')"
+            "\""
+        )
         await run_ssh(u["ssh_host"], u["ssh_user"], dl_script)
     else:
         cmd = f"mkdir -p {plugins_dir} && touch {plugins_dir}/{target['dll_name']} && chown -R unturned:unturned {plugins_dir}"
@@ -2828,7 +3414,7 @@ print(json.dumps({{"admins": admins, "bans": bans}}))
 
     return {
         "running": running,
-        "host": "game.circuitverse.online:7777 (87.99.133.221)",
+        "host": "game.circuitverse.online:7777 (Hetzner EX63 Dedicated)",
         "process": proc_line,
         "mem": mem_info,
         "disk": disk_info,
@@ -2852,6 +3438,7 @@ async def api_ns13_action(request: Request):
     if action in ("start", "stop", "restart"):
         if tier not in ("admin", "technician"):
             raise HTTPException(403, "Only NS13 Director, Host, Head Admin, or Maintainer can control server power")
+        await send_discord_game_lifecycle_alert("ns13", action, user.get("username", "Staff"))
         res = await run_ssh(ns["ssh_host"], ns["ssh_user"], f"sudo systemctl {action} novastation.service")
         record_audit(user, "ns13", f"service_{action}", f"systemctl {action} novastation.service")
         return {"success": res["code"] == 0, "output": res["stdout"] + res["stderr"]}
@@ -2951,7 +3538,7 @@ async def api_ns13_save_file(request: Request):
     ns = cfg["ns13_server"]
     await asyncio.to_thread(sftp_write_sync, ns["ssh_host"], ns["ssh_user"], NS13_ALLOWED_FILES[name], content)
     record_audit(user, "ns13", "save_file", f"Edited {name} ({len(content)} bytes)")
-    return {"success": True, "message": f"Saved {name} on 87.99.133.221"}
+    return {"success": True, "message": f"Saved {name} on Hetzner EX63 Dedicated"}
 
 @app.get("/api/ns13/logs")
 async def api_ns13_logs(request: Request):
@@ -2968,11 +3555,119 @@ async def api_ns13_logs(request: Request):
     return {"logs": res["stdout"]}
 
 # ==========================================
+
+async def send_discord_game_lifecycle_alert(game: str, action: str, actor: str, extra_info: str = ""):
+    """Sends an operational lifecycle embed to the official Discord game status channel."""
+    try:
+        cfg = load_config()
+        token = cfg.get("discord_bot_token")
+        if not token:
+            return
+        channel_map = {
+            "mc": {
+                "channel_id": cfg.get("mc_server", {}).get("status_channel", 1567516535159787700),
+                "name": "Minecraft SMP",
+                "host": "play.circuitverse.online (Port 25565 / Bedrock 19132)",
+            },
+            "pz": {
+                "channel_id": cfg.get("pz_server", {}).get("status_channel", 1567702337961594883),
+                "name": "Project Zomboid",
+                "host": "pz.circuitverse.online (Port 16261)",
+            },
+            "ns13": {
+                "channel_id": 1566597379753512980,
+                "name": "Nova Station 13",
+                "host": "game.circuitverse.online:7777",
+            },
+            "unturned": {
+                "channel_id": cfg.get("unturned_server", {}).get("status_channel", 1568805619522343095),
+                "name": "Unturned Server",
+                "host": "unturned.circuitverse.online (Port 27015)",
+            }
+        }
+        info = channel_map.get(game)
+        if not info or not info.get("channel_id"):
+            return
+        colors = {
+            "restart": 0xFEE75C,
+            "stop": 0xED4245,
+            "start": 0x57F287,
+        }
+        titles = {
+            "restart": f"🔄 {info['name']} — Server Rebooting",
+            "stop": f"🛑 {info['name']} — Server Shutting Down",
+            "start": f"🟢 {info['name']} — Server Starting Up",
+        }
+        descriptions = {
+            "restart": (
+                f"• **Action**: Server reboot initiated by **{actor}** via Staff Control Panel.\n"
+                f"• **Status**: World data synced to disk. Process cycling and returning online in ~60-90s.\n"
+                f"• **Connect Address**: `{info['host']}`\n"
+                f"• **Infrastructure**: Hetzner EX63 Dedicated Server (CircuitVerse.Online)"
+            ),
+            "stop": (
+                f"• **Action**: Server shutdown initiated by **{actor}** via Staff Control Panel.\n"
+                f"• **Status**: Server stopped for maintenance. World progress synchronized.\n"
+                f"• **Notice**: Staff will announce once active service resumes."
+            ),
+            "start": (
+                f"• **Action**: Server startup initiated by **{actor}** via Staff Control Panel.\n"
+                f"• **Status**: Server processes launching and initializing.\n"
+                f"• **Connect Address**: `{info['host']}`"
+            )
+        }
+        desc = descriptions.get(action, f"Action: {action} initiated by {actor}")
+        if extra_info:
+            desc += f"\n• **Details**: {extra_info}"
+
+        embed = {
+            "title": titles.get(action, f"ℹ️ {info['name']} — Status Update"),
+            "description": desc,
+            "color": colors.get(action, 0x5865F2),
+            "footer": {
+                "text": "Circuit Verse Automated Operations • Hetzner EX63 Dedicated Bare-Metal"
+            },
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+        async with httpx.AsyncClient(timeout=10) as client:
+            await client.post(
+                f"https://discord.com/api/v10/channels/{info['channel_id']}/messages",
+                headers={"Authorization": f"Bot {token}", "Content-Type": "application/json"},
+                json={"embeds": [embed]}
+            )
+    except Exception as e:
+        logger.error(f"Error posting lifecycle alert: {e}")
+
+RADIO_MEDIA_DIR = "/var/lib/docker/volumes/azuracast_station_data/_data/circuit_verse_radio/media"
+_media_file_map = {}
+_media_map_ts = 0.0
+
+async def get_media_file_map() -> dict:
+    global _media_file_map, _media_map_ts
+    now = time.time()
+    if _media_file_map and (now - _media_map_ts < 300):
+        return _media_file_map
+    code, files = await azura_request("GET", "/api/station/1/files")
+    if isinstance(files, list):
+        fmap = {}
+        for f in files:
+            p = f.get("path")
+            if p:
+                if f.get("unique_id"):
+                    fmap[str(f["unique_id"])] = p
+                if f.get("id"):
+                    fmap[str(f["id"])] = p
+                if f.get("song_id"):
+                    fmap[str(f["song_id"])] = p
+        _media_file_map = fmap
+        _media_map_ts = now
+    return _media_file_map
+
 # CV Radio Control Panel (/api/radio/*)
 # ==========================================
 async def azura_request(method: str, path: str, json_body: Any = None) -> tuple[int, Any]:
     cfg = load_config()
-    url = f"http://87.99.133.221{path}"
+    url = f"http://127.0.0.1{path}"
     headers = {
         "Host": "radio.circuitverse.online",
         "X-Forwarded-Proto": "https",
@@ -3005,6 +3700,26 @@ async def api_radio_status(request: Request):
         "tier": user["access"]["radio"],
     }
 
+
+@app.get("/api/radio/stream/{media_id}")
+async def api_radio_stream(media_id: str, request: Request):
+    user = await get_current_user(request)
+    if not user or not user["access"]["radio"]:
+        raise HTTPException(403, "Requires CV-Radio-Access role")
+    fmap = await get_media_file_map()
+    rel_path = fmap.get(str(media_id))
+    if not rel_path:
+        global _media_map_ts
+        _media_map_ts = 0.0
+        fmap = await get_media_file_map()
+        rel_path = fmap.get(str(media_id))
+    if not rel_path:
+        raise HTTPException(404, "Audio track not found in station library")
+    full_path = os.path.join(RADIO_MEDIA_DIR, rel_path)
+    if not os.path.isfile(full_path):
+        raise HTTPException(404, "Audio file missing on storage")
+    return FileResponse(full_path, media_type="audio/mpeg", filename=os.path.basename(rel_path))
+
 @app.get("/api/radio/requests")
 async def api_radio_requests(request: Request, q: str = ""):
     user = await get_current_user(request)
@@ -3019,7 +3734,12 @@ async def api_radio_requests(request: Request, q: str = ""):
             it for it in items
             if ql in (it.get("song", {}).get("text", "") or "").lower()
         ]
-    return {"items": items[:60]}
+    res_items = items[:60]
+    for it in res_items:
+        req_id = it.get("request_id")
+        if req_id:
+            it["preview_url"] = f"/api/radio/stream/{req_id}"
+    return {"items": res_items}
 
 @app.post("/api/radio/action")
 async def api_radio_action(request: Request):
@@ -3157,140 +3877,180 @@ async def api_master_unlock(request: Request):
 @app.get("/api/master/overview")
 async def api_master_overview(request: Request):
     await require_master(request)
-    cfg = load_config()
 
-    # Query Hetzner Cloud servers if token available
-    hetzner_servers = []
-    seen_ips = set()
+    mem = psutil.virtual_memory()
+    swap = psutil.swap_memory()
+    disk = psutil.disk_usage('/')
+    cpu_pct = psutil.cpu_percent(interval=0.1)
+    per_cpu = psutil.cpu_percent(percpu=True)
+    load_avg = [round(x, 2) for x in os.getloadavg()]
+
+    boot_time = datetime.datetime.fromtimestamp(psutil.boot_time(), datetime.timezone.utc)
+    uptime_seconds = int((datetime.datetime.now(datetime.timezone.utc) - boot_time).total_seconds())
+    u_days, rem = divmod(uptime_seconds, 86400)
+    u_hours, rem = divmod(rem, 3600)
+    u_mins, _ = divmod(rem, 60)
+    uptime_str = f"{u_days}d {u_hours}h {u_mins}m" if u_days else f"{u_hours}h {u_mins}m"
+
+    processes = []
+    for p in psutil.process_iter(['pid', 'name', 'username', 'cpu_percent', 'memory_info', 'memory_percent', 'status']):
+        try:
+            info = p.info
+            mem_mb = round(info['memory_info'].rss / (1024 * 1024), 1) if info.get('memory_info') else 0
+            cpu_val = round(info.get('cpu_percent') or 0, 1)
+            if mem_mb > 15 or cpu_val > 0.1:
+                processes.append({
+                    "pid": info['pid'],
+                    "name": info['name'],
+                    "user": info.get('username') or 'system',
+                    "cpu_percent": cpu_val,
+                    "memory_mb": mem_mb,
+                    "memory_percent": round(info.get('memory_percent') or 0, 1),
+                    "status": info.get('status') or 'running'
+                })
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            pass
+
+    processes.sort(key=lambda x: (x['memory_mb'], x['cpu_percent']), reverse=True)
+    top_processes = processes[:15]
+
+    fleet_services = [
+        ("minecraft.service", "Minecraft SMP (Purpur 1.21.x / Java 25)"),
+        ("mc-staff-logger.service", "Minecraft Staff Audit Logger"),
+        ("project-zomboid.service", "Project Zomboid Dedicated (Build 42)"),
+        ("zomboid-panel.service", "Project Zomboid Web Panel (ZCP 3001)"),
+        ("unturned.service", "Unturned Dedicated Server (PEI 27015)"),
+        ("novastation.service", "Nova Station 13 (BYOND DreamDaemon 7777)"),
+        ("mariadb.service", "MariaDB SQL Database Server"),
+        ("cv-panel.service", "CV-Panel Executive Control Center"),
+        ("cv-nova-helper.service", "Circuit Verse Helper Discord Bot"),
+        ("cv-radio-helper.service", "Circuit Verse Radio Discord Bot"),
+        ("cv-radio-tunnel.service", "Cloudflare Argo Tunnel (Universal SSL)"),
+        ("docker.service", "Docker Runtime (AzuraCast 24/7 Radio)"),
+    ]
+
+    services_status = {}
+    for svc, label in fleet_services:
+        try:
+            res = subprocess.run(["systemctl", "is-active", svc], capture_output=True, text=True)
+            services_status[svc] = {
+                "label": label,
+                "state": res.stdout.strip()
+            }
+        except Exception:
+            services_status[svc] = {"label": label, "state": "unknown"}
+
+    ex63_info = {
+        "id": "ex63-dedicated",
+        "name": "Hetzner EX63 Bare-Metal Dedicated Server",
+        "model": "Intel Core Ultra 7 265 (20 Cores up to 5.5 GHz)",
+        "status": "online",
+        "ip": "62.238.81.224",
+        "datacenter": "fsn1-dc14 (Falkenstein, Germany)",
+        "cpu": {
+            "percent": cpu_pct,
+            "cores": psutil.cpu_count(logical=True),
+            "physical_cores": psutil.cpu_count(logical=False),
+            "load_avg": load_avg,
+            "per_cpu": per_cpu[:8]
+        },
+        "ram": {
+            "total_gb": round(mem.total / (1024**3), 1),
+            "used_gb": round(mem.used / (1024**3), 1),
+            "free_gb": round(mem.available / (1024**3), 1),
+            "percent": mem.percent
+        },
+        "swap": {
+            "total_gb": round(swap.total / (1024**3), 1),
+            "used_gb": round(swap.used / (1024**3), 1),
+            "percent": swap.percent
+        },
+        "disk": {
+            "total_gb": round(disk.total / (1024**3), 1),
+            "used_gb": round(disk.used / (1024**3), 1),
+            "free_gb": round(disk.free / (1024**3), 1),
+            "percent": disk.percent
+        },
+        "uptime": uptime_str,
+        "processes": top_processes,
+        "services": services_status
+    }
+
+    hetzner_servers = [
+        {
+            "id": 1,
+            "name": "Hetzner EX63 Dedicated Server",
+            "status": "running",
+            "ip": "62.238.81.224",
+            "type": "EX63 Bare-Metal",
+            "cores": 20,
+            "memory_gb": 64,
+            "disk_gb": 1024,
+            "datacenter": "fsn1-dc14 (Falkenstein)",
+            "is_dedicated": True
+        }
+    ]
+    cfg = load_config()
     if cfg.get("hetzner_api_token"):
-        async with httpx.AsyncClient(timeout=10) as client:
-            try:
+        try:
+            async with httpx.AsyncClient(timeout=5) as client:
                 r = await client.get(
                     "https://api.hetzner.cloud/v1/servers",
-                    headers={"Authorization": f"Bearer {cfg['hetzner_api_token']}"},
+                    headers={"Authorization": f"Bearer {cfg['hetzner_api_token']}"}
                 )
                 if r.status_code == 200:
                     for srv in r.json().get("servers", []):
-                        ip = srv.get("public_net", {}).get("ipv4", {}).get("ip")
-                        seen_ips.add(ip)
                         hetzner_servers.append({
                             "id": srv["id"],
                             "name": srv["name"],
                             "status": srv["status"],
-                            "ip": ip,
-                            "type": srv.get("server_type", {}).get("name"),
-                            "cores": srv.get("server_type", {}).get("cores"),
-                            "memory_gb": srv.get("server_type", {}).get("memory"),
-                            "disk_gb": srv.get("server_type", {}).get("disk"),
-                            "datacenter": srv.get("datacenter", {}).get("name"),
+                            "ip": srv.get("public_net", {}).get("ipv4", {}).get("ip") or "—",
+                            "type": srv.get("server_type", {}).get("name") or "cloud",
+                            "cores": srv.get("server_type", {}).get("cores") or 0,
+                            "memory_gb": srv.get("server_type", {}).get("memory") or 0,
+                            "disk_gb": srv.get("server_type", {}).get("disk") or 0,
+                            "datacenter": srv.get("datacenter", {}).get("name") or "—",
+                            "is_dedicated": False
                         })
-            except Exception as e:
-                logger.debug(f"Hetzner API query error: {e}")
-
-    # Ensure all Hetzner cloud dedicated instances are present
-    standard_hetzner = [
-        {
-            "id": 174435350,
-            "name": "circuit-verse-mc",
-            "status": "running",
-            "ip": "2.31.101.63",
-            "type": "cax31",
-            "cores": 8,
-            "memory_gb": 16,
-            "disk_gb": 160,
-            "datacenter": "fsn1-dc14 (Falkenstein)",
-        },
-        {
-            "id": 174435351,
-            "name": "circuit-verse-pz",
-            "status": "running",
-            "ip": "2.31.52.69",
-            "type": "cx32",
-            "cores": 4,
-            "memory_gb": 8,
-            "disk_gb": 80,
-            "datacenter": "fsn1-dc14 (Falkenstein)",
-        },
-        {
-            "id": 174034628,
-            "name": "nova-station-13",
-            "status": "running",
-            "ip": "87.99.133.221",
-            "type": "cpx31",
-            "cores": 4,
-            "memory_gb": 8,
-            "disk_gb": 160,
-            "datacenter": "ash-dc1 (Ashburn, US-East)",
-        },
-        {
-            "id": 174966750,
-            "name": "circuit-verse-general",
-            "status": "running",
-            "ip": "2.31.173.113",
-            "type": "cx32",
-            "cores": 4,
-            "memory_gb": 8,
-            "disk_gb": 80,
-            "datacenter": "fsn1-dc14 (Falkenstein)",
-        },
-    ]
-    for def_srv in standard_hetzner:
-        if def_srv["ip"] not in seen_ips:
-            hetzner_servers.append(def_srv)
-            seen_ips.add(def_srv["ip"])
-
-    # Query live service state across all 4 nodes in parallel
-    pz_task = run_ssh("127.0.0.1", "root", "systemctl is-active project-zomboid.service zomboid-panel.service cv-panel.service pz-staff-logger.service nginx.service; free -m | awk '/Mem:/ {print $2,$3}'; df -h / | awk 'NR==2 {print $2,$3,$5}'")
-    mc_task = run_ssh("2.31.101.63", "root", "systemctl is-active minecraft.service mc-staff-logger.service; free -m | awk '/Mem:/ {print $2,$3}'; df -h / | awk 'NR==2 {print $2,$3,$5}'")
-    ns_task = run_ssh("87.99.133.221", "ubuntu", "systemctl is-active novastation.service mariadb.service docker.service; free -m | awk '/Mem:/ {print $2,$3}'; df -h / | awk 'NR==2 {print $2,$3,$5}'")
-    gen_task = run_ssh("2.31.173.113", "ubuntu", "systemctl is-active cv-nova-helper.service cv-radio-helper.service docker.service; free -m | awk '/Mem:/ {print $2,$3}'; df -h / | awk 'NR==2 {print $2,$3,$5}'")
-    pz_res, mc_res, ns_res, gen_res = await asyncio.gather(pz_task, mc_task, ns_task, gen_task, return_exceptions=True)
-
-    def parse_node(res, svc_names):
-        if isinstance(res, Exception):
-            return {"error": str(res), "services": {}}
-        lines = res["stdout"].strip().splitlines()
-        svcs = {}
-        for i, name in enumerate(svc_names):
-            svcs[name] = lines[i].strip() if i < len(lines) else "unknown"
-        mem = lines[len(svc_names)] if len(lines) > len(svc_names) else ""
-        disk = lines[len(svc_names) + 1] if len(lines) > len(svc_names) + 1 else ""
-        return {"services": svcs, "mem": mem, "disk": disk}
+        except Exception as e:
+            logger.debug(f"Hetzner Cloud query error: {e}")
 
     return {
         "hetzner_servers": hetzner_servers,
+        "ex63": ex63_info,
         "nodes": {
-            "pz_node": parse_node(pz_res, ["project-zomboid.service", "zomboid-panel.service", "cv-panel.service", "pz-staff-logger.service", "nginx.service"]),
-            "mc_node": parse_node(mc_res, ["minecraft.service", "mc-staff-logger.service"]),
-            "ns13_node": parse_node(ns_res, ["novastation.service", "mariadb.service", "docker.service"]),
-            "general_node": parse_node(gen_res, ["cv-nova-helper.service", "cv-radio-helper.service", "docker.service"]),
-        },
+            "ex63_node": {
+                "services": {k: v["state"] for k, v in services_status.items()},
+                "mem": f"{round(mem.used/(1024**3),1)} / {round(mem.total/(1024**3),1)} GB",
+                "disk": f"{round(disk.used/(1024**3),1)} GB / {round(disk.total/(1024**3),1)} GB ({disk.percent}%)"
+            }
+        }
     }
 
 @app.post("/api/master/node-service")
 async def api_master_node_service(request: Request):
     user = await require_master(request)
     body = await request.json()
-    node = body.get("node")
     service = body.get("service", "")
     op = body.get("op", "restart")
     if op not in ("start", "stop", "restart"):
         raise HTTPException(400, "Invalid operation")
-    allowed_services = {
-        "pz_node": ("127.0.0.1", "root", {"project-zomboid.service", "zomboid-panel.service", "cv-panel.service", "pz-staff-logger.service", "nginx.service"}),
-        "mc_node": ("2.31.101.63", "root", {"minecraft.service", "mc-staff-logger.service"}),
-        "ns13_node": ("87.99.133.221", "ubuntu", {"novastation.service", "mariadb.service", "docker.service"}),
-        "general_node": ("2.31.173.113", "ubuntu", {"cv-nova-helper.service", "cv-radio-helper.service", "docker.service"}),
+
+    allowed = {
+        "minecraft.service", "mc-staff-logger.service",
+        "project-zomboid.service", "zomboid-panel.service",
+        "unturned.service", "novastation.service", "mariadb.service",
+        "cv-panel.service", "cv-nova-helper.service",
+        "cv-radio-helper.service", "cv-radio-tunnel.service", "docker.service"
     }
-    if node not in allowed_services:
-        raise HTTPException(400, "Invalid node")
-    host, ssh_user, valid_svcs = allowed_services[node]
-    if service not in valid_svcs:
-        raise HTTPException(400, "Invalid service")
-    prefix = "sudo " if ssh_user != "root" else ""
-    res = await run_ssh(host, ssh_user, f"{prefix}systemctl {op} {service}")
-    record_audit(user, "master", "node_service", f"{node}: systemctl {op} {service}")
-    return {"success": res["code"] == 0, "output": res["stdout"] + res["stderr"]}
+    if service not in allowed:
+        raise HTTPException(400, f"Service {service} is not in the allowed fleet services list")
+
+    try:
+        res = subprocess.run(["systemctl", op, service], capture_output=True, text=True)
+        return {"success": res.returncode == 0, "output": res.stdout + res.stderr}
+    except Exception as e:
+        raise HTTPException(500, str(e))
 
 @app.post("/api/master/hetzner-power")
 async def api_master_hetzner_power(request: Request):
@@ -3300,6 +4060,19 @@ async def api_master_hetzner_power(request: Request):
     action = body.get("action")  # reboot, poweron, poweroff
     if action not in ("reboot", "poweron", "poweroff"):
         raise HTTPException(400, "Invalid Hetzner power action")
+
+    if server_id == 1:
+        if action == "reboot":
+            record_audit(user, "master", "ex63_reboot", "Dispatched host reboot on EX63 Bare-Metal")
+            subprocess.Popen(["sh", "-c", "sync && sleep 2 && reboot"])
+            return {"success": True, "data": {"message": "Server reboot initiated. Connection will restore in ~60 seconds."}}
+        elif action in ("poweroff", "shutdown"):
+            record_audit(user, "master", "ex63_shutdown", "Dispatched host shutdown on EX63 Bare-Metal")
+            subprocess.Popen(["sh", "-c", "sync && sleep 2 && shutdown -h now"])
+            return {"success": True, "data": {"message": "Server shutdown initiated. System is powering down cleanly."}}
+        elif action in ("poweron", "start"):
+            record_audit(user, "master", "ex63_start", "Verified host operational state")
+            return {"success": True, "data": {"message": "Server is currently online, operational, and running all active fleet services."}}
     cfg = load_config()
     server_ip_map = {
         174435350: ("2.31.101.63", "root"),
@@ -3365,7 +4138,7 @@ async def api_master_global_broadcast(request: Request):
             import struct
             import urllib.parse
             ns = cfg.get("ns13_server", {})
-            byond_host = ns.get("byond_host", "87.99.133.221")
+            byond_host = ns.get("byond_host", "127.0.0.1")
             byond_port = int(ns.get("byond_port", 7777))
             comms_key = ns.get("comms_key", "")
 
@@ -3414,8 +4187,8 @@ async def api_master_global_broadcast(request: Request):
 @app.get("/api/master/bot-config")
 async def api_master_get_bot_config(request: Request):
     await require_master(request)
-    content = await asyncio.to_thread(sftp_read_sync, "87.99.133.221", "ubuntu", "/home/ubuntu/CV-Nova-Helper/config.json")
-    cogs_res = await run_ssh("87.99.133.221", "ubuntu", "ls -1 /home/ubuntu/CV-Nova-Helper/cogs/*.py | xargs -n1 basename")
+    content = await asyncio.to_thread(sftp_read_sync, "127.0.0.1", "ubuntu", "/home/ubuntu/CV-Nova-Helper/config.json")
+    cogs_res = await run_ssh("127.0.0.1", "ubuntu", "ls -1 /home/ubuntu/CV-Nova-Helper/cogs/*.py | xargs -n1 basename")
     cogs = [c.strip() for c in cogs_res["stdout"].splitlines() if c.strip()]
     return {"config_raw": content, "cogs": cogs}
 
@@ -3431,12 +4204,12 @@ async def api_master_save_bot_config(request: Request):
     except Exception as e:
         raise HTTPException(400, f"Invalid JSON: {e}")
 
-    await asyncio.to_thread(sftp_write_sync, "87.99.133.221", "ubuntu", "/home/ubuntu/CV-Nova-Helper/config.json", formatted)
+    await asyncio.to_thread(sftp_write_sync, "127.0.0.1", "ubuntu", "/home/ubuntu/CV-Nova-Helper/config.json", formatted)
     # Also update snapshot on panel host
     with open("/etc/cv-panel/bot_config_snapshot.json", "w", encoding="utf-8") as f:
         f.write(formatted)
     if restart:
-        await run_ssh("87.99.133.221", "ubuntu", "sudo systemctl restart cv-nova-helper.service")
+        await run_ssh("127.0.0.1", "ubuntu", "sudo systemctl restart cv-nova-helper.service")
     record_audit(user, "master", "save_bot_config", f"Updated bot config.json (restart={restart})")
     return {"success": True, "message": "Saved /home/ubuntu/CV-Nova-Helper/config.json" + (" and restarted bot!" if restart else "")}
 
@@ -3446,7 +4219,7 @@ async def api_master_get_bot_cog(request: Request, name: str = "project_zomboid.
     safe_name = os.path.basename(name)
     if not safe_name.endswith(".py"):
         raise HTTPException(400, "Invalid cog filename")
-    content = await asyncio.to_thread(sftp_read_sync, "87.99.133.221", "ubuntu", f"/home/ubuntu/CV-Nova-Helper/cogs/{safe_name}")
+    content = await asyncio.to_thread(sftp_read_sync, "127.0.0.1", "ubuntu", f"/home/ubuntu/CV-Nova-Helper/cogs/{safe_name}")
     return {"name": safe_name, "content": content}
 
 @app.post("/api/master/bot-cog")
@@ -3458,19 +4231,106 @@ async def api_master_save_bot_cog(request: Request):
     restart = body.get("restart", True)
     if not safe_name.endswith(".py"):
         raise HTTPException(400, "Invalid cog filename")
-    await asyncio.to_thread(sftp_write_sync, "87.99.133.221", "ubuntu", f"/home/ubuntu/CV-Nova-Helper/cogs/{safe_name}", content)
+    await asyncio.to_thread(sftp_write_sync, "127.0.0.1", "ubuntu", f"/home/ubuntu/CV-Nova-Helper/cogs/{safe_name}", content)
     if restart:
-        await run_ssh("87.99.133.221", "ubuntu", "sudo systemctl restart cv-nova-helper.service")
+        await run_ssh("127.0.0.1", "ubuntu", "sudo systemctl restart cv-nova-helper.service")
     record_audit(user, "master", "save_bot_cog", f"Updated cog {safe_name} (restart={restart})")
     return {"success": True, "message": f"Saved cogs/{safe_name}" + (" and restarted bot!" if restart else "")}
 
 @app.get("/api/master/bot-logs")
 async def api_master_bot_logs(request: Request):
     await require_master(request)
-    res = await run_ssh("87.99.133.221", "ubuntu", "sudo journalctl -u cv-nova-helper.service -n 100 --no-pager")
+    res = await run_ssh("127.0.0.1", "ubuntu", "sudo journalctl -u cv-nova-helper.service -n 100 --no-pager")
     return {"logs": res["stdout"]}
 
+@app.get("/api/master/staff-permissions")
+async def api_master_get_staff_permissions(request: Request):
+    await require_master(request)
+    raw_cfg = await asyncio.to_thread(sftp_read_sync, "127.0.0.1", "ubuntu", "/home/ubuntu/CV-Nova-Helper/config.json")
+    try:
+        cfg = json.loads(raw_cfg)
+    except Exception:
+        cfg = {}
+
+    staff_perms = cfg.get("staff_permissions", {})
+    bot_token = cfg.get("bot_token")
+    guild_id = cfg.get("guild_id", "1564605314752585797")
+    roles = []
+    categories = []
+
+    if bot_token and guild_id:
+        try:
+            async with httpx.AsyncClient(timeout=6.0) as client:
+                r_roles = await client.get(
+                    f"https://discord.com/api/v10/guilds/{guild_id}/roles",
+                    headers={"Authorization": f"Bot {bot_token}", "User-Agent": "CircuitVersePanel (1.0)"}
+                )
+                if r_roles.status_code == 200:
+                    for r in r_roles.json():
+                        roles.append({"id": r["id"], "name": r["name"], "color": r.get("color", 0)})
+
+                r_channels = await client.get(
+                    f"https://discord.com/api/v10/guilds/{guild_id}/channels",
+                    headers={"Authorization": f"Bot {bot_token}", "User-Agent": "CircuitVersePanel (1.0)"}
+                )
+                if r_channels.status_code == 200:
+                    for c in r_channels.json():
+                        if c.get("type") == 4:
+                            categories.append({"id": c["id"], "name": c["name"]})
+        except Exception as e:
+            logger.warning(f"Failed to fetch guild info for staff permissions: {e}")
+
+    return {
+        "staff_permissions": staff_perms,
+        "roles": sorted(roles, key=lambda x: x["name"].lower()),
+        "categories": sorted(categories, key=lambda x: x["name"].lower())
+    }
+
+@app.post("/api/master/staff-permissions")
+async def api_master_save_staff_permissions(request: Request):
+    user = await require_master(request)
+    body = await request.json()
+    new_perms = body.get("staff_permissions")
+    if not isinstance(new_perms, dict):
+        raise HTTPException(400, "staff_permissions must be a valid dictionary")
+
+    raw_cfg = await asyncio.to_thread(sftp_read_sync, "127.0.0.1", "ubuntu", "/home/ubuntu/CV-Nova-Helper/config.json")
+    try:
+        cfg = json.loads(raw_cfg)
+    except Exception as e:
+        raise HTTPException(500, f"Error reading bot config.json: {e}")
+
+    cfg["staff_permissions"] = new_perms
+    formatted = json.dumps(cfg, indent=2)
+
+    await asyncio.to_thread(sftp_write_sync, "127.0.0.1", "ubuntu", "/home/ubuntu/CV-Nova-Helper/config.json", formatted)
+    await run_ssh("127.0.0.1", "ubuntu", "sudo systemctl restart cv-nova-helper.service")
+    record_audit(user, "master", "save_staff_permissions", "Updated staff bot command permissions and category scopes via panel")
+    return {"success": True, "message": "Saved staff permissions and restarted Discord Bot successfully!"}
+
 # ---- Discord Guild Roles, Members & Channels ----
+@app.post("/api/master/discord-credentials")
+async def api_master_discord_credentials(request: Request):
+    user = await require_master(request)
+    body = await request.json()
+    new_secret = body.get("client_secret", "").strip()
+    new_client_id = body.get("client_id", "").strip()
+    cfg = load_config()
+    changed = []
+    if new_client_id:
+        cfg["discord_client_id"] = new_client_id
+        changed.append(f"client_id ({new_client_id})")
+    if new_secret:
+        cfg["discord_client_secret"] = new_secret
+        changed.append("client_secret (updated)")
+
+    if changed:
+        with open(CONFIG_PATH, "w", encoding="utf-8") as f:
+            json.dump(cfg, f, indent=2)
+        record_audit(user, "master", "update_discord_credentials", f"Updated Discord credentials: {', '.join(changed)}")
+        return {"success": True, "message": f"Saved {', '.join(changed)} to {CONFIG_PATH}!"}
+    return {"success": True, "message": "No changes were submitted."}
+
 @app.get("/api/master/discord")
 async def api_master_discord(request: Request):
     await require_master(request)
@@ -3542,11 +4402,13 @@ WEB_ALLOWED_FILES = {
     "preview/index.html": "/home/circxust/public_html/preview/index.html",
     "preview/directory.html": "/home/circxust/public_html/preview/directory.html",
     "preview/partnerships.html": "/home/circxust/public_html/preview/partnerships.html",
+    "preview/affiliates.html": "/home/circxust/public_html/preview/affiliates.html",
     "preview/style.css": "/home/circxust/public_html/preview/style.css",
     "preview/script.js": "/home/circxust/public_html/preview/script.js",
     "index.html (Root)": "/home/circxust/public_html/index.html",
     "directory.html (Root)": "/home/circxust/public_html/directory.html",
     "partnerships.html (Root)": "/home/circxust/public_html/partnerships.html",
+    "affiliates.html (Root)": "/home/circxust/public_html/affiliates.html",
     "maintenance.html (Root)": "/home/circxust/public_html/maintenance.html",
     "preview/maintenance.html": "/home/circxust/public_html/preview/maintenance.html",
     "style.css (Root)": "/home/circxust/public_html/style.css",
@@ -3612,6 +4474,173 @@ async def api_master_save_website(request: Request):
             return {"success": res["code"] == 0, "maintenance_mode": True, "message": "🚧 Maintenance Mode ACTIVATED on root circuitverse.online! (Full site remains viewable on /preview/)"}
 
     raise HTTPException(400, "Unknown website action")
+
+# ---- Community Partnerships & Affiliates API ----
+PARTNERSHIPS_FILE = os.path.join(os.path.dirname(__file__), "partnerships.json")
+AFFILIATES_FILE = os.path.join(os.path.dirname(__file__), "affiliates.json")
+
+def load_json_list(filepath: str) -> list:
+    if os.path.exists(filepath):
+        try:
+            with open(filepath, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return []
+    return []
+
+def save_json_list(filepath: str, data: list):
+    with open(filepath, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
+
+@app.get("/api/public/partnerships")
+async def api_public_partnerships():
+    data = load_json_list(PARTNERSHIPS_FILE)
+    return {"partnerships": data}
+
+@app.post("/api/master/partnerships/add")
+async def api_master_add_partnership(request: Request):
+    user = await require_master(request)
+    body = await request.json()
+    name = (body.get("name") or "").strip()
+    link = (body.get("link") or "").strip()
+    contact = (body.get("contact") or "").strip()
+    description = (body.get("description") or "").strip()
+    if not name or not link:
+        raise HTTPException(400, "Name and link are required")
+
+    partners = load_json_list(PARTNERSHIPS_FILE)
+    new_id = f"p-{int(datetime.datetime.now(datetime.timezone.utc).timestamp())}"
+    item = {
+        "id": new_id,
+        "name": name,
+        "link": link,
+        "contact": contact or "None",
+        "description": description,
+        "added_at": datetime.datetime.now(datetime.timezone.utc).isoformat()
+    }
+    partners.append(item)
+    save_json_list(PARTNERSHIPS_FILE, partners)
+    record_audit(user, "master", "add_partnership", f"Added partner: {name}")
+
+    # Broadcast to Discord #🤝・partnerships
+    try:
+        cfg = load_config()
+        ch_id = cfg.get("partnerships_channel_id", 1567730987821957180)
+        bot_token = cfg.get("discord_bot_token")
+        if bot_token and ch_id:
+            desc_text = f"\n\n{description}\n" if description else "\n"
+            embed = {
+                "title": f"🤝 New Community Partnership: {name}",
+                "description": f"Circuit Verse is proud to announce an official community partnership with **{name}**!{desc_text}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n🌐 **Connect:** {link}\n👤 **Representative:** {contact or 'N/A'}",
+                "color": 0xec4899,
+                "footer": {"text": "Circuit Verse Partnerships Network • Mutual Community Alliance"}
+            }
+            async with httpx.AsyncClient(timeout=10) as client:
+                res = await client.post(
+                    f"https://discord.com/api/v10/channels/{ch_id}/messages",
+                    headers={"Authorization": f"Bot {bot_token}", "Content-Type": "application/json"},
+                    json={"embeds": [embed]}
+                )
+                if res.status_code in (200, 201):
+                    msg_data = res.json()
+                    item["discord_message_id"] = msg_data.get("id")
+                    save_json_list(PARTNERSHIPS_FILE, partners)
+    except Exception as e:
+        logger.warning(f"Could not broadcast partnership to Discord: {e}")
+
+    return {"success": True, "partner": item}
+
+@app.post("/api/master/partnerships/remove")
+async def api_master_remove_partnership(request: Request):
+    user = await require_master(request)
+    body = await request.json()
+    pid = body.get("id")
+    partners = load_json_list(PARTNERSHIPS_FILE)
+    partners = [p for p in partners if p.get("id") != pid]
+    save_json_list(PARTNERSHIPS_FILE, partners)
+    record_audit(user, "master", "remove_partnership", f"Removed partner ID: {pid}")
+    return {"success": True}
+
+# Affiliates API
+@app.get("/api/public/affiliates")
+async def api_public_affiliates():
+    data = load_json_list(AFFILIATES_FILE)
+    return {"affiliates": data}
+
+@app.post("/api/master/affiliates/add")
+async def api_master_add_affiliate(request: Request):
+    user = await require_master(request)
+    body = await request.json()
+    name = (body.get("name") or "").strip()
+    link = (body.get("link") or "").strip()
+    aff_type = (body.get("type") or "Content Creator").strip()
+    contact = (body.get("contact") or "").strip()
+    perks = (body.get("perks") or "").strip()
+    description = (body.get("description") or "").strip()
+    if not name or not link:
+        raise HTTPException(400, "Name and link are required")
+
+    affiliates = load_json_list(AFFILIATES_FILE)
+    new_id = f"aff-{int(datetime.datetime.now(datetime.timezone.utc).timestamp())}"
+    item = {
+        "id": new_id,
+        "name": name,
+        "link": link,
+        "type": aff_type,
+        "contact": contact or "None",
+        "perks": perks or "Creator Role & Cross-Promotion",
+        "description": description,
+        "added_at": datetime.datetime.now(datetime.timezone.utc).isoformat()
+    }
+    affiliates.append(item)
+    save_json_list(AFFILIATES_FILE, affiliates)
+    record_audit(user, "master", "add_affiliate", f"Added affiliate: {name} ({aff_type})")
+
+    # Broadcast to Discord #🤝・affiliates
+    try:
+        cfg = load_config()
+        ch_id = cfg.get("affiliates_channel_id", 1570071721703116864)
+        bot_token = cfg.get("discord_bot_token")
+        if bot_token and ch_id:
+            desc_text = f"\n\n{description}\n" if description else "\n"
+            embed = {
+                "title": f"⭐ New Community Affiliate: {name}",
+                "description": (
+                    f"Please welcome our newest **Circuit Verse Affiliate & Creator**, **{name}**!{desc_text}\n"
+                    f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                    f"🏷️ **Affiliate Category:** `{aff_type}`\n"
+                    f"🌐 **Platform Link:** {link}\n"
+                    f"👤 **Representative:** {contact or 'N/A'}\n"
+                    f"🎁 **Community Perks:** {perks or 'Creator Perks & Cross-Promotion'}"
+                ),
+                "color": 0x06b6d4,
+                "footer": {"text": "Circuit Verse Affiliate & Creator Program"}
+            }
+            async with httpx.AsyncClient(timeout=10) as client:
+                res = await client.post(
+                    f"https://discord.com/api/v10/channels/{ch_id}/messages",
+                    headers={"Authorization": f"Bot {bot_token}", "Content-Type": "application/json"},
+                    json={"embeds": [embed]}
+                )
+                if res.status_code in (200, 201):
+                    msg_data = res.json()
+                    item["discord_message_id"] = msg_data.get("id")
+                    save_json_list(AFFILIATES_FILE, affiliates)
+    except Exception as e:
+        logger.warning(f"Could not broadcast affiliate to Discord: {e}")
+
+    return {"success": True, "affiliate": item}
+
+@app.post("/api/master/affiliates/remove")
+async def api_master_remove_affiliate(request: Request):
+    user = await require_master(request)
+    body = await request.json()
+    aid = body.get("id")
+    affiliates = load_json_list(AFFILIATES_FILE)
+    affiliates = [a for a in affiliates if a.get("id") != aid]
+    save_json_list(AFFILIATES_FILE, affiliates)
+    record_audit(user, "master", "remove_affiliate", f"Removed affiliate ID: {aid}")
+    return {"success": True}
 
 # ---- Cloudflare DNS & Cache Manager ----
 @app.get("/api/master/cloudflare")
@@ -3741,5 +4770,10 @@ setup_website_and_backup(app, {
     "sftp_read_sync": sftp_read_sync,
     "sftp_write_sync": sftp_write_sync,
 })
+
+@app.get("/")
+@app.get("/index.html")
+async def get_index_root():
+    return FileResponse("/opt/cv-panel/index.html", headers={"Cache-Control": "no-cache, no-store, must-revalidate", "Pragma": "no-cache", "Expires": "0"})
 
 app.mount("/", StaticFiles(directory="/opt/cv-panel/static", html=True), name="static")
